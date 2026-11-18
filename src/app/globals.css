@@ -1,0 +1,119 @@
+@import "tailwindcss";
+
+/*
+  TMLGUIDE v3 design tokens ("Dusk Programme").
+  Intent and rules: docs/design/direction.md. Reference mockup: design/concepts/concept-d-dusk-programme.html.
+  Change tokens here only. Components consume them through Tailwind utilities (bg-ground, text-cream, border-hair, etc.).
+*/
+
+:root {
+  --ground: #0c0a09;
+  --surface: #15110f;
+  --surface-2: #1d1714;
+  --cream: #f4ece0;
+  --cream-mute: rgb(244 236 224 / 0.68);
+  --hair: rgb(244 236 224 / 0.14);
+  --hair-strong: rgb(244 236 224 / 0.26);
+
+  /* ambient hues (low-opacity glows, small accents, status colours) */
+  --ember: #ff6a3d;
+  --teal: #2bc4b4; /* verified */
+  --rose: #f0527f; /* live */
+  --gold: #e9c46a; /* dividers and sparkle */
+
+  /* edition accent: set by [data-ed] on <body>; default Belgium */
+  --ea: #ffc83d;
+  --on-accent: #14100c;
+}
+body[data-ed="winter"] {
+  --ea: #8edbff;
+}
+body[data-ed="brasil"] {
+  --ea: #ff8a5c;
+}
+
+@theme inline {
+  --color-ground: var(--ground);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-cream: var(--cream);
+  --color-cream-mute: var(--cream-mute);
+  --color-hair: var(--hair);
+  --color-hair-strong: var(--hair-strong);
+  --color-ember: var(--ember);
+  --color-teal: var(--teal);
+  --color-rose: var(--rose);
+  --color-gold: var(--gold);
+  --color-accent: var(--ea);
+  --color-on-accent: var(--on-accent);
+
+  --font-display: var(--font-fraunces), Georgia, serif;
+  --font-sans: var(--font-instrument), system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, monospace;
+
+  --radius-card: 24px;
+  --radius-panel: 28px;
+}
+
+html {
+  scroll-behavior: smooth;
+  color-scheme: dark;
+}
+body {
+  background: var(--ground);
+  color: var(--cream);
+  font-family: var(--font-sans);
+  font-size: 1.0625rem;
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+
+/* focus ring uses the edition accent */
+:focus-visible {
+  outline: 2px solid var(--ea);
+  outline-offset: 4px;
+  border-radius: 6px;
+}
+
+/* ambient glow layer (apply to a fixed, pointer-events-none element) */
+.ambient-glow {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(46vmax 36vmax at 88% 6%, rgb(255 106 61 / 0.2), transparent 62%),
+    radial-gradient(44vmax 38vmax at 4% 44%, rgb(43 196 180 / 0.15), transparent 62%),
+    radial-gradient(50vmax 36vmax at 70% 108%, rgb(240 82 127 / 0.14), transparent 62%);
+}
+
+/* tracked mono label, used for eyebrows, dates, tabs */
+.label {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.skip-link {
+  position: absolute;
+  left: -999px;
+}
+.skip-link:focus {
+  left: 12px;
+  top: 12px;
+  z-index: 100;
+  background: var(--ea);
+  color: var(--on-accent);
+  padding: 10px 14px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}
