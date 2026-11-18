@@ -1,0 +1,308 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Concept D: Dusk Programme | TMLGUIDE v3 design gate</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT,WONK@0,9..144,300..700,100,1;1,9..144,300..600,100,1&family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ground:#0C0A09; --surface:#15110F; --surface-2:#1D1714; --hair:rgba(244,236,224,.14); --hair-2:rgba(244,236,224,.26);
+  --cream:#F4ECE0; --mute:rgba(244,236,224,.68);
+  --saff:#FFC83D; --ember:#FF6A3D; --teal:#2BC4B4; --rose:#F0527F;
+  --ea:var(--saff);                      /* active edition accent */
+  --serif:'Fraunces',Georgia,serif; --sans:'Instrument Sans',system-ui,sans-serif; --mono:'JetBrains Mono',ui-monospace,monospace;
+}
+body[data-ed=winter]{--ea:#8EDBFF}
+body[data-ed=brasil]{--ea:#FF8A5C}
+*{box-sizing:border-box;margin:0}
+html{scroll-behavior:smooth}
+body{background:var(--ground);color:var(--cream);font-family:var(--sans);font-size:17px;line-height:1.6;overflow-x:hidden;transition:--ea .3s}
+a{color:inherit}
+.skip{position:absolute;left:-999px}.skip:focus{left:12px;top:12px;background:var(--saff);color:#000;padding:10px 14px;z-index:99}
+:focus-visible{outline:2px solid var(--ea);outline-offset:4px;border-radius:6px}
+/* atmosphere: slow ember + teal glows, our own hues */
+.glow{position:fixed;inset:0;z-index:-1;pointer-events:none;background:
+  radial-gradient(46vmax 36vmax at 88% 6%,rgba(255,106,61,.20),transparent 62%),
+  radial-gradient(44vmax 38vmax at 4% 44%,rgba(43,196,180,.15),transparent 62%),
+  radial-gradient(50vmax 36vmax at 70% 108%,rgba(240,82,127,.14),transparent 62%)}
+.glow::after{content:"";position:absolute;inset:0;opacity:.06;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E")}
+/* nav: tabs with underline, hairline bottom */
+header{position:sticky;top:0;z-index:30;background:rgba(12,10,9,.78);backdrop-filter:blur(14px);border-bottom:1px solid var(--hair)}
+.nav{max-width:1240px;margin:auto;padding:0 28px;height:68px;display:flex;align-items:center;gap:30px}
+.mark{font-family:var(--serif);font-weight:500;font-size:25px;letter-spacing:-.02em;text-decoration:none;display:flex;align-items:baseline;gap:1px;font-variation-settings:"SOFT" 100,"WONK" 1}
+.mark em{font-style:italic;font-weight:400;color:var(--ea)}
+.mark small{font-family:var(--mono);font-size:9px;letter-spacing:.22em;color:var(--mute);margin-left:10px;text-transform:uppercase}
+nav{display:flex;gap:28px;margin:0 auto}
+nav a{font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;text-decoration:none;color:var(--mute);height:68px;display:flex;align-items:center;position:relative;transition:color .2s}
+nav a:hover,nav a[aria-current]{color:var(--cream)}
+nav a[aria-current]::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;background:var(--ea)}
+.right{display:flex;gap:10px;align-items:center}
+.ed{display:flex;border:1px solid var(--hair-2);border-radius:999px;padding:3px;gap:2px}
+.ed button{all:unset;cursor:pointer;font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;padding:7px 12px;border-radius:999px;color:var(--mute);transition:all .2s}
+.ed button[aria-pressed=true]{background:var(--ea);color:#14100C;font-weight:700}
+.kbd{font-family:var(--mono);font-size:11px;letter-spacing:.1em;border:1px solid var(--hair-2);border-radius:999px;padding:9px 14px;background:transparent;color:var(--mute);cursor:pointer}
+/* hero: calm, large serif, one accent */
+.hero{max-width:1240px;margin:auto;padding:110px 28px 70px;display:grid;grid-template-columns:7fr 5fr;gap:60px;align-items:center}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:var(--ea);display:flex;align-items:center;gap:14px}
+.eyebrow::before{content:"";width:34px;height:1px;background:var(--ea)}
+h1{font-family:var(--serif);font-weight:400;font-size:clamp(50px,6.8vw,104px);line-height:.98;letter-spacing:-.035em;margin:22px 0 26px;font-variation-settings:"SOFT" 100,"WONK" 1}
+h1 em{font-style:italic;font-weight:300;color:var(--ea)}
+.lede{font-size:19px;color:var(--mute);max-width:50ch}
+.cta{display:flex;gap:18px;margin-top:36px;align-items:center;flex-wrap:wrap}
+.btn{font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;font-weight:700;padding:18px 28px;border-radius:999px;text-decoration:none;background:var(--ea);color:#14100C;transition:transform .2s,box-shadow .2s;box-shadow:0 14px 34px -14px var(--ea)}
+.btn:hover{transform:translateY(-3px);box-shadow:0 22px 40px -14px var(--ea)}
+.link{font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;text-decoration:none;border-bottom:1px solid var(--hair-2);padding-bottom:5px}
+.link:hover{border-color:var(--ea)}
+/* hero side: next-event panel with a 3D icon */
+.next{position:relative;border:1px solid var(--hair-2);border-radius:28px;padding:34px 32px 30px;background:linear-gradient(160deg,var(--surface-2),var(--surface));overflow:hidden}
+.next::before{content:"";position:absolute;width:320px;height:320px;right:-120px;top:-140px;border-radius:50%;background:radial-gradient(circle,rgba(255,200,61,.22),transparent 66%)}
+.next img{position:absolute;right:20px;top:18px;width:104px;filter:drop-shadow(0 18px 18px rgba(0,0,0,.5));animation:bob 7s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(-8px) rotate(3deg)}}
+.next small{font-family:var(--mono);font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--mute)}
+.next h2{font-family:var(--serif);font-weight:400;font-size:38px;line-height:1.05;letter-spacing:-.02em;margin:10px 0 4px;max-width:9ch}
+.next p{color:var(--mute);font-size:15px}
+.cd{display:grid;grid-template-columns:repeat(4,1fr);gap:0;margin-top:26px;border-top:1px solid var(--hair)}
+.cd div{padding:16px 0 0}
+.cd b{display:block;font-family:var(--serif);font-weight:300;font-size:40px;line-height:1;letter-spacing:-.02em}
+.cd span{font-family:var(--mono);font-size:9px;letter-spacing:.2em;color:var(--mute);text-transform:uppercase}
+/* sections */
+section{max-width:1240px;margin:auto;padding:80px 28px 20px}
+.sh{display:grid;grid-template-columns:5fr 7fr;gap:60px;align-items:end;margin-bottom:46px;padding-top:26px;border-top:1px solid var(--hair)}
+.sh .n{font-family:var(--mono);font-size:11px;letter-spacing:.22em;color:var(--ea);text-transform:uppercase}
+h2.t{font-family:var(--serif);font-weight:400;font-size:clamp(36px,4.4vw,62px);line-height:1;letter-spacing:-.03em;margin-top:12px;font-variation-settings:"SOFT" 100,"WONK" 1}
+h2.t em{font-style:italic;font-weight:300;color:var(--ea)}
+.sub{color:var(--mute);max-width:50ch;justify-self:end}
+/* premium cards: dark surface, hairline, edition-accent edge, glowing 3D icon */
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
+.card{position:relative;display:flex;flex-direction:column;text-decoration:none;min-height:340px;padding:26px 24px 22px;border:1px solid var(--hair);border-radius:24px;background:linear-gradient(170deg,var(--surface-2),var(--surface) 60%);overflow:hidden;transition:transform .35s cubic-bezier(.2,.9,.3,1.2),border-color .3s,box-shadow .35s}
+.card::before{content:"";position:absolute;inset:0 0 auto 0;height:2px;background:linear-gradient(90deg,var(--ea),transparent 70%);opacity:.75}
+.card::after{content:"";position:absolute;width:240px;height:240px;right:-90px;bottom:-110px;border-radius:50%;background:radial-gradient(circle,var(--g,rgba(255,200,61,.26)),transparent 66%);transition:opacity .3s;opacity:.8}
+.card:hover{transform:translateY(-8px);border-color:var(--hair-2);box-shadow:0 30px 50px -28px rgba(0,0,0,.9),0 0 0 1px var(--hair-2)}
+.card:hover::after{opacity:1}
+.card .k{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--mute);display:flex;justify-content:space-between}
+.card .k span:last-child{display:none}
+.card h3{font-family:var(--serif);font-weight:400;font-size:28px;line-height:1.05;letter-spacing:-.02em;margin:18px 0 10px;max-width:10ch}
+.card p{font-size:15px;line-height:1.45;color:var(--mute);max-width:21ch}
+.card img{position:absolute;right:-6px;bottom:-8px;width:138px;z-index:2;filter:drop-shadow(0 18px 14px rgba(0,0,0,.55));transition:transform .45s cubic-bezier(.2,.9,.3,1.4)}
+.card:hover img{transform:scale(1.12) rotate(-8deg) translateY(-6px)}
+.card .go{margin-top:auto;font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;display:inline-flex;gap:10px;align-items:center;position:relative;z-index:3}
+.card .go::after{content:"→";transition:transform .25s}.card:hover .go::after{transform:translateX(6px)}
+.card .ver{position:absolute;top:22px;right:20px;z-index:3;font-family:var(--mono);font-size:9px;letter-spacing:.16em;color:var(--teal);border:1px solid rgba(43,196,180,.5);border-radius:999px;padding:4px 9px}
+.c1{--g:rgba(255,200,61,.30)}.c2{--g:rgba(43,196,180,.28)}.c3{--g:rgba(255,106,61,.28)}.c4{--g:rgba(240,82,127,.28)}
+/* sale timeline: row pattern with 3D icon chips and hairline dividers */
+.timeline{max-width:880px}
+.row{display:grid;grid-template-columns:auto 1fr;gap:22px;padding:28px 0;border-bottom:1px solid var(--hair);align-items:start}
+.chips{display:flex;gap:8px}
+.chip{width:50px;height:50px;border-radius:50%;border:1px solid var(--hair-2);background:var(--surface-2);display:grid;place-items:center}
+.chip img{width:34px}
+.row h3{font-family:var(--serif);font-weight:400;font-size:26px;letter-spacing:-.015em;line-height:1.15}
+.row .when{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--ea);margin:8px 0 8px;display:block}
+.row p{color:var(--mute);font-size:15px;max-width:60ch}
+.row .add{margin-top:12px;display:inline-block;font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;border:1px solid var(--hair-2);border-radius:999px;padding:7px 12px;text-decoration:none;color:var(--cream)}
+.row .add:hover{border-color:var(--ea);color:var(--ea)}
+.src{font-family:var(--mono);font-size:10px;letter-spacing:.12em;color:var(--mute);margin-top:22px;text-transform:uppercase}
+/* split: tool + scam */
+.duo{display:grid;grid-template-columns:1.1fr .9fr;gap:18px}
+.panel{position:relative;border:1px solid var(--hair);border-radius:28px;padding:38px;min-height:320px;overflow:hidden;background:linear-gradient(170deg,var(--surface-2),var(--surface))}
+.panel .eyebrow{margin-bottom:6px}
+.panel h3{font-family:var(--serif);font-weight:400;font-size:36px;line-height:1.05;letter-spacing:-.025em;margin:12px 0 24px;max-width:13ch}
+.panel img{position:absolute;right:-4px;bottom:-8px;width:180px;filter:drop-shadow(0 20px 18px rgba(0,0,0,.55))}
+.tool .r{display:flex;gap:18px;align-items:end;flex-wrap:wrap}
+.tool input{all:unset;font-family:var(--serif);font-weight:300;font-size:60px;width:130px;border-bottom:1px solid var(--ea);color:var(--ea);line-height:1.1}
+.tool .res{font-family:var(--serif);font-weight:300;font-size:60px;line-height:1}
+.tool .res small,.tool label{font-family:var(--mono);font-size:10px;letter-spacing:.2em;color:var(--mute);display:block;text-transform:uppercase}
+.note{font-size:13px;color:var(--mute);max-width:40ch;margin-top:22px}
+.scam{border-color:rgba(255,200,61,.35);background:linear-gradient(170deg,rgba(255,200,61,.10),var(--surface))}
+.scam ul{margin-left:18px;color:var(--mute);max-width:30ch}
+/* stats */
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:0;margin-top:30px;border-top:1px solid var(--hair);border-bottom:1px solid var(--hair)}
+.stat{padding:38px 10px;text-align:center}
+.stat b{display:block;font-family:var(--serif);font-weight:300;font-size:58px;line-height:1;letter-spacing:-.03em}
+.stat span{font-family:var(--mono);font-size:10px;letter-spacing:.2em;color:var(--mute);text-transform:uppercase}
+footer{max-width:1240px;margin:90px auto 0;padding:40px 28px 70px;display:flex;justify-content:space-between;gap:36px;flex-wrap:wrap;border-top:1px solid var(--hair);font-size:14px;color:var(--mute)}
+footer strong{font-family:var(--serif);font-weight:400;font-size:24px;color:var(--cream)}footer p{max-width:60ch;margin-top:8px}
+.sw{display:flex;gap:8px;margin-top:12px}.sw i{width:30px;height:30px;border-radius:50%;border:1px solid var(--hair-2)}
+.badge-note{position:fixed;bottom:14px;left:14px;font-family:var(--mono);font-size:10px;letter-spacing:.1em;background:var(--cream);color:#14100C;padding:6px 10px;border-radius:8px;z-index:70}
+/* ---------- radio player (desktop: floating pill; mobile: docked mini-player) ---------- */
+.radio{position:fixed;right:22px;bottom:22px;z-index:60;display:flex;align-items:center;gap:14px;padding:10px 20px 10px 10px;border:1px solid var(--hair-2);border-radius:999px;background:rgba(21,17,15,.88);backdrop-filter:blur(16px);box-shadow:0 24px 50px -20px #000,0 0 0 1px rgba(0,0,0,.4);max-width:calc(100vw - 28px)}
+.radio .pp{all:unset;cursor:pointer;width:48px;height:48px;border-radius:50%;background:var(--ea);color:#14100C;display:grid;place-items:center;flex:none;transition:transform .2s,box-shadow .2s;box-shadow:0 8px 22px -8px var(--ea)}
+.radio .pp:hover{transform:scale(1.07)}.radio .pp:active{transform:scale(.94)}
+.radio .pp svg{width:20px;height:20px;fill:currentColor}.radio .pp .pa{display:none}.radio[data-on=true] .pp .pl{display:none}.radio[data-on=true] .pp .pa{display:block}
+.radio .meta{display:flex;flex-direction:column;min-width:0}
+.radio .live{font-family:var(--mono);font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:var(--mute);display:flex;align-items:center;gap:8px}
+.radio .live i{width:7px;height:7px;border-radius:50%;background:var(--mute)}
+.radio[data-on=true] .live i{background:var(--rose);box-shadow:0 0 0 4px rgba(240,82,127,.25)}
+.radio .name{font-family:var(--serif);font-size:17px;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.eq{display:flex;gap:3px;align-items:flex-end;height:22px;margin-left:4px}
+.eq b{width:3px;height:6px;border-radius:2px;background:var(--ea);opacity:.45}
+.radio[data-on=true] .eq b{opacity:1;animation:eq 1s ease-in-out infinite}
+.radio[data-on=true] .eq b:nth-child(2){animation-delay:-.3s}.radio[data-on=true] .eq b:nth-child(3){animation-delay:-.6s}.radio[data-on=true] .eq b:nth-child(4){animation-delay:-.15s}
+@keyframes eq{0%,100%{height:5px}50%{height:22px}}
+.radio .vol{width:84px;accent-color:var(--ea)}
+.radio .err{font-size:12px;color:var(--rose);display:none}.radio[data-err=true] .err{display:block}
+/* ---------- mobile tab bar ---------- */
+.tabs{display:none}
+@media(max-width:1100px){.grid{grid-template-columns:repeat(2,1fr)}.hero,.duo,.sh{grid-template-columns:1fr;gap:30px}.sub{justify-self:start}nav{display:none}.stats{grid-template-columns:1fr}}
+@media(max-width:760px){
+  body{font-size:16px;padding-bottom:calc(150px + env(safe-area-inset-bottom))}
+  .nav{height:60px;padding:0 16px;gap:10px}
+  .mark{font-size:22px}.mark small{display:none}
+  .right{margin-left:auto}.ed{display:none}
+  .kbd{width:44px;height:44px;padding:0;display:grid;place-items:center;font-size:0}
+  .kbd::before{content:"";width:18px;height:18px;border:2px solid var(--cream);border-radius:50%;box-shadow:7px 7px 0 -5px var(--cream);transform:translate(-2px,-2px)}
+  /* edition switch becomes a full-width segmented control under the header */
+  .edm{display:flex!important}
+  .hero{padding:44px 20px 36px;gap:34px}
+  h1{font-size:clamp(40px,12vw,56px);line-height:1;margin:16px 0 18px}
+  .lede{font-size:17px}
+  .cta{gap:14px;margin-top:26px}.btn{flex:1;text-align:center;padding:19px 20px}
+  .next{padding:26px 22px 22px;border-radius:24px}.next h2{font-size:32px}.next img{width:84px}
+  .cd b{font-size:34px}
+  section{padding:56px 20px 8px}
+  .sh{gap:16px;margin-bottom:26px;padding-top:20px}
+  h2.t{font-size:clamp(32px,9.4vw,42px)}
+  /* cards become a swipeable snap carousel with peek */
+  .grid{display:flex;gap:14px;overflow-x:auto;scroll-snap-type:x mandatory;margin:0 -20px;padding:4px 20px 22px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  .grid::-webkit-scrollbar{display:none}
+  .card{flex:0 0 78%;scroll-snap-align:center;min-height:320px}
+  .card:hover{transform:none}
+  /* timeline: stack chips above text, 44px min touch targets */
+  .row{grid-template-columns:1fr;gap:14px;padding:24px 0}.row h3{font-size:23px}
+  .row .add{padding:13px 16px;font-size:11px}
+  .panel{padding:28px 22px;border-radius:24px;min-height:300px}.panel h3{font-size:30px}
+  .tool input,.tool .res{font-size:46px}.tool input{width:100px}
+  .panel img{width:130px}
+  .stat b{font-size:46px}.stat{padding:26px 10px}
+  footer{padding:32px 20px 24px}
+  /* radio: docked mini-player above the tab bar */
+  .radio{left:12px;right:12px;bottom:calc(72px + env(safe-area-inset-bottom));max-width:none;border-radius:22px;padding:9px 16px 9px 9px}
+  .radio .vol{display:none}.radio .pp{width:46px;height:46px}
+  .radio .meta{flex:1}.eq{margin-left:auto}
+  /* bottom tab bar: thumb reach, safe area aware */
+  .tabs{display:grid;grid-template-columns:repeat(5,1fr);position:fixed;left:0;right:0;bottom:0;z-index:65;background:rgba(12,10,9,.92);backdrop-filter:blur(18px);border-top:1px solid var(--hair);padding:6px 6px calc(6px + env(safe-area-inset-bottom))}
+  .tabs a{display:flex;flex-direction:column;align-items:center;gap:3px;padding:7px 0 5px;text-decoration:none;color:var(--mute);font-family:var(--mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;min-height:48px;border-radius:14px}
+  .tabs a[aria-current]{color:var(--cream);background:var(--surface-2)}
+  .tabs a[aria-current] img{filter:none;opacity:1}
+  .tabs img{width:26px;height:26px;opacity:.7;filter:grayscale(.4)}
+  .badge-note{display:none}
+}
+@media(max-width:380px){.card{flex-basis:86%}.btn{font-size:11px;padding:18px 14px}}
+.edm{display:none;position:sticky;top:60px;z-index:29;padding:10px 16px;background:rgba(12,10,9,.85);backdrop-filter:blur(14px);border-bottom:1px solid var(--hair)}
+.edm div{display:flex;width:100%;border:1px solid var(--hair-2);border-radius:999px;padding:3px}
+.edm button{all:unset;cursor:pointer;flex:1;text-align:center;font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;padding:12px 0;border-radius:999px;color:var(--mute);min-height:44px;box-sizing:border-box}
+.edm button[aria-pressed=true]{background:var(--ea);color:#14100C;font-weight:700}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+</style>
+</head>
+<body data-ed="belgium">
+<a class="skip" href="#main">Skip to content</a>
+<div class="glow"></div>
+<div class="badge-note">CONCEPT D · DUSK PROGRAMME · DESIGN MOCKUP</div>
+<header><div class="nav">
+  <a class="mark" href="#">TML<em>guide</em><small>Independent</small></a>
+  <nav aria-label="Primary"><a href="#" aria-current="page">Welcome</a><a href="#">Tickets</a><a href="#">Sale dates</a><a href="#">Practical</a><a href="#">Tools</a><a href="#">Community</a></nav>
+  <div class="right">
+    <div class="ed" role="group" aria-label="Choose edition"><button aria-pressed="true" data-e="belgium">Belgium</button><button aria-pressed="false" data-e="winter">Winter</button><button aria-pressed="false" data-e="brasil">Brasil</button></div>
+    <button class="kbd" aria-label="Search">⌘K</button>
+  </div>
+</div></header>
+<div class="edm" role="group" aria-label="Choose edition"><div><button aria-pressed="true" data-e="belgium">Belgium</button><button aria-pressed="false" data-e="winter">Winter</button><button aria-pressed="false" data-e="brasil">Brasil</button></div></div>
+<main id="main">
+<div class="hero">
+  <div>
+    <p class="eyebrow">Independent guide · checked and dated</p>
+    <h1>Everything you need,<br><em>checked</em> before you go.</h1>
+    <p class="lede">Tickets, camping, travel, add-ons and Pearls, explained plainly. Every page shows its source and the date it was last verified.</p>
+    <div class="cta"><a class="btn" href="#">Start planning</a><a class="link" href="#">Ask the guide</a></div>
+  </div>
+  <div class="next" aria-label="Countdown to the next edition">
+    <img src="assets/icons/trophy.webp" alt="">
+    <small>Next edition</small>
+    <h2>CORE Melbourne</h2>
+    <p>28 November 2026</p>
+    <div class="cd"><div><b id="d">00</b><span>Days</span></div><div><b id="h">00</b><span>Hours</span></div><div><b id="m">00</b><span>Mins</span></div><div><b id="s">00</b><span>Secs</span></div></div>
+  </div>
+</div>
+
+<section aria-labelledby="t1">
+  <div class="sh"><div><span class="n">01 · Sale dates</span><h2 class="t" id="t1">Never miss <em>a sale</em></h2></div><p class="sub">Belgium 2027 sale moments as shown on the official page. Add each one to your calendar with the correct time zone.</p></div>
+  <div class="timeline">
+    <div class="row"><div class="chips"><span class="chip"><img src="assets/icons/map-pin.webp" alt=""></span><span class="chip"><img src="assets/icons/gift.webp" alt=""></span><span class="chip"><img src="assets/icons/locker.webp" alt=""></span></div><div><h3>Global Journey Travel Packages Sale</h3><span class="when">Saturday 30 January 2027 · 17:00 CET</span><p>Packages include a ticket, hotel and/or DreamVille, with or without transport.</p><a class="add" href="#">Add to calendar</a></div></div>
+    <div class="row"><div class="chips"><span class="chip"><img src="assets/icons/gift.webp" alt=""></span><span class="chip"><img src="assets/icons/locker.webp" alt=""></span></div><div><h3>Worldwide Pre-Sale</h3><span class="when">Saturday 6 February 2027 · 17:00 CET</span><p>The pre-sale for Tomorrowland tickets and DreamVille packages.</p><a class="add" href="#">Add to calendar</a></div></div>
+    <div class="row"><div class="chips"><span class="chip"><img src="assets/icons/gift.webp" alt=""></span><span class="chip"><img src="assets/icons/locker.webp" alt=""></span></div><div><h3>Worldwide Ticket Sale</h3><span class="when">Saturday 13 February 2027 · 17:00 CET</span><p>The general sales moment for tickets and DreamVille packages.</p><a class="add" href="#">Add to calendar</a></div></div>
+    <p class="src">Source: official Belgium sales page, seen 18 Nov 2026 · Verify on the official site before you buy</p>
+  </div>
+</section>
+
+<section aria-labelledby="t2">
+  <div class="sh"><div><span class="n">02 · Start here</span><h2 class="t" id="t2">Four guides, <em>one plan</em></h2></div><p class="sub">The questions attendees ask most, answered with checked facts and a clear next step.</p></div>
+  <div class="grid">
+    <a class="card c1" href="#"><span class="k"><span>Tickets</span><span>01</span></span><span class="ver">VERIFIED</span><h3>Tickets &amp; passes</h3><p>Every pass type and sale phase explained.</p><img src="assets/icons/gift.webp" alt=""><span class="go">Open guide</span></a>
+    <a class="card c2" href="#"><span class="k"><span>Camping</span><span>02</span></span><h3>DreamVille compared</h3><p>Size, comfort and power for every unit.</p><img src="assets/icons/locker.webp" alt=""><span class="go">Compare units</span></a>
+    <a class="card c3" href="#"><span class="k"><span>Travel</span><span>03</span></span><h3>Getting there</h3><p>Airports, trains and shuttle times.</p><img src="assets/icons/map-pin.webp" alt=""><span class="go">Plan your route</span></a>
+    <a class="card c4" href="#"><span class="k"><span>Add-ons</span><span>04</span></span><h3>Extras worth buying</h3><p>Lockers, dining, parking and breakfast.</p><img src="assets/icons/medal.webp" alt=""><span class="go">See add-ons</span></a>
+  </div>
+</section>
+
+<section aria-labelledby="t3">
+  <div class="sh"><div><span class="n">03 · Tools &amp; safety</span><h2 class="t" id="t3">Work it out <em>before you pay</em></h2></div><p class="sub">A quick Pearl calculator, and the scam warnings every first-timer should read.</p></div>
+  <div class="duo">
+    <div class="panel tool">
+      <span class="eyebrow">Pearl calculator</span><h3>What are your Pearls worth?</h3>
+      <div class="r"><div><label for="p">Pearls</label><input id="p" type="number" value="10" min="0" inputmode="numeric" aria-describedby="rate"></div><span style="font-family:var(--serif);font-size:44px;font-weight:300">=</span><div class="res"><small>Euros</small><span id="e">€19.00</span></div></div>
+      <p class="note" id="rate">1 Pearl = €1.90 at Belgium 2026. Rates differ by edition, so check yours.</p>
+      <img src="assets/icons/wallet.webp" alt="">
+    </div>
+    <div class="panel scam" role="note">
+      <span class="eyebrow">Scam alert</span><h3>Buy only from official channels.</h3>
+      <ul><li>Never pay a stranger by bank transfer</li><li>Check sellers in the community groups first</li></ul>
+      <img src="assets/icons/shield.webp" alt="">
+    </div>
+  </div>
+  <div class="stats" aria-label="Festival facts"><div class="stat"><b>16</b><span>Stages</span></div><div class="stat"><b>400,000</b><span>Visitors</span></div><div class="stat"><b>191</b><span>Nationalities</span></div></div>
+  <p class="src" style="text-align:center">Figures as published on the official Belgium site, seen 18 Nov 2026</p>
+</section>
+</main>
+<footer>
+  <div><strong>TMLguide</strong><p>An independent, fan-made guide. We are not affiliated with Tomorrowland or WeAreOne.World B.V. Names and marks belong to their owners.</p></div>
+  <div><strong style="font-size:18px">Palette and type</strong><div class="sw"><i style="background:#0C0A09"></i><i style="background:#F4ECE0"></i><i style="background:#FFC83D"></i><i style="background:#FF6A3D"></i><i style="background:#2BC4B4"></i><i style="background:#F0527F"></i></div><p>Fraunces · Instrument Sans · JetBrains Mono</p></div>
+</footer>
+<!-- Radio: One World Radio (official Tomorrowland station) -->
+<div class="radio" id="radio" data-on="false" role="region" aria-label="One World Radio player">
+  <button class="pp" id="pp" aria-label="Play One World Radio" aria-pressed="false">
+    <svg class="pl" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.2v13.6a1 1 0 0 0 1.5.9l11-6.8a1 1 0 0 0 0-1.8l-11-6.8A1 1 0 0 0 8 5.2z"/></svg>
+    <svg class="pa" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="5" width="4.5" height="14" rx="1.2"/><rect x="13.5" y="5" width="4.5" height="14" rx="1.2"/></svg>
+  </button>
+  <div class="meta"><span class="live"><i></i><span id="st">Live radio</span></span><span class="name">One World Radio</span><span class="err" role="status" id="rerr">Stream unavailable. Try again shortly.</span></div>
+  <div class="eq" aria-hidden="true"><b></b><b></b><b></b><b></b></div>
+  <input class="vol" id="vol" type="range" min="0" max="1" step="0.05" value="0.25" aria-label="Radio volume">
+  <audio id="aud" preload="none"></audio>
+</div>
+<nav class="tabs" aria-label="Mobile">
+  <a href="#" aria-current="page"><img src="assets/icons/flag.webp" alt="">Home</a>
+  <a href="#"><img src="assets/icons/gift.webp" alt="">Tickets</a>
+  <a href="#"><img src="assets/icons/map-pin.webp" alt="">Plan</a>
+  <a href="#"><img src="assets/icons/wallet.webp" alt="">Tools</a>
+  <a href="#"><img src="assets/icons/star.webp" alt="">More</a>
+</nav>
+<script>
+/* radio: no autoplay; stream only loads after a user tap; clear error state */
+(()=>{const r=document.getElementById('radio'),a=document.getElementById('aud'),pp=document.getElementById('pp'),v=document.getElementById('vol'),st=document.getElementById('st');
+ const SRC='https://playerservices.streamtheworld.com/api/livestream-redirect/OWR_INTERNATIONAL.mp3';a.volume=.25;
+ const set=(on)=>{r.dataset.on=on;pp.setAttribute('aria-pressed',on);pp.setAttribute('aria-label',on?'Pause One World Radio':'Play One World Radio');st.textContent=on?'Live now':'Live radio'};
+ pp.addEventListener('click',async()=>{r.dataset.err='false';
+  if(!a.paused){a.pause();a.removeAttribute('src');a.load();set(false);return}
+  a.src=SRC;try{await a.play();set(true)}catch(e){r.dataset.err='true';set(false)}});
+ a.addEventListener('error',()=>{r.dataset.err='true';set(false)});
+ v.addEventListener('input',()=>a.volume=parseFloat(v.value));})();
+const t=new Date('2026-11-28T00:00:00+11:00');
+function tick(){let s=Math.max(0,Math.floor((t-Date.now())/1000));const f=n=>String(n).padStart(2,'0');
+ d.textContent=f(Math.floor(s/86400));h.textContent=f(Math.floor(s%86400/3600));m.textContent=f(Math.floor(s%3600/60));document.getElementById('s').textContent=f(s%60);}
+tick();setInterval(tick,1000);
+document.getElementById('p').addEventListener('input',e=>{document.getElementById('e').textContent='€'+((parseFloat(e.target.value)||0)*1.9).toFixed(2)});
+document.querySelectorAll('.ed button,.edm button').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('.ed button,.edm button').forEach(x=>x.setAttribute('aria-pressed',x.dataset.e===b.dataset.e?'true':'false'));document.body.dataset.ed=b.dataset.e}));
+</script>
+</body>
+</html>
