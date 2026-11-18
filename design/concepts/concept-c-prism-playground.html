@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Concept C: Prism Playground | TMLGUIDE v3 design gate</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F2F5FF; --ink:#101437; --ink-2:#434A78; --white:#fff;
+  --sky:#3B6BFF; --sun:#FFB020; --mint:#14D6A0; --coral:#FF5C6C; --lilac:#9B7BFF; --ice:#7FD6FF;
+  /* edition worlds */
+  --be-a:#14D6A0; --be-b:#FFB020; --wi-a:#7FD6FF; --wi-b:#3B6BFF; --br-a:#FF8A3D; --br-b:#FF5C6C;
+  --display:'Bricolage Grotesque',system-ui,sans-serif; --text:'Instrument Sans',system-ui,sans-serif; --mono:'JetBrains Mono',ui-monospace,monospace;
+}
+*{box-sizing:border-box;margin:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--ink);font-family:var(--text);font-size:17px;line-height:1.55;overflow-x:hidden}
+a{color:inherit}
+.skip{position:absolute;left:-999px}.skip:focus{left:12px;top:12px;background:var(--ink);color:#fff;padding:10px 14px;z-index:99;border-radius:10px}
+:focus-visible{outline:3px solid var(--sky);outline-offset:3px;border-radius:10px}
+body::before{content:"";position:fixed;inset:0;z-index:-1;background:
+ radial-gradient(40vmax 30vmax at 100% 0,rgba(255,176,32,.28),transparent 60%),
+ radial-gradient(45vmax 35vmax at 0 20%,rgba(20,214,160,.22),transparent 60%),
+ radial-gradient(45vmax 35vmax at 70% 100%,rgba(155,123,255,.22),transparent 60%)}
+header{position:sticky;top:14px;z-index:30;margin:14px auto 0;max-width:1260px;padding:0 20px}
+.nav{background:rgba(255,255,255,.88);backdrop-filter:blur(12px);border-radius:22px;padding:10px 12px 10px 20px;display:flex;align-items:center;gap:18px;box-shadow:0 10px 30px -14px rgba(16,20,55,.35),0 0 0 1.5px rgba(16,20,55,.06)}
+.mark{font-family:var(--display);font-weight:800;font-size:25px;letter-spacing:-.04em;text-decoration:none;display:flex;gap:2px}
+.mark b{color:var(--sky)}.mark i{font-style:normal;color:var(--coral)}
+nav ul{display:flex;gap:2px;list-style:none;padding:0;margin-left:14px}
+nav a.l{display:block;padding:9px 15px;border-radius:12px;text-decoration:none;font-weight:600;font-size:15px;color:var(--ink-2)}
+nav a.l:hover{background:var(--bg);color:var(--ink)}
+.right{margin-left:auto;display:flex;gap:10px;align-items:center}
+.ed{display:flex;gap:6px;background:var(--bg);padding:5px;border-radius:14px}
+.ed button{all:unset;cursor:pointer;font-weight:700;font-size:13px;padding:8px 12px;border-radius:10px;color:var(--ink-2);transition:all .2s}
+.ed button[aria-pressed=true]{color:#fff;background:linear-gradient(135deg,var(--ea,var(--sky)),var(--eb,var(--lilac)));box-shadow:0 6px 14px -6px var(--ea,var(--sky))}
+.search{font-family:var(--mono);font-size:12px;background:var(--bg);border:0;border-radius:14px;padding:12px 16px;color:var(--ink-2);cursor:pointer;font-weight:700}
+/* hero */
+.hero{max-width:1260px;margin:auto;padding:70px 20px 30px;display:grid;grid-template-columns:1.1fr .9fr;gap:30px;align-items:center}
+.chip{display:inline-flex;gap:8px;align-items:center;background:#fff;border-radius:999px;padding:8px 16px 8px 10px;font-weight:700;font-size:14px;box-shadow:0 4px 14px -6px rgba(16,20,55,.3)}
+.chip::before{content:"";width:12px;height:12px;border-radius:50%;background:var(--mint);box-shadow:0 0 0 4px rgba(20,214,160,.25)}
+h1{font-family:var(--display);font-weight:800;font-size:clamp(52px,7.4vw,112px);line-height:.94;letter-spacing:-.045em;margin:22px 0 22px}
+h1 .g{background:linear-gradient(90deg,#2F5BF0,#6E4BEA,#E5384C);-webkit-background-clip:text;background-clip:text;color:transparent}
+h1 .u{position:relative;white-space:nowrap}
+h1 .u::after{content:"";position:absolute;left:0;right:0;bottom:.04em;height:.2em;background:var(--sun);z-index:-1;border-radius:99px;transform:rotate(-1.5deg)}
+.lede{font-size:20px;color:var(--ink-2);max-width:48ch}
+.cta{display:flex;gap:12px;margin-top:30px;flex-wrap:wrap}
+.btn{font-family:var(--display);font-weight:700;font-size:18px;padding:17px 28px;border-radius:18px;text-decoration:none;transition:transform .22s cubic-bezier(.2,.9,.3,1.4),box-shadow .22s}
+.btn.p{background:linear-gradient(135deg,#2F5BF0,#6E4BEA);color:#fff;box-shadow:0 14px 28px -12px var(--sky),inset 0 1px 0 rgba(255,255,255,.4)}
+.btn.p:hover{transform:translateY(-3px) scale(1.03)}.btn.p:active{transform:scale(.97)}
+.btn.s{background:#fff;box-shadow:0 0 0 1.5px rgba(16,20,55,.1)}.btn.s:hover{transform:translateY(-3px)}
+/* hero stack of 3D icons */
+.stack{position:relative;height:480px}
+.blob{position:absolute;border-radius:40% 60% 55% 45%/50% 45% 55% 50%;filter:blur(.5px)}
+.blob.a{inset:6% 8% 10% 12%;background:linear-gradient(140deg,var(--ice),var(--sky) 60%,var(--lilac));animation:morph 12s ease-in-out infinite;box-shadow:inset -18px -22px 50px rgba(16,20,55,.25)}
+@keyframes morph{50%{border-radius:55% 45% 40% 60%/45% 55% 45% 55%;transform:rotate(6deg)}}
+.stack img{position:absolute;filter:drop-shadow(0 26px 22px rgba(16,20,55,.3));animation:fl 7s ease-in-out infinite}
+.stack .i1{width:210px;left:28%;top:12%}.stack .i2{width:140px;left:2%;top:54%;animation-delay:-2s}.stack .i3{width:150px;right:0;top:46%;animation-delay:-4s}.stack .i4{width:110px;right:14%;top:2%;animation-delay:-1s}
+@keyframes fl{50%{transform:translateY(-16px) rotate(5deg)}}
+.cd{position:absolute;left:50%;bottom:0;transform:translateX(-50%);background:#fff;border-radius:22px;padding:14px 20px;display:flex;gap:18px;box-shadow:0 18px 36px -14px rgba(16,20,55,.45);white-space:nowrap}
+.cd div{text-align:center}.cd b{font-family:var(--mono);font-size:28px;display:block;line-height:1}.cd small{font-size:10px;font-weight:700;letter-spacing:.1em;color:var(--ink-2)}
+.cd p{font-size:11px;font-weight:700;color:var(--ink-2);letter-spacing:.1em;text-transform:uppercase;align-self:center;width:78px;flex:none;white-space:normal;line-height:1.25}
+/* sections */
+section{max-width:1260px;margin:auto;padding:70px 20px 20px}
+.sh{display:flex;justify-content:space-between;align-items:end;gap:20px;flex-wrap:wrap;margin-bottom:30px}
+h2.t{font-family:var(--display);font-weight:800;font-size:clamp(36px,4.6vw,64px);line-height:1;letter-spacing:-.04em}
+.sub{color:var(--ink-2);max-width:44ch}
+/* premium cards: layered, spring, coloured worlds */
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px}
+.card{--a:var(--sky);--b:var(--lilac);position:relative;display:flex;flex-direction:column;text-decoration:none;background:#fff;border-radius:28px;padding:8px;box-shadow:0 1px 0 rgba(255,255,255,.9) inset,0 0 0 1.5px rgba(16,20,55,.06),0 22px 40px -26px rgba(16,20,55,.5);transition:transform .35s cubic-bezier(.2,.9,.3,1.35),box-shadow .35s;transform-style:preserve-3d}
+.card:hover{transform:translateY(-10px) scale(1.02);box-shadow:0 0 0 1.5px var(--a),0 32px 50px -24px var(--a)}
+.card .art{border-radius:22px;height:200px;background:linear-gradient(145deg,var(--a),var(--b));position:relative;overflow:hidden;display:grid;place-items:center}
+.card .art::before{content:"";position:absolute;width:260px;height:260px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.55),transparent 62%);top:-80px;left:-60px}
+.card .art::after{content:"";position:absolute;inset:0;background:radial-gradient(circle at 80% 120%,rgba(16,20,55,.28),transparent 60%)}
+.card .art img{width:150px;position:relative;z-index:2;transition:transform .5s cubic-bezier(.2,.9,.3,1.5);filter:drop-shadow(0 18px 14px rgba(16,20,55,.35))}
+.card:hover .art img{transform:translateY(-8px) rotate(-8deg) scale(1.1)}
+.card .body{padding:20px 16px 16px;display:flex;flex-direction:column;flex:1}
+.card .k{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.12em;color:var(--ink-2);text-transform:uppercase;display:inline-flex;align-items:center;gap:8px}
+.card .k::before{content:"";width:10px;height:10px;border-radius:50%;background:linear-gradient(135deg,var(--a),var(--b))}
+.card h3{font-family:var(--display);font-weight:800;font-size:25px;line-height:1.05;letter-spacing:-.03em;margin:8px 0}
+.card p{font-size:15px;color:var(--ink-2);line-height:1.4}
+.card .go{margin-top:auto;padding-top:18px;font-weight:700;display:flex;justify-content:space-between;align-items:center}
+.card .go span{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;background:var(--bg);transition:all .3s}
+.card:hover .go span{background:linear-gradient(135deg,var(--a),var(--b));color:#fff;transform:rotate(-45deg)}
+.pill{position:absolute;top:18px;left:18px;z-index:3;background:rgba(255,255,255,.92);font-size:11px;font-weight:800;padding:5px 10px;border-radius:99px;letter-spacing:.06em}
+.k1{--a:var(--be-a);--b:var(--be-b)}.k2{--a:var(--wi-b);--b:var(--wi-a)}.k3{--a:var(--br-a);--b:var(--br-b)}.k4{--a:var(--lilac);--b:var(--coral)}
+/* tool + scam */
+.duo{display:grid;grid-template-columns:1.1fr .9fr;gap:20px}
+.panel{border-radius:32px;padding:36px;position:relative;overflow:hidden;min-height:320px}
+.tool{background:linear-gradient(145deg,var(--ink),#26307A);color:#fff}
+.alert{background:linear-gradient(145deg,var(--sun),#FF8A3D);color:var(--ink)}
+.panel .k{font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;opacity:.85}
+.panel h3{font-family:var(--display);font-weight:800;font-size:38px;line-height:1;letter-spacing:-.04em;margin:12px 0 22px;max-width:13ch}
+.panel img{position:absolute;right:-6px;bottom:-8px;width:200px;filter:drop-shadow(0 20px 18px rgba(0,0,0,.35));animation:fl 8s ease-in-out infinite}
+.tool .row{display:flex;gap:16px;align-items:end;flex-wrap:wrap}
+.tool input{all:unset;font-family:var(--mono);font-weight:700;font-size:48px;width:150px;border-bottom:3px solid var(--mint);color:var(--mint)}
+.tool .res{font-family:var(--mono);font-weight:700;font-size:48px;line-height:1}.tool .res small{display:block;font-size:11px;letter-spacing:.12em;opacity:.7;margin-bottom:4px}
+.note{font-size:14px;opacity:.78;max-width:38ch;margin-top:18px}
+.alert ul{margin-left:18px;max-width:30ch}
+footer{max-width:1260px;margin:70px auto 0;padding:34px 20px 60px;display:flex;justify-content:space-between;gap:30px;flex-wrap:wrap;color:var(--ink-2);font-size:14px;border-top:1.5px solid rgba(16,20,55,.1)}
+footer strong{font-family:var(--display);font-size:22px;color:var(--ink)}footer p{max-width:60ch;margin-top:6px}
+.sw{display:flex;gap:8px;margin-top:10px}.sw i{width:32px;height:32px;border-radius:10px}
+.badge-note{position:fixed;bottom:14px;left:14px;font-family:var(--mono);font-size:11px;background:var(--ink);color:#fff;padding:6px 10px;border-radius:8px;z-index:70}
+@media(max-width:1100px){.grid{grid-template-columns:repeat(2,1fr)}.hero,.duo{grid-template-columns:1fr}.stack{height:420px}nav ul{display:none}}
+@media(max-width:560px){.grid{grid-template-columns:1fr}.search{display:none}.ed button{padding:7px 8px;font-size:12px}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<div class="badge-note">Concept C · Prism Playground · design mockup</div>
+<header><div class="nav">
+  <a class="mark" href="#"><b>tml</b><i>guide</i></a>
+  <nav aria-label="Primary"><ul><li><a class="l" href="#">Editions</a></li><li><a class="l" href="#">Plan</a></li><li><a class="l" href="#">Tools</a></li><li><a class="l" href="#">Community</a></li><li><a class="l" href="#">Ask the guide</a></li></ul></nav>
+  <div class="right">
+    <div class="ed" role="group" aria-label="Choose edition"><button aria-pressed="true" style="--ea:var(--be-a);--eb:var(--be-b)">Belgium</button><button aria-pressed="false" style="--ea:var(--wi-b);--eb:var(--wi-a)">Winter</button><button aria-pressed="false" style="--ea:var(--br-a);--eb:var(--br-b)">Brasil</button></div>
+    <button class="search" aria-label="Search">⌘K</button>
+  </div>
+</div></header>
+<main id="main">
+<div class="hero">
+  <div>
+    <span class="chip">Independent fan guide, checked and dated</span>
+    <h1>Your whole trip,<br><span class="g">sorted</span> and <span class="u">stress-free.</span></h1>
+    <p class="lede">Tickets, camping, travel, add-ons and Pearls explained clearly. Every page shows its source and when it was last checked.</p>
+    <div class="cta"><a class="btn p" href="#">Start your plan</a><a class="btn s" href="#">Explore guides</a></div>
+  </div>
+  <div class="stack" aria-label="Countdown to CORE Melbourne">
+    <div class="blob a"></div>
+    <img class="i1" src="assets/icons/trophy.webp" alt=""><img class="i2" src="assets/icons/music.webp" alt=""><img class="i3" src="assets/icons/rocket.webp" alt=""><img class="i4" src="assets/icons/star.webp" alt="">
+    <div class="cd"><p>CORE Melbourne</p><div><b id="d">00</b><small>DAYS</small></div><div><b id="h">00</b><small>HRS</small></div><div><b id="m">00</b><small>MIN</small></div><div><b id="s">00</b><small>SEC</small></div></div>
+  </div>
+</div>
+
+<section aria-labelledby="t1">
+  <div class="sh"><h2 class="t" id="t1">Pick a place to start</h2><p class="sub">Each edition has its own colour world, so you always know where you are.</p></div>
+  <div class="grid">
+    <a class="card k1" href="#"><div class="art"><span class="pill">VERIFIED</span><img src="assets/icons/gift.webp" alt=""></div><div class="body"><span class="k">Tickets</span><h3>Tickets &amp; sale dates</h3><p>Every pass type and sale phase, with reminders.</p><span class="go">Open guide <span>→</span></span></div></a>
+    <a class="card k2" href="#"><div class="art"><img src="assets/icons/locker.webp" alt=""></div><div class="body"><span class="k">Camping</span><h3>DreamVille compared</h3><p>Size, comfort and power for every unit.</p><span class="go">Compare units <span>→</span></span></div></a>
+    <a class="card k3" href="#"><div class="art"><img src="assets/icons/map-pin.webp" alt=""></div><div class="body"><span class="k">Travel</span><h3>Getting there and back</h3><p>Airports, trains and shuttles with times.</p><span class="go">Plan your route <span>→</span></span></div></a>
+    <a class="card k4" href="#"><div class="art"><img src="assets/icons/medal.webp" alt=""></div><div class="body"><span class="k">Add-ons</span><h3>Extras worth buying</h3><p>Lockers, dining, parking and breakfast.</p><span class="go">See add-ons <span>→</span></span></div></a>
+  </div>
+</section>
+
+<section aria-labelledby="t2">
+  <div class="sh"><h2 class="t" id="t2">Work it out before you pay</h2><p class="sub">A quick calculator and the scam warnings every first-timer needs.</p></div>
+  <div class="duo">
+    <div class="panel tool">
+      <span class="k">Tool · Pearl calculator</span><h3>What are your Pearls worth?</h3>
+      <div class="row"><label class="k" for="p">Pearls</label><input id="p" type="number" value="10" min="0" inputmode="numeric" aria-describedby="rate"><span style="font-size:36px">→</span><div class="res"><small>EUROS</small><span id="e">€19.00</span></div></div>
+      <p class="note" id="rate">1 Pearl = €1.90 at Belgium 2026. Rates differ by edition.</p>
+      <img src="assets/icons/wallet.webp" alt="">
+    </div>
+    <div class="panel alert" role="note">
+      <span class="k">Scam alert</span><h3>Buy only from official channels.</h3>
+      <ul><li>Never pay a stranger by bank transfer</li><li>Check sellers in the community groups</li></ul>
+      <img src="assets/icons/shield.webp" alt="">
+    </div>
+  </div>
+</section>
+</main>
+<footer>
+  <div><strong>tmlguide</strong><p>An independent, fan-made guide. We are not affiliated with Tomorrowland or WeAreOne.World B.V. Names and marks belong to their owners.</p></div>
+  <div><strong style="font-size:18px">Edition worlds</strong><div class="sw"><i style="background:linear-gradient(135deg,#14D6A0,#FFB020)"></i><i style="background:linear-gradient(135deg,#3B6BFF,#7FD6FF)"></i><i style="background:linear-gradient(135deg,#FF8A3D,#FF5C6C)"></i><i style="background:linear-gradient(135deg,#9B7BFF,#FF5C6C)"></i></div><p>Bricolage Grotesque · Instrument Sans · JetBrains Mono</p></div>
+</footer>
+<script>
+const t=new Date('2026-11-28T00:00:00+11:00');
+function tick(){let s=Math.max(0,Math.floor((t-Date.now())/1000));const f=n=>String(n).padStart(2,'0');
+ d.textContent=f(Math.floor(s/86400));h.textContent=f(Math.floor(s%86400/3600));m.textContent=f(Math.floor(s%3600/60));document.getElementById('s').textContent=f(s%60);}
+tick();setInterval(tick,1000);
+document.getElementById('p').addEventListener('input',e=>{document.getElementById('e').textContent='€'+((parseFloat(e.target.value)||0)*1.9).toFixed(2)});
+document.querySelectorAll('.ed button').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('.ed button').forEach(x=>x.setAttribute('aria-pressed','false'));b.setAttribute('aria-pressed','true')}));
+</script>
+</body>
+</html>

@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Concept A: Carnival Night | TMLGUIDE v3 design gate</title>
+<link rel="preconnect" href="https://api.fontshare.com">
+<link href="https://api.fontshare.com/v2/css?f[]=clash-display@500,600,700&f[]=satoshi@400,500,700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#14060F; --ink-2:#210B1B; --ink-3:#2E1226;
+  --paper:#FFF4E6;
+  --coral:#FF5A3C; --pink:#FF3D8B; --lime:#D5FF3F; --cyan:#2EE6D6; --sun:#FFC62E;
+  --line:rgba(255,244,230,.16);
+  --display:'Clash Display',system-ui,sans-serif; --text:'Satoshi',system-ui,sans-serif; --mono:'JetBrains Mono',ui-monospace,monospace;
+}
+*{box-sizing:border-box;margin:0}
+html{scroll-behavior:smooth}
+body{background:var(--ink);color:var(--paper);font-family:var(--text);font-size:17px;line-height:1.55;overflow-x:hidden}
+a{color:inherit}
+.skip{position:absolute;left:-999px}.skip:focus{left:12px;top:12px;background:var(--lime);color:var(--ink);padding:10px 14px;z-index:99;font-weight:700}
+:focus-visible{outline:3px solid var(--lime);outline-offset:3px}
+/* background glow field */
+.field{position:fixed;inset:0;z-index:-1;background:
+  radial-gradient(60vmax 40vmax at 85% -5%,rgba(255,61,139,.35),transparent 60%),
+  radial-gradient(50vmax 40vmax at -5% 30%,rgba(46,230,214,.22),transparent 60%),
+  radial-gradient(50vmax 40vmax at 60% 110%,rgba(255,90,60,.28),transparent 60%),var(--ink)}
+.grain{position:fixed;inset:0;z-index:-1;opacity:.07;pointer-events:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E")}
+/* nav */
+header{position:sticky;top:0;z-index:20;background:rgba(20,6,15,.82);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.nav{max-width:1320px;margin:auto;padding:14px 28px;display:flex;align-items:center;gap:28px}
+.mark{font-family:var(--display);font-weight:700;font-size:26px;letter-spacing:-.02em;text-decoration:none;display:flex;align-items:center;gap:10px}
+.mark i{width:34px;height:34px;border-radius:10px;background:conic-gradient(from 200deg,var(--coral),var(--pink),var(--sun),var(--lime),var(--cyan),var(--coral));display:grid;place-items:center;transform:rotate(-8deg);box-shadow:3px 3px 0 var(--paper)}
+.mark i b{font-size:17px;color:var(--ink)}
+.mark em{font-style:normal;color:var(--lime)}
+nav ul{display:flex;gap:6px;list-style:none;padding:0;margin-left:auto}
+nav a.l{display:block;padding:9px 14px;border-radius:999px;text-decoration:none;font-weight:500;font-size:15px}
+nav a.l:hover{background:var(--ink-3)}
+.switch{display:flex;border:2px solid var(--paper);border-radius:999px;padding:3px;gap:2px;font-family:var(--mono);font-size:12px;font-weight:700}
+.switch button{all:unset;cursor:pointer;padding:7px 12px;border-radius:999px;letter-spacing:.04em}
+.switch button[aria-pressed=true]{background:var(--lime);color:var(--ink)}
+.kbd{font-family:var(--mono);font-size:12px;border:1px solid var(--line);border-radius:8px;padding:8px 12px;color:rgba(255,244,230,.7);background:var(--ink-2);cursor:pointer}
+/* marquee */
+.marquee{background:var(--lime);color:var(--ink);border-block:2px solid var(--ink);overflow:hidden;white-space:nowrap;font-family:var(--display);font-weight:700;font-size:18px;text-transform:uppercase;letter-spacing:.02em}
+.marquee div{display:inline-block;padding:10px 0;animation:mq 38s linear infinite}
+.marquee span{margin:0 22px}.marquee span::after{content:"✦";margin-left:44px}
+@keyframes mq{to{transform:translateX(-50%)}}
+/* hero */
+.hero{max-width:1320px;margin:auto;padding:88px 28px 70px;display:grid;grid-template-columns:1.25fr .75fr;gap:40px;align-items:center}
+.eyebrow{font-family:var(--mono);font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--cyan)}
+h1{font-family:var(--display);font-weight:700;font-size:clamp(54px,8.4vw,128px);line-height:.92;letter-spacing:-.035em;margin:18px 0 26px}
+h1 .a{background:linear-gradient(95deg,var(--coral),var(--pink) 45%,var(--sun));-webkit-background-clip:text;background-clip:text;color:transparent}
+h1 .b{display:inline-block;background:var(--lime);color:var(--ink);padding:0 .12em;transform:rotate(-2deg);box-shadow:6px 6px 0 var(--pink)}
+.lede{max-width:56ch;font-size:20px;color:rgba(255,244,230,.82)}
+.cta{display:flex;gap:14px;margin-top:34px;flex-wrap:wrap}
+.btn{font-family:var(--display);font-weight:600;font-size:18px;padding:16px 26px;border-radius:14px;text-decoration:none;border:2px solid var(--paper);transition:transform .18s,box-shadow .18s}
+.btn.p{background:var(--coral);color:var(--ink);box-shadow:5px 5px 0 var(--paper)}
+.btn.p:hover{transform:translate(-2px,-2px);box-shadow:8px 8px 0 var(--paper)}
+.btn.p:active{transform:translate(3px,3px);box-shadow:1px 1px 0 var(--paper)}
+.btn.s:hover{background:var(--paper);color:var(--ink)}
+/* countdown poster */
+.poster{position:relative;background:var(--paper);color:var(--ink);border-radius:26px;padding:30px;border:3px solid var(--paper);box-shadow:10px 10px 0 var(--pink);transform:rotate(1.6deg)}
+.poster .tag{font-family:var(--mono);font-size:12px;letter-spacing:.12em;text-transform:uppercase;font-weight:700}
+.poster h2{font-family:var(--display);font-size:38px;line-height:1;letter-spacing:-.02em;margin:10px 0 4px}
+.poster p{font-size:15px;opacity:.75}
+.cd{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:22px}
+.cd div{background:var(--ink);color:var(--paper);border-radius:14px;padding:14px 4px 10px;text-align:center}
+.cd b{display:block;font-family:var(--mono);font-size:34px;line-height:1;color:var(--lime)}
+.cd small{font-size:11px;letter-spacing:.1em;text-transform:uppercase;opacity:.7}
+.poster .icon{position:absolute;right:-26px;top:-46px;width:118px;transform:rotate(12deg);filter:drop-shadow(0 14px 14px rgba(0,0,0,.35));animation:float 5s ease-in-out infinite}
+@keyframes float{50%{transform:rotate(6deg) translateY(-10px)}}
+/* sections */
+section{max-width:1320px;margin:auto;padding:70px 28px}
+.sh{display:flex;justify-content:space-between;align-items:end;gap:20px;margin-bottom:34px;flex-wrap:wrap}
+h2.t{font-family:var(--display);font-size:clamp(38px,5vw,68px);line-height:1;letter-spacing:-.03em}
+h2.t span{color:var(--pink)}
+.sub{max-width:46ch;color:rgba(255,244,230,.72)}
+/* premium card family */
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:22px}
+.card{position:relative;border-radius:24px;padding:26px 24px 24px;border:2px solid var(--paper);color:var(--ink);overflow:hidden;min-height:310px;display:flex;flex-direction:column;transition:transform .22s cubic-bezier(.2,.9,.3,1.3),box-shadow .22s;box-shadow:7px 7px 0 var(--c2,var(--paper))}
+.card:hover{transform:translate(-4px,-6px) rotate(-.6deg);box-shadow:12px 12px 0 var(--c2,var(--paper))}
+.card .k{font-family:var(--mono);font-size:12px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;display:flex;justify-content:space-between}
+.card h3{font-family:var(--display);font-size:30px;line-height:1.02;letter-spacing:-.02em;margin:14px 0 8px;max-width:11ch}
+.card p{font-size:15px;line-height:1.4;max-width:22ch;opacity:.82}
+.card img{position:absolute;right:-12px;bottom:-14px;width:156px;transition:transform .3s cubic-bezier(.2,.9,.3,1.4);filter:drop-shadow(0 16px 14px rgba(0,0,0,.28))}
+.card:hover img{transform:scale(1.14) rotate(-8deg)}
+.card .go{margin-top:auto;font-family:var(--display);font-weight:600;display:inline-flex;gap:8px;align-items:center;text-decoration:none;font-size:16px}
+.card .go::after{content:"→";transition:transform .2s}.card:hover .go::after{transform:translateX(6px)}
+.c1{--c2:var(--pink);background:var(--coral)}
+.c2{--c2:var(--lime);background:var(--cyan)}
+.c3{--c2:var(--cyan);background:var(--sun)}
+.c4{--c2:var(--coral);background:var(--pink)}
+.badge{position:absolute;top:18px;right:16px;background:var(--ink);color:var(--lime);font-family:var(--mono);font-size:11px;font-weight:700;padding:5px 9px;border-radius:999px;transform:rotate(6deg)}
+/* tool + scam */
+.duo{display:grid;grid-template-columns:1.1fr .9fr;gap:22px}
+.panel{border-radius:26px;padding:32px;border:2px solid var(--paper);position:relative;overflow:hidden}
+.tool{background:var(--ink-2);box-shadow:8px 8px 0 var(--cyan)}
+.tool h3,.alert h3{font-family:var(--display);font-size:34px;line-height:1;letter-spacing:-.02em;margin:10px 0 18px}
+.row{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.tool input{all:unset;font-family:var(--mono);font-weight:700;font-size:44px;width:150px;border-bottom:3px solid var(--lime);color:var(--lime);padding-bottom:4px}
+.tool .res{font-family:var(--mono);font-size:44px;font-weight:700}
+.tool .res small{display:block;font-size:12px;letter-spacing:.1em;color:rgba(255,244,230,.6);font-weight:500;text-transform:uppercase}
+.tool img{position:absolute;right:10px;bottom:6px;width:150px;opacity:.95}
+.note{font-size:13px;color:rgba(255,244,230,.6);margin-top:16px;max-width:42ch}
+.alert{background:var(--lime);color:var(--ink);box-shadow:8px 8px 0 var(--pink)}
+.alert p{max-width:36ch}
+.alert img{position:absolute;right:-6px;bottom:-10px;width:160px}
+.alert ul{margin:16px 0 0 18px}
+/* footer */
+footer{border-top:1px solid var(--line);padding:46px 28px 64px;max-width:1320px;margin:auto;display:flex;gap:32px;justify-content:space-between;flex-wrap:wrap;font-size:14px;color:rgba(255,244,230,.65)}
+footer strong{font-family:var(--display);font-size:20px;color:var(--paper)}
+.disc{max-width:62ch}
+.swatches{display:flex;gap:8px;margin-top:10px}.swatches i{width:30px;height:30px;border-radius:8px;border:2px solid var(--paper)}
+.badge-note{position:fixed;bottom:14px;left:14px;font-family:var(--mono);font-size:11px;background:var(--paper);color:var(--ink);padding:6px 10px;border-radius:8px;z-index:50}
+@media(max-width:1100px){.grid{grid-template-columns:repeat(2,1fr)}.hero,.duo{grid-template-columns:1fr}nav ul{display:none}.poster{transform:none}}
+@media(max-width:560px){.grid{grid-template-columns:1fr}.nav{gap:12px}.kbd{display:none}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<div class="field"></div><div class="grain"></div>
+<div class="badge-note">Concept A · Carnival Night · design mockup</div>
+<header>
+  <div class="nav">
+    <a class="mark" href="#"><i><b>T</b></i>TML<em>GUIDE</em></a>
+    <nav aria-label="Primary"><ul>
+      <li><a class="l" href="#">Editions</a></li><li><a class="l" href="#">Plan</a></li><li><a class="l" href="#">Tools</a></li><li><a class="l" href="#">Community</a></li><li><a class="l" href="#">Ask the guide</a></li>
+    </ul></nav>
+    <div class="switch" role="group" aria-label="Choose edition"><button aria-pressed="true">BELGIUM</button><button aria-pressed="false">WINTER</button><button aria-pressed="false">BRASIL</button></div>
+    <button class="kbd" aria-label="Search">⌘K · Search</button>
+  </div>
+</header>
+<div class="marquee" aria-hidden="true"><div>
+  <span>Independent fan guide</span><span>Tickets &amp; sale dates</span><span>DreamVille camping</span><span>Pearls explained</span><span>Shuttles &amp; travel</span><span>Scam alerts</span>
+  <span>Independent fan guide</span><span>Tickets &amp; sale dates</span><span>DreamVille camping</span><span>Pearls explained</span><span>Shuttles &amp; travel</span><span>Scam alerts</span>
+</div></div>
+<main id="main">
+<div class="hero">
+  <div>
+    <p class="eyebrow">The community-run help guide</p>
+    <h1><span class="a">Plan it</span> <span class="b">right.</span><br>Live it loud.</h1>
+    <p class="lede">Tickets, DreamVille, travel, add-ons and Pearls in plain English. Every fact is sourced, dated and checked, so you spend your time dancing, not guessing.</p>
+    <div class="cta"><a class="btn p" href="#">Start planning</a><a class="btn s" href="#">Ask the guide</a></div>
+  </div>
+  <div class="poster">
+    <img class="icon" src="assets/icons/rocket.webp" alt="">
+    <span class="tag">Next up</span>
+    <h2>CORE Melbourne</h2>
+    <p>28 November 2026</p>
+    <div class="cd" aria-live="off"><div><b id="d">00</b><small>Days</small></div><div><b id="h">00</b><small>Hours</small></div><div><b id="m">00</b><small>Mins</small></div><div><b id="s">00</b><small>Secs</small></div></div>
+  </div>
+</div>
+
+<section aria-labelledby="t1">
+  <div class="sh"><h2 class="t" id="t1">Everything you <span>need</span></h2><p class="sub">Four starting points. Each one opens a complete, linked guide with checked prices and a clear next step.</p></div>
+  <div class="grid">
+    <a class="card c1" href="#" style="text-decoration:none"><span class="k"><span>Tickets</span><span>01</span></span><h3>Get your ticket</h3><p>Types, sale phases, and how not to get scammed.</p><img src="assets/icons/gift.webp" alt=""><span class="go">Open guide</span></a>
+    <a class="card c2" href="#" style="text-decoration:none"><span class="k"><span>Camping</span><span>02</span></span><h3>Pitch up in DreamVille</h3><p>Compare every unit by size, comfort and power.</p><img src="assets/icons/locker.webp" alt=""><span class="go">Compare units</span></a>
+    <a class="card c3" href="#" style="text-decoration:none"><span class="k"><span>Travel</span><span>03</span></span><h3>Get there &amp; back</h3><p>Airports, trains, shuttles and first and last departures.</p><img src="assets/icons/map-pin.webp" alt=""><span class="go">Plan your route</span></a>
+    <a class="card c4" href="#" style="text-decoration:none"><span class="k"><span>Add-ons</span><span>04</span></span><h3>Extras worth buying</h3><p>Lockers, dining, parking and breakfast, side by side.</p><span class="badge">VERIFIED</span><img src="assets/icons/medal.webp" alt=""><span class="go">See add-ons</span></a>
+  </div>
+</section>
+
+<section aria-labelledby="t2">
+  <div class="duo">
+    <div class="panel tool">
+      <span class="eyebrow">Tool · Pearl calculator</span>
+      <h3>What are your Pearls worth?</h3>
+      <div class="row">
+        <label for="p" class="note" style="margin:0">Pearls</label>
+        <input id="p" type="number" value="10" min="0" inputmode="numeric" aria-describedby="rate">
+        <span style="font-size:34px">→</span>
+        <div class="res"><small>Euros</small><span id="e">€19.00</span></div>
+      </div>
+      <p class="note" id="rate">Rate: 1 Pearl = €1.90 (Belgium 2026). Rates differ by edition, so always check the edition you are attending.</p>
+      <img src="assets/icons/wallet.webp" alt="">
+    </div>
+    <div class="panel alert" id="t2" role="note">
+      <span class="eyebrow" style="color:var(--ink)">Scam alert</span>
+      <h3>Buy only from official channels.</h3>
+      <p>Resale fraud is the biggest risk for first-timers. Read this before you pay anyone.</p>
+      <ul><li>Never pay a stranger by bank transfer</li><li>Check the seller in the community groups</li></ul>
+      <img src="assets/icons/shield.webp" alt="">
+    </div>
+  </div>
+</section>
+</main>
+<footer>
+  <div class="disc"><strong>TMLGUIDE</strong><p>An independent, fan-made guide. We are not affiliated with Tomorrowland or WeAreOne.World B.V. Names and marks belong to their owners.</p></div>
+  <div><strong>Palette</strong><div class="swatches"><i style="background:#14060F"></i><i style="background:#FF5A3C"></i><i style="background:#FF3D8B"></i><i style="background:#D5FF3F"></i><i style="background:#2EE6D6"></i><i style="background:#FFC62E"></i><i style="background:#FFF4E6"></i></div><p style="margin-top:10px">Clash Display · Satoshi · JetBrains Mono</p></div>
+</footer>
+<script>
+const t=new Date('2026-11-28T00:00:00+11:00');
+function tick(){let s=Math.max(0,Math.floor((t-Date.now())/1000));const f=(n)=>String(n).padStart(2,'0');
+ document.getElementById('d').textContent=f(Math.floor(s/86400));document.getElementById('h').textContent=f(Math.floor(s%86400/3600));
+ document.getElementById('m').textContent=f(Math.floor(s%3600/60));document.getElementById('s').textContent=f(s%60);}
+tick();setInterval(tick,1000);
+document.getElementById('p').addEventListener('input',e=>{document.getElementById('e').textContent='€'+((parseFloat(e.target.value)||0)*1.9).toFixed(2)});
+document.querySelectorAll('.switch button').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('.switch button').forEach(x=>x.setAttribute('aria-pressed','false'));b.setAttribute('aria-pressed','true')}));
+</script>
+</body>
+</html>

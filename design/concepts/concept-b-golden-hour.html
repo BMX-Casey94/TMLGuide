@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Concept B: Golden Hour | TMLGUIDE v3 design gate</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT,WONK@0,9..144,400..800,100,1;1,9..144,400..800,100,1&family=Instrument+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#F7EFE3; --paper-2:#EFE3D1; --ink:#1B1410; --ink-2:#3A2B22;
+  --tang:#FF7A1A; --rose:#E8336D; --teal:#0E5A5A; --saff:#FFC83D; --coral:#FF5A4D; --plum:#4A1630;
+  --line:rgba(27,20,16,.18);
+  --serif:'Fraunces',Georgia,serif; --sans:'Instrument Sans',system-ui,sans-serif; --mono:'IBM Plex Mono',ui-monospace,monospace;
+}
+*{box-sizing:border-box;margin:0}
+html{scroll-behavior:smooth}
+body{background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:17px;line-height:1.6;overflow-x:hidden}
+a{color:inherit}
+.skip{position:absolute;left:-999px}.skip:focus{left:12px;top:12px;background:var(--ink);color:var(--paper);padding:10px 14px;z-index:99}
+:focus-visible{outline:3px solid var(--rose);outline-offset:3px}
+.paper-grain{position:fixed;inset:0;pointer-events:none;z-index:60;opacity:.35;mix-blend-mode:multiply;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='.8' numOctaves='3'/%3E%3CfeColorMatrix values='0 0 0 0 .5 0 0 0 0 .4 0 0 0 0 .3 0 0 0 .18 0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E")}
+/* top strip + nav */
+.strip{background:var(--ink);color:var(--paper);font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;text-align:center;padding:8px}
+header{position:sticky;top:0;z-index:30;background:rgba(247,239,227,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.nav{max-width:1360px;margin:auto;padding:16px 36px;display:flex;align-items:center;gap:36px}
+.mark{font-family:var(--serif);font-size:30px;font-weight:700;font-variation-settings:"SOFT" 100,"WONK" 1;letter-spacing:-.02em;text-decoration:none;display:flex;align-items:baseline;gap:2px}
+.mark span{font-style:italic;font-weight:500;background:linear-gradient(90deg,var(--tang),var(--rose));-webkit-background-clip:text;background-clip:text;color:transparent}
+.mark sup{font-family:var(--mono);font-size:10px;margin-left:6px;color:var(--teal);letter-spacing:.1em}
+nav ul{display:flex;gap:30px;list-style:none;padding:0}
+nav a.l{text-decoration:none;font-weight:500;font-size:15px;position:relative;padding:4px 0}
+nav a.l::after{content:"";position:absolute;left:0;right:100%;bottom:-2px;height:2px;background:var(--rose);transition:right .25s}
+nav a.l:hover::after{right:0}
+.right{margin-left:auto;display:flex;gap:14px;align-items:center}
+.ed{font-family:var(--mono);font-size:12px;border:1.5px solid var(--ink);padding:9px 14px;border-radius:999px;background:var(--saff);font-weight:600;cursor:pointer}
+.kbd{font-family:var(--mono);font-size:12px;border:1.5px solid var(--line);padding:9px 14px;border-radius:999px;background:transparent;cursor:pointer;color:var(--ink-2)}
+/* hero */
+.hero{max-width:1360px;margin:auto;padding:64px 36px 40px;display:grid;grid-template-columns:7fr 5fr;gap:46px;align-items:stretch}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--teal);font-weight:600}
+h1{font-family:var(--serif);font-weight:600;font-size:clamp(56px,8.6vw,132px);line-height:.9;letter-spacing:-.04em;margin:20px 0 28px;font-variation-settings:"SOFT" 100,"WONK" 1}
+h1 em{font-style:italic;font-weight:400;background:linear-gradient(100deg,var(--tang) 10%,var(--rose) 60%,var(--plum));-webkit-background-clip:text;background-clip:text;color:transparent;padding-right:.05em}
+.lede{font-size:21px;max-width:50ch;color:var(--ink-2)}
+.cta{display:flex;gap:16px;margin-top:34px;align-items:center;flex-wrap:wrap}
+.btn{font-weight:600;font-size:17px;padding:17px 30px;border-radius:999px;text-decoration:none;background:var(--ink);color:var(--paper);transition:transform .2s,box-shadow .2s;box-shadow:0 10px 24px -10px rgba(27,20,16,.6)}
+.btn:hover{transform:translateY(-3px);box-shadow:0 18px 30px -12px rgba(232,51,109,.6)}
+.link{font-weight:600;text-decoration:underline;text-underline-offset:6px;text-decoration-color:var(--rose);text-decoration-thickness:2px}
+.sun{position:relative;border-radius:240px 240px 24px 24px;min-height:520px;overflow:hidden;background:
+  radial-gradient(circle at 50% 62%,var(--saff) 0 18%,transparent 18.4%),
+  linear-gradient(180deg,#FF9A3C 0%,var(--tang) 30%,var(--rose) 62%,var(--plum) 100%);color:var(--paper);display:flex;flex-direction:column;justify-content:flex-end;padding:30px}
+.sun::before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(180deg,transparent 0 22px,rgba(74,22,48,.18) 22px 24px);mask:linear-gradient(180deg,transparent 52%,#000 90%)}
+.sun .icon{position:absolute;left:50%;top:46%;width:170px;transform:translate(-50%,-50%);filter:drop-shadow(0 22px 22px rgba(74,22,48,.5));animation:bob 6s ease-in-out infinite}
+@keyframes bob{50%{transform:translate(-50%,-56%) rotate(3deg)}}
+.sun .meta{position:relative}
+.sun small{font-family:var(--mono);letter-spacing:.14em;text-transform:uppercase;font-size:12px;opacity:.9}
+.sun h2{font-family:var(--serif);font-size:44px;line-height:1;font-weight:500;margin:6px 0 14px}
+.cd{display:flex;gap:18px;font-family:var(--serif);font-size:44px;font-weight:500;line-height:1}
+.cd div{display:flex;flex-direction:column}.cd small{font-size:11px;margin-top:4px}
+/* sections */
+section{max-width:1360px;margin:auto;padding:84px 36px 40px}
+.sh{display:grid;grid-template-columns:5fr 7fr;gap:46px;align-items:end;border-top:2px solid var(--ink);padding-top:22px;margin-bottom:44px}
+.sh .n{font-family:var(--mono);font-size:12px;letter-spacing:.16em;color:#B3174A;font-weight:600}
+h2.t{font-family:var(--serif);font-weight:600;font-size:clamp(40px,5.2vw,76px);line-height:.98;letter-spacing:-.035em;font-variation-settings:"SOFT" 100,"WONK" 1}
+h2.t em{font-style:italic;font-weight:400;color:var(--teal)}
+.sub{font-size:19px;color:var(--ink-2);max-width:52ch;justify-self:end}
+/* ticket cards */
+.tickets{display:grid;grid-template-columns:repeat(4,1fr);gap:26px}
+.ticket{position:relative;display:flex;flex-direction:column;text-decoration:none;filter:drop-shadow(0 16px 22px rgba(74,22,48,.18));transition:transform .3s cubic-bezier(.2,.9,.3,1.2),filter .3s}
+.ticket:hover{transform:translateY(-10px) rotate(-1deg);filter:drop-shadow(0 28px 30px rgba(232,51,109,.28))}
+.ticket .top{height:210px;border-radius:22px 22px 0 0;padding:22px;position:relative;overflow:hidden;color:var(--paper)}
+.ticket .top::after{content:"";position:absolute;inset:auto -20% -60% -20%;height:90%;border-radius:50%;background:rgba(255,255,255,.14)}
+.ticket .top img{position:absolute;right:10px;bottom:-6px;width:150px;z-index:2;transition:transform .4s cubic-bezier(.2,.9,.3,1.4);filter:drop-shadow(0 14px 12px rgba(0,0,0,.3))}
+.ticket:hover .top img{transform:scale(1.12) rotate(-7deg) translateY(-6px)}
+.ticket .no{font-family:var(--mono);font-size:12px;letter-spacing:.14em;position:relative;z-index:2}
+.ticket .bot{background:#FFFDF8;border-radius:0 0 22px 22px;padding:26px 24px 24px;position:relative;flex:1;border:1px solid var(--line);border-top:0}
+.ticket .bot::before{content:"";position:absolute;left:14px;right:14px;top:-1px;border-top:2.5px dashed var(--paper-2)}
+.ticket .bot::after{content:"";position:absolute;left:-12px;top:-12px;width:24px;height:24px;border-radius:50%;background:var(--paper);box-shadow:calc(100% + 0px) 0 0 var(--paper)}
+.ticket h3{font-family:var(--serif);font-weight:600;font-size:30px;line-height:1.02;letter-spacing:-.02em}
+.ticket p{font-size:15px;color:var(--ink-2);margin:10px 0 18px;line-height:1.45}
+.ticket .go{font-weight:600;font-size:15px;display:flex;gap:8px;justify-content:space-between;border-top:1px solid var(--line);padding-top:14px}
+.t1 .top{background:linear-gradient(150deg,var(--tang),var(--rose));color:var(--ink)}
+.t4 .top{color:var(--ink)}
+.t2 .top{background:linear-gradient(150deg,var(--teal),#1E8E7E)}
+.t3 .top{background:linear-gradient(150deg,var(--plum),var(--rose))}
+.t4 .top{background:linear-gradient(150deg,#E7A400,var(--tang))}
+.vb{position:absolute;top:18px;right:18px;z-index:3;background:var(--paper);color:var(--ink);font-family:var(--mono);font-size:10px;font-weight:600;padding:5px 9px;border-radius:999px;letter-spacing:.1em}
+/* split feature */
+.split{display:grid;grid-template-columns:1fr 1fr;gap:26px}
+.pane{border-radius:30px;padding:42px;position:relative;overflow:hidden;min-height:340px}
+.pane.tool{background:var(--teal);color:var(--paper)}
+.pane.scam{background:var(--saff)}
+.pane h3{font-family:var(--serif);font-size:40px;font-weight:600;line-height:1;letter-spacing:-.03em;margin:12px 0 22px;max-width:14ch}
+.pane img{position:absolute;right:-8px;bottom:-12px;width:190px;filter:drop-shadow(0 18px 18px rgba(0,0,0,.28))}
+.pane .eyebrow{color:inherit;opacity:.85}
+.tool input{all:unset;font-family:var(--serif);font-size:64px;width:140px;border-bottom:2px solid var(--saff);color:var(--saff)}
+.tool .row{display:flex;gap:18px;align-items:end;flex-wrap:wrap}
+.tool .res{font-family:var(--serif);font-size:64px;line-height:1}.tool .res small{display:block;font-family:var(--mono);font-size:11px;letter-spacing:.14em;opacity:.75}
+.note{font-size:14px;opacity:.8;max-width:40ch;margin-top:20px}
+.pane.scam ul{margin-left:18px;max-width:30ch}
+footer{margin-top:90px;background:var(--ink);color:var(--paper);padding:56px 36px}
+.fi{max-width:1360px;margin:auto;display:flex;justify-content:space-between;gap:36px;flex-wrap:wrap}
+footer strong{font-family:var(--serif);font-size:28px;font-weight:600}
+footer p{max-width:60ch;opacity:.75;font-size:14px;margin-top:8px}
+.sw{display:flex;gap:8px;margin-top:12px}.sw i{width:34px;height:34px;border-radius:50%;border:2px solid var(--paper)}
+.badge-note{position:fixed;bottom:14px;left:14px;font-family:var(--mono);font-size:11px;background:var(--ink);color:var(--paper);padding:6px 10px;border-radius:8px;z-index:70}
+@media(max-width:1100px){.tickets{grid-template-columns:repeat(2,1fr)}.hero,.split,.sh{grid-template-columns:1fr}.sub{justify-self:start}nav ul{display:none}.sun{min-height:420px}}
+@media(max-width:560px){.tickets{grid-template-columns:1fr}.nav{padding:14px 20px;gap:14px}.kbd{display:none}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<div class="paper-grain"></div>
+<div class="badge-note">Concept B · Golden Hour · design mockup</div>
+<div class="strip">An independent fan guide · Not affiliated with Tomorrowland</div>
+<header><div class="nav">
+  <a class="mark" href="#">TML<span>guide</span><sup>FIELD GUIDE</sup></a>
+  <nav aria-label="Primary"><ul><li><a class="l" href="#">Editions</a></li><li><a class="l" href="#">Plan your trip</a></li><li><a class="l" href="#">Tools</a></li><li><a class="l" href="#">Community</a></li><li><a class="l" href="#">Ask the guide</a></li></ul></nav>
+  <div class="right"><button class="ed" aria-label="Change edition">Belgium ▾</button><button class="kbd" aria-label="Search">⌘K</button></div>
+</div></header>
+<main id="main">
+<div class="hero">
+  <div>
+    <p class="eyebrow">A field guide for people of tomorrow</p>
+    <h1>Every detail,<br><em>checked</em> before<br>you go.</h1>
+    <p class="lede">Tickets, camping, travel, add-ons and Pearls, written plainly and verified against the source. Each page shows when it was last checked.</p>
+    <div class="cta"><a class="btn" href="#">Begin your plan</a><a class="link" href="#">Browse the guides</a></div>
+  </div>
+  <div class="sun" aria-label="Countdown to the next edition">
+    <img class="icon" src="assets/icons/star.webp" alt="">
+    <div class="meta">
+      <small>Next edition</small>
+      <h2>CORE Melbourne<br>28 November</h2>
+      <div class="cd"><div><span id="d">00</span><small>DAYS</small></div><div><span id="h">00</span><small>HRS</small></div><div><span id="m">00</span><small>MIN</small></div><div><span id="s">00</span><small>SEC</small></div></div>
+    </div>
+  </div>
+</div>
+
+<section aria-labelledby="t1">
+  <div class="sh"><div><span class="n">01 / THE ESSENTIALS</span><h2 class="t" id="t1">Start with <em>what matters</em></h2></div><p class="sub">Four guides that answer most of what attendees ask, each with a clear next step and a verified date.</p></div>
+  <div class="tickets">
+    <a class="ticket t1" href="#"><div class="top"><span class="no">№ 01 · TICKETS</span><span class="vb">VERIFIED</span><img src="assets/icons/gift.webp" alt=""></div><div class="bot"><h3>Tickets &amp; sale dates</h3><p>Every pass type, every sale phase, and a calendar reminder for each.</p><span class="go">Open the guide <span>→</span></span></div></a>
+    <a class="ticket t2" href="#"><div class="top"><span class="no">№ 02 · CAMPING</span><img src="assets/icons/locker.webp" alt=""></div><div class="bot"><h3>DreamVille, compared</h3><p>Sleeping space, power and comfort for every unit, side by side.</p><span class="go">Compare units <span>→</span></span></div></a>
+    <a class="ticket t3" href="#"><div class="top"><span class="no">№ 03 · TRAVEL</span><img src="assets/icons/map-pin.webp" alt=""></div><div class="bot"><h3>Getting there and back</h3><p>Airports, trains and shuttles with first and last departures.</p><span class="go">Plan the route <span>→</span></span></div></a>
+    <a class="ticket t4" href="#"><div class="top"><span class="no">№ 04 · ADD-ONS</span><img src="assets/icons/medal.webp" alt=""></div><div class="bot"><h3>Extras worth buying</h3><p>Lockers, dining, parking and breakfast, honestly compared.</p><span class="go">See the add-ons <span>→</span></span></div></a>
+  </div>
+</section>
+
+<section aria-labelledby="t2">
+  <div class="sh"><div><span class="n">02 / TOOLS &amp; SAFETY</span><h2 class="t" id="t2">Useful <em>before</em> you pay</h2></div><p class="sub">Work out what things cost, and know what a scam looks like before you part with any money.</p></div>
+  <div class="split">
+    <div class="pane tool">
+      <span class="eyebrow">Pearl calculator</span>
+      <h3>What are your Pearls worth?</h3>
+      <div class="row"><label for="p" class="eyebrow">Pearls</label><input id="p" type="number" value="10" min="0" inputmode="numeric" aria-describedby="rate"><span style="font-family:var(--serif);font-size:44px">=</span><div class="res"><small>EURO</small><span id="e">€19.00</span></div></div>
+      <p class="note" id="rate">1 Pearl = €1.90 at Belgium 2026. Rates change by edition, so check yours.</p>
+      <img src="assets/icons/money-bag.webp" alt="">
+    </div>
+    <div class="pane scam" role="note">
+      <span class="eyebrow">Scam alert</span>
+      <h3>Only buy from official channels.</h3>
+      <ul><li>Never pay a stranger by bank transfer</li><li>Check sellers in the community groups first</li></ul>
+      <img src="assets/icons/shield.webp" alt="">
+    </div>
+  </div>
+</section>
+</main>
+<footer><div class="fi">
+  <div><strong>TMLguide</strong><p>An independent, fan-made guide. We are not affiliated with Tomorrowland or WeAreOne.World B.V. Names and marks belong to their owners.</p></div>
+  <div><strong style="font-size:20px">Palette and type</strong><div class="sw"><i style="background:#F7EFE3"></i><i style="background:#FF7A1A"></i><i style="background:#E8336D"></i><i style="background:#0E5A5A"></i><i style="background:#FFC83D"></i><i style="background:#4A1630"></i></div><p>Fraunces · Instrument Sans · IBM Plex Mono</p></div>
+</div></footer>
+<script>
+const t=new Date('2026-11-28T00:00:00+11:00');
+function tick(){let s=Math.max(0,Math.floor((t-Date.now())/1000));const f=n=>String(n).padStart(2,'0');
+ d.textContent=f(Math.floor(s/86400));h.textContent=f(Math.floor(s%86400/3600));m.textContent=f(Math.floor(s%3600/60));document.getElementById('s').textContent=f(s%60);}
+tick();setInterval(tick,1000);
+document.getElementById('p').addEventListener('input',e=>{document.getElementById('e').textContent='€'+((parseFloat(e.target.value)||0)*1.9).toFixed(2)});
+</script>
+</body>
+</html>
