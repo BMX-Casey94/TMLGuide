@@ -3,7 +3,7 @@
 import { RADIO_NAME, RADIO_STREAM_URL } from "./stream";
 import { useRadio } from "./radio-context";
 import {
-  Equaliser,
+  Headphones,
   MuteButton,
   PlayPauseButton,
   RadioCredit,
@@ -43,7 +43,7 @@ export function RadioPanel() {
                 {RADIO_NAME}
               </h2>
             </div>
-            <Equaliser status={status} className="mt-1.5" />
+            <Headphones status={status} size="large" className="mt-1.5" />
           </div>
 
           <div className="flex items-center gap-4">

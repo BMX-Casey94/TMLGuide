@@ -16,7 +16,7 @@ export interface SiteShellProps {
  *
  * Pages render their own <main id="main">, which is where the skip link in the root layout sends
  * focus. This component therefore only supplies the skip-link target and never a second landmark,
- * and it adds no top offset: the header reserves its own logo overhang, so pages start flush.
+ * and it adds no top offset: the header sits in normal flow height, so pages start flush.
  *
  * The column is at least one viewport tall and the content wrapper grows, so short pages still put
  * the footer at the bottom of the window rather than halfway up it.

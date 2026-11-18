@@ -48,9 +48,30 @@ function currentAudio(): HTMLAudioElement {
   return audio;
 }
 
-/** The player renders both layouts, so a control can appear more than once. */
-function firstButton(name: string): HTMLElement {
-  return screen.getAllByRole("button", { name })[0];
+/** The desktop player, collapsed to an edge tab until its panel is opened. */
+function desktopPlayer(): HTMLElement {
+  return screen.getByRole("region", { name: "One World Radio player" });
+}
+
+/*
+  The desktop player starts collapsed, so its transport, mute and volume controls only
+  exist once the panel is open. jsdom applies no CSS, so the phone mini-player is in the
+  DOM as well; scoping to the desktop region keeps every query unambiguous and fails loudly
+  if a control is ever rendered twice inside the one panel.
+*/
+function desktopButton(name: string): HTMLElement {
+  return within(desktopPlayer()).getByRole("button", { name });
+}
+
+/** The desktop panel's only slider: the phone dock deliberately has none. */
+function desktopSlider(): HTMLElement {
+  return within(desktopPlayer()).getByRole("slider", { name: "Radio volume" });
+}
+
+/** Expands the desktop edge tab, which is what reveals its controls. */
+function openDesktopPanel(): HTMLElement {
+  fireEvent.click(desktopButton("Open One World Radio player"));
+  return desktopPlayer();
 }
 
 /** The provider's single polite live region. */
@@ -83,7 +104,8 @@ describe("radio", () => {
 
   it("creates the element on the first toggle with the exact stream URL", () => {
     renderPlayer();
-    fireEvent.click(firstButton("Play One World Radio"));
+    openDesktopPanel();
+    fireEvent.click(desktopButton("Play One World Radio"));
 
     const audio = currentAudio();
     expect(audio.getAttribute("src")).toBe(RADIO_STREAM_URL);
@@ -94,7 +116,8 @@ describe("radio", () => {
 
   it("moves from loading to playing on the playing event", () => {
     renderPlayer();
-    fireEvent.click(firstButton("Play One World Radio"));
+    openDesktopPanel();
+    fireEvent.click(desktopButton("Play One World Radio"));
     expect(announced()).toBe("Connecting…");
 
     act(() => {
@@ -102,14 +125,17 @@ describe("radio", () => {
     });
 
     expect(announced()).toBe("Live now");
-    expect(screen.getAllByRole("button", { name: "Pause One World Radio" })).toHaveLength(2);
-    // The desktop pill prints the design's LIVE label.
-    expect(screen.getByText("LIVE")).toBeInTheDocument();
+    // Only the open desktop panel has transport controls: the phone tab stays collapsed.
+    expect(screen.getAllByRole("button", { name: "Pause One World Radio" })).toHaveLength(1);
+    expect(within(desktopPlayer()).getByRole("button", { name: "Pause One World Radio" })).toBeInTheDocument();
+    // The desktop panel prints the design's LIVE label.
+    expect(within(desktopPlayer()).getByText("LIVE")).toBeInTheDocument();
   });
 
   it("returns to loading when the stream stalls or waits", () => {
     renderPlayer();
-    fireEvent.click(firstButton("Play One World Radio"));
+    openDesktopPanel();
+    fireEvent.click(desktopButton("Play One World Radio"));
     act(() => {
       currentAudio().dispatchEvent(new Event("playing"));
     });
@@ -133,14 +159,15 @@ describe("radio", () => {
     );
 
     renderPlayer();
+    openDesktopPanel();
     await act(async () => {
-      fireEvent.click(firstButton("Play One World Radio"));
+      fireEvent.click(desktopButton("Play One World Radio"));
     });
 
     expect(announced()).toBe("Stream unavailable. Tap to retry.");
-    expect(screen.getAllByText("Stream unavailable. Tap to retry.").length).toBeGreaterThan(0);
+    expect(within(desktopPlayer()).getByText("Stream unavailable. Tap to retry.")).toBeInTheDocument();
 
-    const retry = firstButton("Retry One World Radio");
+    const retry = desktopButton("Retry One World Radio");
     expect(retry).toBeInTheDocument();
 
     await act(async () => {
@@ -162,7 +189,8 @@ describe("radio", () => {
 
   it("shows an error on the media error event", () => {
     renderPlayer();
-    fireEvent.click(firstButton("Play One World Radio"));
+    openDesktopPanel();
+    fireEvent.click(desktopButton("Play One World Radio"));
     act(() => {
       currentAudio().dispatchEvent(new Event("playing"));
     });
@@ -171,12 +199,13 @@ describe("radio", () => {
     });
 
     expect(announced()).toBe("Stream unavailable. Tap to retry.");
-    expect(firstButton("Retry One World Radio")).toBeInTheDocument();
+    expect(desktopButton("Retry One World Radio")).toBeInTheDocument();
   });
 
   it("releases the stream on pause and rebuilds it on the next play", () => {
     renderPlayer();
-    fireEvent.click(firstButton("Play One World Radio"));
+    openDesktopPanel();
+    fireEvent.click(desktopButton("Play One World Radio"));
     act(() => {
       currentAudio().dispatchEvent(new Event("playing"));
     });
@@ -185,14 +214,14 @@ describe("radio", () => {
     vi.mocked(HTMLMediaElement.prototype.pause).mockClear();
     vi.mocked(HTMLMediaElement.prototype.load).mockClear();
 
-    fireEvent.click(firstButton("Pause One World Radio"));
+    fireEvent.click(desktopButton("Pause One World Radio"));
 
     expect(audio.hasAttribute("src")).toBe(false);
     expect(HTMLMediaElement.prototype.pause).toHaveBeenCalled();
     expect(HTMLMediaElement.prototype.load).toHaveBeenCalled();
     expect(announced()).toBe("Paused");
 
-    fireEvent.click(firstButton("Play One World Radio"));
+    fireEvent.click(desktopButton("Play One World Radio"));
     expect(currentAudio().getAttribute("src")).toBe(RADIO_STREAM_URL);
     expect(currentAudio()).toBe(audio);
   });
@@ -200,20 +229,24 @@ describe("radio", () => {
   it("persists volume and ignores invalid stored values", () => {
     window.localStorage.setItem(RADIO_VOLUME_STORAGE_KEY, "0.6");
     const view = renderPlayer();
+    openDesktopPanel();
 
-    const slider = screen.getAllByRole("slider", { name: "Radio volume" })[0];
+    // The phone dock has no slider, so the open desktop panel's is the only one on the page.
+    expect(screen.getAllByRole("slider", { name: "Radio volume" })).toHaveLength(1);
+    const slider = desktopSlider();
     expect(slider).toHaveValue("60");
 
     fireEvent.change(slider, { target: { value: "35" } });
 
     expect(window.localStorage.getItem(RADIO_VOLUME_STORAGE_KEY)).toBe("0.35");
-    expect(screen.getAllByRole("slider", { name: "Radio volume" })[0]).toHaveValue("35");
+    expect(desktopSlider()).toHaveValue("35");
 
     for (const stored of ["not-a-number", "4.2", "-1", "", "NaN"]) {
       view.unmount();
       window.localStorage.setItem(RADIO_VOLUME_STORAGE_KEY, stored);
       renderPlayer();
-      expect(screen.getAllByRole("slider", { name: "Radio volume" })[0]).toHaveValue("25");
+      openDesktopPanel();
+      expect(desktopSlider()).toHaveValue("25");
       cleanup();
     }
   });
@@ -221,24 +254,31 @@ describe("radio", () => {
   it("keeps a valid stored volume of zero", () => {
     window.localStorage.setItem(RADIO_VOLUME_STORAGE_KEY, "0");
     renderPlayer();
+    openDesktopPanel();
 
-    expect(screen.getAllByRole("slider", { name: "Radio volume" })[0]).toHaveValue("0");
+    expect(desktopSlider()).toHaveValue("0");
   });
 
   it("applies the stored volume when the element is created", () => {
     window.localStorage.setItem(RADIO_VOLUME_STORAGE_KEY, "0.45");
     renderPlayer();
+    openDesktopPanel();
 
-    fireEvent.click(firstButton("Play One World Radio"));
+    fireEvent.click(desktopButton("Play One World Radio"));
+    expect(announced()).toBe("Connecting…");
 
-    expect(currentAudio().volume).toBeCloseTo(0.45);
+    const audio = currentAudio();
+    expect(audio.volume).toBeCloseTo(0.45);
+    // Nothing about opening the panel or playing touches the persisted volume.
+    expect(window.localStorage.getItem(RADIO_VOLUME_STORAGE_KEY)).toBe("0.45");
   });
 
   it("changes the live volume when the slider moves", () => {
     renderPlayer();
-    fireEvent.click(firstButton("Play One World Radio"));
+    openDesktopPanel();
+    fireEvent.click(desktopButton("Play One World Radio"));
 
-    const slider = screen.getAllByRole("slider", { name: "Radio volume" })[0];
+    const slider = desktopSlider();
     fireEvent.change(slider, { target: { value: "80" } });
 
     expect(currentAudio().volume).toBeCloseTo(0.8);
@@ -246,36 +286,41 @@ describe("radio", () => {
 
   it("toggles mute with a name that reflects the state", () => {
     renderPlayer();
-    fireEvent.click(firstButton("Play One World Radio"));
+    openDesktopPanel();
+    fireEvent.click(desktopButton("Play One World Radio"));
 
-    fireEvent.click(firstButton("Mute One World Radio"));
-    expect(screen.getAllByRole("button", { name: "Unmute One World Radio" })).toHaveLength(2);
+    fireEvent.click(desktopButton("Mute One World Radio"));
+    expect(screen.getAllByRole("button", { name: "Unmute One World Radio" })).toHaveLength(1);
+    expect(within(desktopPlayer()).getByRole("button", { name: "Unmute One World Radio" })).toBeInTheDocument();
     expect(currentAudio().muted).toBe(true);
 
-    fireEvent.click(firstButton("Unmute One World Radio"));
-    expect(screen.getAllByRole("button", { name: "Mute One World Radio" })).toHaveLength(2);
+    fireEvent.click(desktopButton("Unmute One World Radio"));
+    expect(screen.getAllByRole("button", { name: "Mute One World Radio" })).toHaveLength(1);
+    expect(within(desktopPlayer()).getByRole("button", { name: "Mute One World Radio" })).toBeInTheDocument();
     expect(currentAudio().muted).toBe(false);
   });
 
   it("remembers mute across the first play and never fetches on a mute tap", () => {
     renderPlayer();
+    openDesktopPanel();
 
-    fireEvent.click(firstButton("Mute One World Radio"));
+    fireEvent.click(desktopButton("Mute One World Radio"));
     // Muting alone must not start the stream or create an element.
     expect(document.querySelector("audio")).toBeNull();
 
-    fireEvent.click(firstButton("Play One World Radio"));
+    fireEvent.click(desktopButton("Play One World Radio"));
 
     expect(currentAudio().muted).toBe(true);
   });
 
   it("announces every state once through a polite region", () => {
     renderPlayer();
+    openDesktopPanel();
     const region = screen.getByRole("status");
     expect(region).toHaveAttribute("aria-live", "polite");
     expect(region).toHaveTextContent("Tap to listen");
 
-    fireEvent.click(firstButton("Play One World Radio"));
+    fireEvent.click(desktopButton("Play One World Radio"));
     expect(region).toHaveTextContent("Connecting…");
 
     act(() => {
@@ -283,30 +328,167 @@ describe("radio", () => {
     });
     expect(region).toHaveTextContent("Live now");
 
-    fireEvent.click(firstButton("Pause One World Radio"));
+    fireEvent.click(desktopButton("Pause One World Radio"));
     expect(region).toHaveTextContent("Paused");
 
     // Exactly one live region, so a change is never announced twice.
     expect(screen.getAllByRole("status")).toHaveLength(1);
   });
 
-  it("keeps the docked status line hidden until the listener engages", () => {
+  it("starts the phone player as a slim tab and expands it on request", () => {
     renderPlayer();
     const dock = screen.getByRole("region", { name: "One World Radio mini-player" });
 
-    // Collapsed: the mini-player shows only the button and the station name.
+    // Collapsed: only the edge tab exists. No transport controls, no status line, no stream.
+    const open = within(dock).getByRole("button", { name: "Open One World Radio player" });
+    expect(open).toHaveAttribute("aria-expanded", "false");
+    expect(within(dock).queryByRole("button", { name: "Play One World Radio" })).toBeNull();
     expect(within(dock).queryByText("Tap to listen")).toBeNull();
+    expect(document.querySelector("audio")).toBeNull();
+
+    fireEvent.click(open);
+
+    // Expanded: transport, name and a minimise control. The stream still has not started.
     expect(within(dock).getByText("One World Radio")).toBeInTheDocument();
     expect(within(dock).queryByRole("slider")).toBeNull();
+    expect(document.querySelector("audio")).toBeNull();
 
     fireEvent.click(within(dock).getByRole("button", { name: "Play One World Radio" }));
-
     expect(within(dock).getByText("Connecting…")).toBeInTheDocument();
+
+    fireEvent.click(within(dock).getByRole("button", { name: "Minimise One World Radio player" }));
+    expect(within(dock).getByRole("button", { name: "Open One World Radio player" })).toBeInTheDocument();
+    // Minimising must not stop playback.
+    expect(currentAudio().getAttribute("src")).toBe(RADIO_STREAM_URL);
+  });
+
+  it("starts the desktop player collapsed as an edge tab", () => {
+    renderPlayer();
+    const desktop = desktopPlayer();
+
+    const open = within(desktop).getByRole("button", { name: "Open One World Radio player" });
+    expect(open).toHaveAttribute("aria-expanded", "false");
+
+    // Collapsed: no transport, no mute, no volume slider, no status line, no stream.
+    expect(within(desktop).queryByRole("button", { name: "Play One World Radio" })).toBeNull();
+    expect(within(desktop).queryByRole("button", { name: "Mute One World Radio" })).toBeNull();
+    expect(within(desktop).queryByRole("slider")).toBeNull();
+    expect(within(desktop).queryByText("Tap to listen")).toBeNull();
+    expect(document.querySelector("audio")).toBeNull();
+  });
+
+  it("opens the desktop panel with its controls and a minimise button", () => {
+    renderPlayer();
+    const desktop = openDesktopPanel();
+
+    // Expanded: exactly one of each control, because only this panel is open.
+    expect(within(desktop).getAllByRole("button", { name: "Play One World Radio" })).toHaveLength(1);
+    expect(within(desktop).getAllByRole("button", { name: "Mute One World Radio" })).toHaveLength(1);
+    expect(within(desktop).getAllByRole("slider", { name: "Radio volume" })).toHaveLength(1);
+    expect(within(desktop).getByText("One World Radio")).toBeInTheDocument();
+
+    const minimise = within(desktop).getByRole("button", { name: "Minimise One World Radio player" });
+    expect(minimise).toHaveAttribute("aria-expanded", "true");
+    expect(within(desktop).queryByRole("button", { name: "Open One World Radio player" })).toBeNull();
+    // Opening the panel alone must not start the stream.
+    expect(document.querySelector("audio")).toBeNull();
+
+    // The two layouts keep separate state: opening the desktop panel leaves the phone tab shut.
+    const dock = screen.getByRole("region", { name: "One World Radio mini-player" });
+    expect(within(dock).getByRole("button", { name: "Open One World Radio player" })).toHaveAttribute(
+      "aria-expanded",
+      "false",
+    );
+    expect(within(dock).queryByRole("button", { name: "Play One World Radio" })).toBeNull();
+  });
+
+  it("collapses the desktop panel on Escape without stopping playback", () => {
+    renderPlayer();
+    const desktop = openDesktopPanel();
+    const play = within(desktop).getByRole("button", { name: "Play One World Radio" });
+    play.focus();
+    expect(play).toHaveFocus();
+
+    fireEvent.click(play);
+    act(() => {
+      currentAudio().dispatchEvent(new Event("playing"));
+    });
+    expect(announced()).toBe("Live now");
+
+    vi.mocked(HTMLMediaElement.prototype.pause).mockClear();
+    // The key arrives from a real Escape press, which lands on the document, not the panel.
+    fireEvent.keyDown(play, { key: "Escape" });
+
+    // The panel gives way to the tab, and the tab reports the collapsed state to assistive tech.
+    const open = within(desktopPlayer()).getByRole("button", { name: "Open One World Radio player" });
+    expect(open).toHaveAttribute("aria-expanded", "false");
+    expect(within(desktopPlayer()).queryByRole("slider")).toBeNull();
+    expect(within(desktopPlayer()).queryByRole("button", { name: "Pause One World Radio" })).toBeNull();
+    // The collapsed state does not depend on where focus was: the panel it described is gone.
+    expect(play).not.toBeInTheDocument();
+    // The tab that replaces it stays reachable, so a keyboard listener can still reopen.
+    expect(open).toBeEnabled();
+    expect(open).not.toHaveAttribute("hidden");
+
+    // Escape is a layout change, not a transport command.
+    expect(HTMLMediaElement.prototype.pause).not.toHaveBeenCalled();
+    expect(currentAudio().getAttribute("src")).toBe(RADIO_STREAM_URL);
+    expect(announced()).toBe("Live now");
+  });
+
+  it("keeps playing when the desktop panel is minimised", () => {
+    renderPlayer();
+    const desktop = openDesktopPanel();
+    fireEvent.click(within(desktop).getByRole("button", { name: "Play One World Radio" }));
+    act(() => {
+      currentAudio().dispatchEvent(new Event("playing"));
+    });
+
+    vi.mocked(HTMLMediaElement.prototype.pause).mockClear();
+    fireEvent.click(within(desktop).getByRole("button", { name: "Minimise One World Radio player" }));
+
+    expect(within(desktopPlayer()).getByRole("button", { name: "Open One World Radio player" })).toBeInTheDocument();
+    expect(HTMLMediaElement.prototype.pause).not.toHaveBeenCalled();
+    expect(currentAudio().getAttribute("src")).toBe(RADIO_STREAM_URL);
+    expect(announced()).toBe("Live now");
+  });
+
+  it("removes the Escape listener once the desktop panel is collapsed", () => {
+    const addSpy = vi.spyOn(window, "addEventListener");
+    const removeSpy = vi.spyOn(window, "removeEventListener");
+
+    renderPlayer();
+    openDesktopPanel();
+
+    const added = addSpy.mock.calls.filter(([type]) => type === "keydown").map(([, listener]) => listener);
+    expect(added).toHaveLength(1);
+    // While open, no keydown listener has been torn down.
+    expect(removeSpy.mock.calls.filter(([type]) => type === "keydown")).toHaveLength(0);
+
+    fireEvent.keyDown(window, { key: "Escape" });
+
+    // The exact handler reference that was added is the one removed.
+    const removed = removeSpy.mock.calls.filter(([type]) => type === "keydown").map(([, listener]) => listener);
+    expect(removed).toHaveLength(1);
+    expect(removed[0]).toBe(added[0]);
+
+    // A further Escape reaches no stale handler: the state cannot change from a dead listener.
+    expect(() => fireEvent.keyDown(window, { key: "Escape" })).not.toThrow();
+    expect(within(desktopPlayer()).getByRole("button", { name: "Open One World Radio player" })).toBeInTheDocument();
+    expect(removeSpy.mock.calls.filter(([type]) => type === "keydown")).toHaveLength(1);
+
+    // Reopening subscribes again, and closing again tears that one down too: no accumulation.
+    openDesktopPanel();
+    expect(addSpy.mock.calls.filter(([type]) => type === "keydown")).toHaveLength(2);
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(removeSpy.mock.calls.filter(([type]) => type === "keydown")).toHaveLength(2);
+    expect(within(desktopPlayer()).getByRole("button", { name: "Open One World Radio player" })).toBeInTheDocument();
   });
 
   it("removes the element and its listeners on unmount", () => {
     const view = renderPlayer();
-    fireEvent.click(firstButton("Play One World Radio"));
+    openDesktopPanel();
+    fireEvent.click(desktopButton("Play One World Radio"));
     const audio = currentAudio();
 
     view.unmount();
@@ -381,7 +563,13 @@ describe("radio", () => {
       value: undefined,
     });
     expect(() => renderPlayer()).not.toThrow();
-    expect(screen.getAllByRole("button", { name: "Play One World Radio" })).toHaveLength(2);
+    // Collapsed layouts expose no transport, so neither edge tab offers Play yet.
+    expect(screen.queryAllByRole("button", { name: "Play One World Radio" })).toHaveLength(0);
+
+    openDesktopPanel();
+    // Opening only the desktop panel reveals exactly one Play button across both layouts.
+    expect(screen.getAllByRole("button", { name: "Play One World Radio" })).toHaveLength(1);
+    expect(within(desktopPlayer()).getByRole("button", { name: "Play One World Radio" })).toBeInTheDocument();
   });
 });
 

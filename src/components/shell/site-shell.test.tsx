@@ -53,7 +53,7 @@ describe("SiteShell", () => {
     );
 
     const groups = await screen.findAllByRole("radiogroup", { name: "Choose edition" });
-    expect(groups).toHaveLength(2);
+    expect(groups).toHaveLength(1);
     expect(document.body.dataset.ed).toBe("belgium");
   });
 

@@ -58,7 +58,7 @@ body[data-ed="brasil"] {
 
 html {
   scroll-behavior: smooth;
-  scroll-padding-top: 88px; /* sticky header plus logo overhang */
+  scroll-padding-top: 84px; /* sticky header row (68px) plus breathing room */
   color-scheme: dark;
 }
 body {
@@ -94,6 +94,16 @@ body {
   font-size: 0.6875rem;
   letter-spacing: 0.2em;
   text-transform: uppercase;
+}
+
+/* The header search pill draws its own focus state (border and glow), so the field inside it must
+   not also get the global outline. This rule is unlayered, so it beats Tailwind's layered utilities. */
+.search-field,
+.search-field:focus,
+.search-field:focus-visible {
+  outline: none;
+  box-shadow: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .skip-link {

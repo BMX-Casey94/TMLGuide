@@ -1,0 +1,1701 @@
+{
+  "repoRoot": "C:\\Users\\user\\Desktop\\TMLGUIDE v3",
+  "inputPath": "C:\\Users\\user\\Desktop\\TMLGUIDE v3\\docs\\factcheck\\links-input.json",
+  "generatedAt": "2026-11-18T18:15:22.604Z",
+  "startedAt": "2026-11-18T18:15:06.893Z",
+  "userAgent": "TMLGuideLinkCheck/1.0 (+independent fan guide; contact via site)",
+  "settings": {
+    "globalConcurrency": 4,
+    "perHostConcurrency": 2,
+    "requestTimeoutMs": 12000,
+    "maxRedirects": 2,
+    "maxBodyBytes": 65536
+  },
+  "summary": {
+    "total": 53,
+    "kinds": "21 resource, 26 whatsapp, 6 partner",
+    "byKind": {
+      "partner": {
+        "ok": 6,
+        "redirected": 0,
+        "insecure": 0,
+        "dead": 0,
+        "blocked": 0,
+        "unreachable": 0,
+        "rejected": 0
+      },
+      "resource": {
+        "ok": 12,
+        "redirected": 1,
+        "insecure": 7,
+        "dead": 0,
+        "blocked": 1,
+        "unreachable": 0,
+        "rejected": 0
+      },
+      "whatsapp": {
+        "ok": 19,
+        "redirected": 0,
+        "insecure": 6,
+        "dead": 1,
+        "blocked": 0,
+        "unreachable": 0,
+        "rejected": 0
+      }
+    },
+    "byClassification": {
+      "ok": 37,
+      "redirected": 1,
+      "insecure": 13,
+      "dead": 1,
+      "blocked": 1,
+      "unreachable": 0,
+      "rejected": 0
+    }
+  },
+  "results": [
+    {
+      "id": "resource-travel-partner",
+      "kind": "resource",
+      "title": "Travel Partner (Travel Packages)",
+      "url": "http://drive.google.com/file/d/1zdWofqpQVfPUmtcjQxkAZjWp3nLPO_dm/view",
+      "category": "Travel",
+      "classification": "insecure",
+      "httpStatus": 200,
+      "via": "HEAD",
+      "finalUrl": "https://drive.google.com/file/d/1zdWofqpQVfPUmtcjQxkAZjWp3nLPO_dm/view",
+      "redirects": [
+        {
+          "from": "http://drive.google.com/file/d/1zdWofqpQVfPUmtcjQxkAZjWp3nLPO_dm/view",
+          "to": "https://drive.google.com/file/d/1zdWofqpQVfPUmtcjQxkAZjWp3nLPO_dm/view",
+          "status": 301
+        }
+      ],
+      "attempts": 2,
+      "note": "plain http:// (follows a redirect)",
+      "trail": [
+        {
+          "url": "http://drive.google.com/file/d/1zdWofqpQVfPUmtcjQxkAZjWp3nLPO_dm/view",
+          "method": "HEAD",
+          "status": 301
+        },
+        {
+          "url": "https://drive.google.com/file/d/1zdWofqpQVfPUmtcjQxkAZjWp3nLPO_dm/view",
+          "method": "HEAD",
+          "status": 200
+        }
+      ],
+      "httpsAlternative": {
+        "url": "https://drive.google.com/file/d/1zdWofqpQVfPUmtcjQxkAZjWp3nLPO_dm/view",
+        "works": true,
+        "classification": "ok",
+        "httpStatus": 200,
+        "finalUrl": "https://drive.google.com/file/d/1zdWofqpQVfPUmtcjQxkAZjWp3nLPO_dm/view",
+        "note": "200 — OK",
+        "trail": [
+          {
+            "url": "https://drive.google.com/file/d/1zdWofqpQVfPUmtcjQxkAZjWp3nLPO_dm/view",
+            "method": "HEAD",
+            "status": 200
+          }
+        ],
+        "chainExceeded": false
+      }
+    },
+    {
+      "id": "resource-fraud",
+      "kind": "resource",
+      "title": "Fraud Protection (How to Spot a Scammer)",
+      "url": "https://chat.whatsapp.com/Hp8ob6MM1LI6s2pzgeJPHP",
+      "category": "Safety",
+      "classification": "ok",
+      "httpStatus": 200,
+      "via": "GET",
+      "finalUrl": "https://chat.whatsapp.com/Hp8ob6MM1LI6s2pzgeJPHP",
+      "redirects": [],
+      "attempts": 1,
+      "note": "200 — OK; invite live, group name shown: \"TML - W2 Fraud Protection - How to spot Scammers ⁉️🚫\"",
+      "trail": [
+        {
+          "url": "https://chat.whatsapp.com/Hp8ob6MM1LI6s2pzgeJPHP",
+          "method": "GET",
+          "status": 200
+        }
+      ],
+      "whatsapp": {
+        "state": "active",
+        "groupName": "TML - W2 Fraud Protection - How to spot Scammers ⁉️🚫",
+        "evidence": "group name in invite page body"
+      }
+    },
+    {
+      "id": "resource-discord",
+      "kind": "resource",
+      "title": "Tomorrowland Discord (Official Server - 25K+ Members)",
+      "url": "http://discord.gg/tomorrowland",
+      "category": "Community",
+      "classification": "insecure",
+      "httpStatus": 200,
+      "via": "HEAD",
+      "finalUrl": "https://discord.com/invite/tomorrowland",
+      "redirects": [
+        {
+          "from": "http://discord.gg/tomorrowland",
+          "to": "https://discord.gg/tomorrowland",
+          "status": 301
+        },
+        {
+          "from": "https://discord.gg/tomorrowland",
+          "to": "https://discord.com/invite/tomorrowland",
+          "status": 301
+        }
+      ],
+      "attempts": 3,
+      "note": "plain http:// (follows 2 redirects)",
+      "trail": [
+        {
+          "url": "http://discord.gg/tomorrowland",
+          "method": "HEAD",
+          "status": 301
+        },
+        {
+          "url": "https://discord.gg/tomorrowland",
+          "method": "HEAD",
+          "status": 301
+        },
+        {
+          "url": "https://discord.com/invite/tomorrowland",
+          "method": "HEAD",
+          "status": 200
+        }
+      ],
+      "httpsAlternative": {
+        "url": "https://discord.gg/tomorrowland",
+        "works": true,
+        "classification": "redirected",
+        "httpStatus": 200,
+        "finalUrl": "https://discord.com/invite/tomorrowland",
+        "note": "follows a redirect",
+        "trail": [
+          {
+            "url": "https://discord.gg/tomorrowland",
+            "method": "HEAD",
+            "status": 301
+          },
+          {
+            "url": "https://discord.com/invite/tomorrowland",
+            "method": "HEAD",
+            "status": 200
+          }
+        ],
+        "chainExceeded": false
+      }
+    },
+    {
+      "id": "resource-lineup",
+      "kind": "resource",
+      "title": "Line-Up (Official Festival Artists)",
+      "url": "http://belgium.tomorrowland.com/en/line-up/",
+      "category": "Festival",
+      "classification": "insecure",
+      "httpStatus": 200,
+      "via": "HEAD",
+      "finalUrl": "https://belgium.tomorrowland.com/en/line-up/",
+      "redirects": [
+        {
+          "from": "http://belgium.tomorrowland.com/en/line-up/",
+          "to": "https://belgium.tomorrowland.com/en/line-up/",
+          "status": 301
+        }
+      ],
+      "attempts": 2,
+      "note": "plain http:// (follows a redirect)",
+      "trail": [
+        {
+          "url": "http://belgium.tomorrowland.com/en/line-up/",
+          "method": "HEAD",
+          "status": 301
+        },
+        {
+          "url": "https://belgium.tomorrowland.com/en/line-up/",
+          "method": "HEAD",
+          "status": 200
+        }
+      ],
+      "httpsAlternative": {
+        "url": "https://belgium.tomorrowland.com/en/line-up/",
+        "works": true,
+        "classification": "ok",
+        "httpStatus": 200,
+        "finalUrl": "https://belgium.tomorrowland.com/en/line-up/",
+        "note": "200 — OK",
+        "trail": [
+          {
+            "url": "https://belgium.tomorrowland.com/en/line-up/",
+            "method": "HEAD",
+            "status": 200
+          }
+        ],
+        "chainExceeded": false
+      }
+    },
+    {
+      "id": "resource-prices",
+      "kind": "resource",
+      "title": "Ticket Prices (Packages & Categories)",
+      "url": "http://festivalviewer.com/tomorrowland/tickets",
+      "category": "Tickets",
+      "classification": "insecure",
+      "httpStatus": 200,
+      "via": "HEAD",
+      "finalUrl": "https://festivalviewer.com/tomorrowland/tickets",
+      "redirects": [
+        {
+          "from": "http://festivalviewer.com/tomorrowland/tickets",
+          "to": "https://festivalviewer.com/tomorrowland/tickets",
+          "status": 301
+        }
+      ],
+      "attempts": 2,
+      "note": "plain http:// (follows a redirect)",
+      "trail": [
+        {
+          "url": "http://festivalviewer.com/tomorrowland/tickets",
+          "method": "HEAD",
+          "status": 301
+        },
+        {
+          "url": "https://festivalviewer.com/tomorrowland/tickets",
+          "method": "HEAD",
+          "status": 200
+        }
+      ],
+      "httpsAlternative": {
+        "url": "https://festivalviewer.com/tomorrowland/tickets",
+        "works": true,
+        "classification": "ok",
+        "httpStatus": 200,
+        "finalUrl": "https://festivalviewer.com/tomorrowland/tickets",
+        "note": "200 — OK",
+        "trail": [
+          {
+            "url": "https://festivalviewer.com/tomorrowland/tickets",
+            "method": "HEAD",
+            "status": 200
+          }
+        ],
+        "chainExceeded": false
+      }
+    },
+    {
+      "id": "resource-maps",
+      "kind": "resource",
+      "title": "Tomorrowland Maps (Floorplan/Layout)",
+      "url": "http://festivalviewer.com/tomorrowland/map/2024",
+      "category": "Guides",
+      "classification": "insecure",
+      "httpStatus": 200,
+      "via": "HEAD",
+      "finalUrl": "https://festivalviewer.com/tomorrowland/map/2024",
+      "redirects": [
+        {
+          "from": "http://festivalviewer.com/tomorrowland/map/2024",
+          "to": "https://festivalviewer.com/tomorrowland/map/2024",
+          "status": 301
+        }
+      ],
+      "attempts": 2,
+      "note": "plain http:// (follows a redirect)",
+      "trail": [
+        {
+          "url": "http://festivalviewer.com/tomorrowland/map/2024",
+          "method": "HEAD",
+          "status": 301
+        },
+        {
+          "url": "https://festivalviewer.com/tomorrowland/map/2024",
+          "method": "HEAD",
+          "status": 200
+        }
+      ],
+      "httpsAlternative": {
+        "url": "https://festivalviewer.com/tomorrowland/map/2024",
+        "works": true,
+        "classification": "ok",
+        "httpStatus": 200,
+        "finalUrl": "https://festivalviewer.com/tomorrowland/map/2024",
+        "note": "200 — OK",
+        "trail": [
+          {
+            "url": "https://festivalviewer.com/tomorrowland/map/2024",
+            "method": "HEAD",
+            "status": 200
+          }
+        ],
+        "chainExceeded": false
+      }
+    },
+    {
+      "id": "resource-apps",
+      "kind": "resource",
+      "title": "Official Apps (Official Tomorrowland Apps)",
+      "url": "http://tomorrowland.lnk.to/apps",
+      "category": "Festival",
+      "classification": "insecure",
+      "httpStatus": 200,
+      "via": "GET",
+      "finalUrl": "https://tomorrowland.lnk.to/apps",
+      "redirects": [
+        {
+          "from": "http://tomorrowland.lnk.to/apps",
+          "to": "https://tomorrowland.lnk.to/apps",
+          "status": 301
+        }
+      ],
+      "attempts": 3,
+      "note": "plain http:// (follows a redirect)",
+      "trail": [
+        {
+          "url": "http://tomorrowland.lnk.to/apps",
+          "method": "HEAD",
+          "status": 301
+        },
+        {
+          "url": "https://tomorrowland.lnk.to/apps",
+          "method": "HEAD",
+          "status": 204
+        },
+        {
+          "url": "https://tomorrowland.lnk.to/apps",
+          "method": "GET",
+          "status": 200
+        }
+      ],
+      "httpsAlternative": {
+        "url": "https://tomorrowland.lnk.to/apps",
+        "works": true,
+        "classification": "ok",
+        "httpStatus": 200,
+        "finalUrl": "https://tomorrowland.lnk.to/apps",
+        "note": "200 — OK",
+        "trail": [
+          {
+            "url": "https://tomorrowland.lnk.to/apps",
+            "method": "HEAD",
+            "status": 204
+          },
+          {
+            "url": "https://tomorrowland.lnk.to/apps",
+            "method": "GET",
+            "status": 200
+          }
+        ],
+        "chainExceeded": false
+      }
+    },
+    {
+      "id": "resource-radio",
+      "kind": "resource",
+      "title": "One World Radio (Live Stream)",
+      "url": "http://www.tomorrowland.com/home/one-world-radio/",
+      "category": "Media",
+      "classification": "insecure",
+      "httpStatus": 302,
+      "via": "HEAD",
+      "finalUrl": "https://www.tomorrowland.com/one-world-radio/",
+      "redirects": [
+        {
+          "from": "http://www.tomorrowland.com/home/one-world-radio/",
+          "to": "https://www.tomorrowland.com/home/one-world-radio/",
+          "status": 301
+        },
+        {
+          "from": "https://www.tomorrowland.com/home/one-world-radio/",
+          "to": "https://tomorrowland.com/one-world-radio/",
+          "status": 302
+        },
+        {
+          "from": "https://tomorrowland.com/one-world-radio/",
+          "to": "https://www.tomorrowland.com/one-world-radio/",
+          "status": 302
+        }
+      ],
+      "attempts": 3,
+      "note": "chain longer than 2 redirects; stopped after 3 hops at https://www.tomorrowland.com/one-world-radio/ without resolving the final page (the link is plain http://); the https:// twin does resolve (see the http table), so switching to it also saves a hop",
+      "trail": [
+        {
+          "url": "http://www.tomorrowland.com/home/one-world-radio/",
+          "method": "HEAD",
+          "status": 301
+        },
+        {
+          "url": "https://www.tomorrowland.com/home/one-world-radio/",
+          "method": "HEAD",
+          "status": 302
+        },
+        {
+          "url": "https://tomorrowland.com/one-world-radio/",
+          "method": "HEAD",
+          "status": 302
+        }
+      ],
+      "httpsAlternative": {
+        "url": "https://www.tomorrowland.com/home/one-world-radio/",
+        "works": true,
+        "classification": "redirected",
+        "httpStatus": 200,
+        "finalUrl": "https://www.tomorrowland.com/one-world-radio/",
+        "note": "follows 2 redirects",
+        "trail": [
+          {
+            "url": "https://www.tomorrowland.com/home/one-world-radio/",
+            "method": "HEAD",
+            "status": 302
+          },
+          {
+            "url": "https://tomorrowland.com/one-world-radio/",
+            "method": "HEAD",
+            "status": 302
+          },
+          {
+            "url": "https://www.tomorrowland.com/one-world-radio/",
+            "method": "HEAD",
+            "status": 200
+          }
+        ],
+        "chainExceeded": false
+      },
+      "chainExceeded": true
+    },
+    {
+      "id": "resource-official",
+      "kind": "resource",
+      "title": "Tomorrowland (Official Website)",
+      "url": "https://www.tomorrowland.com/home/",
+      "category": "Festival",
+      "classification": "redirected",
+      "httpStatus": 200,
+      "via": "HEAD",
+      "finalUrl": "https://www.tomorrowland.com/",
+      "redirects": [
+        {
+          "from": "https://www.tomorrowland.com/home/",
+          "to": "https://tomorrowland.com/",
+          "status": 302
+        },
+        {
+          "from": "https://tomorrowland.com/",
+          "to": "https://www.tomorrowland.com/",
+          "status": 302
+        }
+      ],
+      "attempts": 3,
+      "note": "follows 2 redirects",
+      "trail": [
+        {
+          "url": "https://www.tomorrowland.com/home/",
+          "method": "HEAD",
+          "status": 302
+        },
+        {
+          "url": "https://tomorrowland.com/",
+          "method": "HEAD",
+          "status": 302
+        },
+        {
+          "url": "https://www.tomorrowland.com/",
+          "method": "HEAD",
+          "status": 200
+        }
+      ]
+    },
+    {
+      "id": "resource-packing",
+      "kind": "resource",
+      "title": "Festival Packing List",
+      "url": "https://drive.google.com/file/d/14HcfxSkxX2y-gZFSYshYH80zBvQuVr03/view?usp=drive_link",
+      "category": "Guides",
+      "classification": "ok",
+      "httpStatus": 200,
+      "via": "HEAD",
+      "finalUrl": "https://drive.google.com/file/d/14HcfxSkxX2y-gZFSYshYH80zBvQuVr03/view?usp=drive_link",
+      "redirects": [],
+      "attempts": 1,
+      "note": "200 — OK",
+      "trail": [
+        {
+          "url": "https://drive.google.com/file/d/14HcfxSkxX2y-gZFSYshYH80zBvQuVr03/view?usp=drive_link",
+          "method": "HEAD",
+          "status": 200
+        }
+      ]
+    },
+    {
+      "id": "resource-ticket-info",
+      "kind": "resource",
+      "title": "Detailed Ticket Sales & Information",
+      "url": "https://drive.google.com/file/d/14HcfxSkxX2y-gZFSYshYH80zBvQuVr03/view?usp=drive_link",
+      "category": "Guides",
+      "classification": "ok",
+      "httpStatus": 200,
+      "via": "HEAD",
+      "finalUrl": "https://drive.google.com/file/d/14HcfxSkxX2y-gZFSYshYH80zBvQuVr03/view?usp=drive_link",
+      "redirects": [],
+      "attempts": 1,
+      "note": "200 — OK",
+      "trail": [
+        {
+          "url": "https://drive.google.com/file/d/14HcfxSkxX2y-gZFSYshYH80zBvQuVr03/view?usp=drive_link",
+          "method": "HEAD",
+          "status": 200
+        }
+      ]
+    },
+    {
+      "id": "resource-whatsapp",
+      "kind": "resource",
+      "title": "WhatsApp Community",
+      "url": "https://chat.whatsapp.com/Jt8m3LkfniYC7Vipnavj2e",
+      "category": "Community",
+      "classification": "ok",
+      "httpStatus": 200,
+      "via": "GET",
+      "finalUrl": "https://chat.whatsapp.com/Jt8m3LkfniYC7Vipnavj2e",
+      "redirects": [],
+      "attempts": 1,
+      "note": "200 — OK; invite live, group name shown: \"TML - W2 - Solo & Group Travellers Community ✨🌈🌞🍄🎵🌌☮️💖🌎🚆✈️\"",
+      "trail": [
+        {
+          "url": "https://chat.whatsapp.com/Jt8m3LkfniYC7Vipnavj2e",
+          "method": "GET",
+          "status": 200
+        }
+      ],
+      "whatsapp": {
+        "state": "active",
+        "groupName": "TML - W2 - Solo & Group Travellers Community ✨🌈🌞🍄🎵🌌☮️💖🌎🚆✈️",
+        "evidence": "group name in invite page body"
+      }
+    },
+    {
+      "id": "resource-fb-solo",
+      "kind": "resource",
+      "title": "Facebook Community (Solo & Group Travellers)",
+      "url": "https://www.facebook.com/groups/2139484856326667",
+      "category": "Community",
+      "classification": "ok",
+      "httpStatus": 200,
+      "via": "HEAD",
+      "finalUrl": "https://www.facebook.com/groups/2139484856326667",
+      "redirects": [],
+      "attempts": 1,
+      "note": "200 — OK",
+      "trail": [
+        {
+          "url": "https://www.facebook.com/groups/2139484856326667",
+          "method": "HEAD",
+          "status": 200
+        }
+      ]
+    },
+    {
+      "id": "resource-faqs",
+      "kind": "resource",
+      "title": "FAQs",
+      "url": "https://faq.tomorrowland.com/",
+      "category": "Guides",
+      "classification": "blocked",
+      "httpStatus": 403,
+      "via": "GET",
+      "finalUrl": "https://faq.tomorrowland.com/hc/en-us",
+      "redirects": [
+        {
+          "from": "https://faq.tomorrowland.com/",
+          "to": "https://faq.tomorrowland.com/hc",
+          "status": 302
+        },
+        {
+          "from": "https://faq.tomorrowland.com/hc",
+          "to": "https://faq.tomorrowland.com/hc/en-us",
+          "status": 301
+        }
+      ],
+      "attempts": 4,
+      "note": "403 — access refused to automated clients",
+      "trail": [
+        {
+          "url": "https://faq.tomorrowland.com/",
+          "method": "HEAD",
+          "status": 302
+        },
+        {
+          "url": "https://faq.tomorrowland.com/hc",
+          "method": "HEAD",
+          "status": 301
+        },
+        {
+          "url": "https://faq.tomorrowland.com/hc/en-us",
+          "method": "HEAD",
+          "status": 403
+        },
+        {
+          "url": "https://faq.tomorrowland.com/hc/en-us",
+          "method": "GET",
+          "status": 403
+        }
+      ]
+    },
+    {
+      "id": "resource-soundcloud",
+      "kind": "resource",
+      "title": "Soundcloud Playlist",
+      "url": "https://soundcloud.com/pepe0711/sets/tomorrowland-down-memory-lane/s-JEcX8Htu08z",
+      "category": "Media",
+      "classification": "ok",
+      "httpStatus": 200,
+      "via": "HEAD",
+      "finalUrl": "https://soundcloud.com/pepe0711/sets/tomorrowland-down-memory-lane/s-JEcX8Htu08z",
+      "redirects": [],
+      "attempts": 1,
+      "note": "200 — OK",
+      "trail": [
+        {
+          "url": "https://soundcloud.com/pepe0711/sets/tomorrowland-down-memory-lane/s-JEcX8Htu08z",
+          "method": "HEAD",
+          "status": 200
+        }
+      ]
+    },
+    {
+      "id": "resource-fb-sa",
+      "kind": "resource",
+      "title": "Facebook Community (South Africa)",
+      "url": "https://www.facebook.com/groups/1754757464796152",
+      "category": "Community",
+      "classification": "ok",
+      "httpStatus": 200,
+      "via": "HEAD",
+      "finalUrl": "https://www.facebook.com/groups/1754757464796152",
+      "redirects": [],
+      "attempts": 1,
+      "note": "200 — OK",
+      "trail": [
+        {
+          "url": "https://www.facebook.com/groups/1754757464796152",
+          "method": "HEAD",
+          "status": 200
+        }
+      ]
+    },
+    {
+      "id": "resource-fb-malta",
+      "kind": "resource",
+      "title": "Facebook Community (Malta)",
+      "url": "https://www.facebook.com/groups/931818451869878",
+      "category": "Community",
+      "classification": "ok",
+      "httpStatus": 200,
+      "via": "HEAD",
+      "finalUrl": "https://www.facebook.com/groups/931818451869878",
+      "redirects": [],
+      "attempts": 1,
+      "note": "200 — OK",
+      "trail": [
+        {
+          "url": "https://www.facebook.com/groups/931818451869878",
+          "method": "HEAD",
+          "status": 200
+        }
+      ]
+    },
+    {
+      "id": "resource-ticketswap",
+      "kind": "resource",
+      "title": "TicketSwap (Add-on Voucher Sale)",
+      "url": "https://www.ticketswap.com/location/tomorrowland-belgium/240981",
+      "category": "Tickets",
+      "classification": "ok",
+      "httpStatus": 202,
+      "via": "HEAD",
+      "finalUrl": "https://www.ticketswap.com/location/tomorrowland-belgium/240981",
+      "redirects": [],
+      "attempts": 1,
+      "note": "202 — OK",
+      "trail": [
+        {
+          "url": "https://www.ticketswap.com/location/tomorrowland-belgium/240981",
+          "method": "HEAD",
+          "status": 202
+        }
+      ]
+    },
+    {
+      "id": "resource-tml-spotify",
+      "kind": "resource",
+      "title": "Tomorrowland Spotify Playlist",
+      "url": "https://open.spotify.com/playlist/7459neGrcVmDCkEJqaOuEn?si=BNtl44mBSRm47MHiSGCZ-A&pi=8OQSWd8UR1q-q",
+      "category": "Media",
+      "classification": "ok",
+      "httpStatus": 200,
+      "via": "HEAD",
+      "finalUrl": "https://open.spotify.com/playlist/7459neGrcVmDCkEJqaOuEn?si=BNtl44mBSRm47MHiSGCZ-A&pi=8OQSWd8UR1q-q",
+      "redirects": [],
+      "attempts": 1,
+      "note": "200 — OK",
+      "trail": [
+        {
+          "url": "https://open.spotify.com/playlist/7459neGrcVmDCkEJqaOuEn?si=BNtl44mBSRm47MHiSGCZ-A&pi=8OQSWd8UR1q-q",
+          "method": "HEAD",
+          "status": 200
+        }
+      ]
+    },
+    {
+      "id": "resource-hardstyle-classics",
+      "kind": "resource",
+      "title": "Hardstyle Classics Spotify Playlist",
+      "url": "https://open.spotify.com/playlist/3ykFIRXVp1C67JnR79pSf7?si=kMZUPlE1ROCaylaEwdW03Q&pi=iQ_-hTo5QFKm0",
+      "category": "Media",
+      "classification": "ok",
+      "httpStatus": 200,
+      "via": "HEAD",
+      "finalUrl": "https://open.spotify.com/playlist/3ykFIRXVp1C67JnR79pSf7?si=kMZUPlE1ROCaylaEwdW03Q&pi=iQ_-hTo5QFKm0",
+      "redirects": [],
+      "attempts": 1,
+      "note": "200 — OK",
+      "trail": [
+        {
+          "url": "https://open.spotify.com/playlist/3ykFIRXVp1C67JnR79pSf7?si=kMZUPlE1ROCaylaEwdW03Q&pi=iQ_-hTo5QFKm0",
+          "method": "HEAD",
+          "status": 200
+        }
+      ]
+    },
+    {
+      "id": "resource-bracelet-tracking",
+      "kind": "resource",
+      "title": "Bracelet Tracking (BPost)",
+      "url": "https://track.bpost.cloud/btr/web/#/home",
+      "category": "Guides",
+      "classification": "ok",
+      "httpStatus": 200,
+      "via": "HEAD",
+      "finalUrl": "https://track.bpost.cloud/btr/web/#/home",
+      "redirects": [],
+      "attempts": 1,
+      "note": "200 — OK",
+      "trail": [
+        {
+          "url": "https://track.bpost.cloud/btr/web/#/home",
+          "method": "HEAD",
+          "status": 200
+        }
+      ]
+    },
+    {
+      "id": "wa-1",
+      "kind": "whatsapp",
+      "title": "Solo & Group Travellers (Community) ✨✈️",
+      "url": "https://chat.whatsapp.com/Jt8m3LkfniYC7Vipnavj2e",
+      "category": "Chats",
+      "classification": "ok",
+      "httpStatus": 200,
+      "via": "GET",
+      "finalUrl": "https://chat.whatsapp.com/Jt8m3LkfniYC7Vipnavj2e",
+      "redirects": [],
+      "attempts": 1,
+      "note": "200 — OK; invite live, group name shown: \"TML - W2 - Solo & Group Travellers Community ✨🌈🌞🍄🎵🌌☮️💖🌎🚆✈️\"",
+      "trail": [
+        {
+          "url": "https://chat.whatsapp.com/Jt8m3LkfniYC7Vipnavj2e",
+          "method": "GET",
+          "status": 200
+        }
+      ],
+      "whatsapp": {
+        "state": "active",
+        "groupName": "TML - W2 - Solo & Group Travellers Community ✨🌈🌞🍄🎵🌌☮️💖🌎🚆✈️",
+        "evidence": "group name in invite page body"
+      }
+    },
+    {
+      "id": "wa-2",
+      "kind": "whatsapp",
+      "title": "Main Chat (Solo & Group Travellers) 💬",
+      "url": "https://chat.whatsapp.com/LyRDb3qxs0u1eytQKsCmDw",
+      "category": "Chats",
+      "classification": "ok",
+      "httpStatus": 200,
+      "via": "GET",
+      "finalUrl": "https://chat.whatsapp.com/LyRDb3qxs0u1eytQKsCmDw",
+      "redirects": [],
+      "attempts": 1,
+      "note": "200 — OK; invite live, group name shown: \"TML - W2 Main Chat - Solo & Group Travellers 💬📢\"",
+      "trail": [
+        {
+          "url": "https://chat.whatsapp.com/LyRDb3qxs0u1eytQKsCmDw",
+          "method": "GET",
+          "status": 200
+        }
+      ],
+      "whatsapp": {
+        "state": "active",
+        "groupName": "TML - W2 Main Chat - Solo & Group Travellers 💬📢",
+        "evidence": "group name in invite page body"
+      }
+    },
+    {
+      "id": "wa-3",
+      "kind": "whatsapp",
+      "title": "Weekend 1 (General Chat) 💬",
+      "url": "https://chat.whatsapp.com/GfB6z4RDvQN65mGpSYFXu5",
+      "category": "Chats",
+      "classification": "ok",
+      "httpStatus": 200,
+      "via": "GET",
+      "finalUrl": "https://chat.whatsapp.com/GfB6z4RDvQN65mGpSYFXu5",
+      "redirects": [],
+      "attempts": 1,
+      "note": "200 — OK; invite live, group name shown: \"TML - W1 Main Chat - Solo & Group Travellers 💬📢\"",
+      "trail": [
+        {
+          "url": "https://chat.whatsapp.com/GfB6z4RDvQN65mGpSYFXu5",
+          "method": "GET",
+          "status": 200
+        }
+      ],
+      "whatsapp": {
+        "state": "active",
+        "groupName": "TML - W1 Main Chat - Solo & Group Travellers 💬📢",
+        "evidence": "group name in invite page body"
+      }
+    },
+    {
+      "id": "wa-4",
+      "kind": "whatsapp",
+      "title": "Weekend 2 (General Chat) 💬",
+      "url": "https://chat.whatsapp.com/DmeA53dRZpW3x2afZKRgHS",
+      "category": "Chats",
+      "classification": "ok",
+      "httpStatus": 200,
+      "via": "GET",
+      "finalUrl": "https://chat.whatsapp.com/DmeA53dRZpW3x2afZKRgHS",
+      "redirects": [],
+      "attempts": 1,
+      "note": "200 — OK; invite live, group name shown: \"W2 chat closed\"",
+      "trail": [
+        {
+          "url": "https://chat.whatsapp.com/DmeA53dRZpW3x2afZKRgHS",
+          "method": "GET",
+          "status": 200
+        }
+      ],
+      "whatsapp": {
+        "state": "active",
+        "groupName": "W2 chat closed",
+        "evidence": "group name in invite page body"
+      }
+    },
+    {
+      "id": "wa-5",
+      "kind": "whatsapp",
+      "title": "South Africa Chat (🇿🇦) ☁️",
+      "url": "https://chat.whatsapp.com/HPbZsTu80o532IMrpwS0px",
+      "region": "South Africa",
+      "category": "Chats",
+      "classification": "ok",
+      "httpStatus": 200,
+      "via": "GET",
+      "finalUrl": "https://chat.whatsapp.com/HPbZsTu80o532IMrpwS0px",
+      "redirects": [],
+      "attempts": 1,
+      "note": "200 — OK; invite live, group name shown: \"TML - Solo & Group Traveller - SA Chat 🇿🇦💭\"",
+      "trail": [
+        {
+          "url": "https://chat.whatsapp.com/HPbZsTu80o532IMrpwS0px",
+          "method": "GET",
+          "status": 200
+        }
+      ],
+      "whatsapp": {
+        "state": "active",
+        "groupName": "TML - Solo & Group Traveller - SA Chat 🇿🇦💭",
+        "evidence": "group name in invite page body"
+      }
+    },
+    {
+      "id": "wa-6",
+      "kind": "whatsapp",
+      "title": "DreamVille (MG) - W1 Group Camp ⛺️",
+      "url": "https://chat.whatsapp.com/FtDY6xKSibc3je5dUa98IS",
+      "category": "Camping & Accommodation",
+      "classification": "ok",
+      "httpStatus": 200,
+      "via": "GET",
+      "finalUrl": "https://chat.whatsapp.com/FtDY6xKSibc3je5dUa98IS",
+      "redirects": [],
+      "attempts": 1,
+      "note": "200 — OK; invite live, group name shown: \"TML - W1 Magnificent Greens & Easy Tents - Camping Chat 🏕️💤\"",
+      "trail": [
+        {
+          "url": "https://chat.whatsapp.com/FtDY6xKSibc3je5dUa98IS",
+          "method": "GET",
+          "status": 200
+        }
+      ],
+      "whatsapp": {
+        "state": "active",
+        "groupName": "TML - W1 Magnificent Greens & Easy Tents - Camping Chat 🏕️💤",
+        "evidence": "group name in invite page body"
+      }
+    },
+    {
+      "id": "wa-7",
+      "kind": "whatsapp",
+      "title": "DreamVille (MG) - W2 Group Camp ⛺️",
+      "url": "https://chat.whatsapp.com/LD1AyBrArih1pab5xfMNA9",
+      "category": "Camping & Accommodation",
+      "classification": "ok",
+      "httpStatus": 200,
+      "via": "GET",
+      "finalUrl": "https://chat.whatsapp.com/LD1AyBrArih1pab5xfMNA9",
+      "redirects": [],
+      "attempts": 1,
+      "note": "200 — OK; invite live, group name shown: \"TML - W2 Magnificent Greens & Easy Tents - Camping Chat 🏕️💤\"",
+      "trail": [
+        {
+          "url": "https://chat.whatsapp.com/LD1AyBrArih1pab5xfMNA9",
+          "method": "GET",
+          "status": 200
+        }
+      ],
+      "whatsapp": {
+        "state": "active",
+        "groupName": "TML - W2 Magnificent Greens & Easy Tents - Camping Chat 🏕️💤",
+        "evidence": "group name in invite page body"
+      }
+    },
+    {
+      "id": "wa-8",
+      "kind": "whatsapp",
+      "title": "DreamVille (Easy Tent) - W1 Group Camp ⛺️",
+      "url": "https://chat.whatsapp.com/HQbdftFnYGPGvnn068L6bp",
+      "category": "Camping & Accommodation",
+      "classification": "ok",
+      "httpStatus": 200,
+      "via": "GET",
+      "finalUrl": "https://chat.whatsapp.com/HQbdftFnYGPGvnn068L6bp",
+      "redirects": [],
+      "attempts": 1,
+      "note": "200 — OK; invite live, group name shown: \"TML - W1 Montagoe - Camping Chat ⛺️💰\"",
+      "trail": [
+        {
+          "url": "https://chat.whatsapp.com/HQbdftFnYGPGvnn068L6bp",
+          "method": "GET",
+          "status": 200
+        }
+      ],
+      "whatsapp": {
+        "state": "active",
+        "groupName": "TML - W1 Montagoe - Camping Chat ⛺️💰",
+        "evidence": "group name in invite page body"
+      }
+    },
+    {
+      "id": "wa-9",
+      "kind": "whatsapp",
+      "title": "DreamVille (Easy Tent) - W2 Group Camp ⛺️",
+      "url": "http://chat.whatsapp.com/JAYGWTE2Nrx3SIartOY3i7",
+      "category": "Camping & Accommodation",
+      "classification": "insecure",
+      "httpStatus": 403,
+      "via": "GET",
+      "finalUrl": "http://chat.whatsapp.com/JAYGWTE2Nrx3SIartOY3i7",
+      "redirects": [],
+      "attempts": 1,
+      "note": "plain http:// (403) but the https twin answers 200; invite live at https://chat.whatsapp.com/JAYGWTE2Nrx3SIartOY3i7, group name shown: \"TML - W2 Montagoe - Camping Chat ⛺️💰\"",
+      "trail": [
+        {
+          "url": "http://chat.whatsapp.com/JAYGWTE2Nrx3SIartOY3i7",
+          "method": "GET",
+          "status": 403
+        }
+      ],
+      "httpsAlternative": {
+        "url": "https://chat.whatsapp.com/JAYGWTE2Nrx3SIartOY3i7",
+        "works": true,
+        "classification": "ok",
+        "httpStatus": 200,
+        "finalUrl": "https://chat.whatsapp.com/JAYGWTE2Nrx3SIartOY3i7",
+        "note": "200 — OK",
+        "trail": [
+          {
+            "url": "https://chat.whatsapp.com/JAYGWTE2Nrx3SIartOY3i7",
+            "method": "GET",
+            "status": 200
+          }
+        ],
+        "chainExceeded": false
+      },
+      "whatsapp": {
+        "state": "active",
+        "groupName": "TML - W2 Montagoe - Camping Chat ⛺️💰",
+        "evidence": "group name in invite page body"
+      }
+    },
+    {
+      "id": "wa-10",
+      "kind": "whatsapp",
+      "title": "Accommodation (Camping, Airbnb, B&B, Hotels) ⛺️🏝️🏨",
+      "url": "http://chat.whatsapp.com/HG7FRoZMBJYLumQu8fdZ5B",
+      "category": "Camping & Accommodation",
+      "classification": "insecure",
+      "httpStatus": 403,
+      "via": "GET",
+      "finalUrl": "http://chat.whatsapp.com/HG7FRoZMBJYLumQu8fdZ5B",
+      "redirects": [],
+      "attempts": 1,
+      "note": "plain http:// (403) but the https twin answers 200; invite live at https://chat.whatsapp.com/HG7FRoZMBJYLumQu8fdZ5B, group name shown: \"TML - W2 Local Hosts, Camping, Airbnb, B&B, Hotels ⛺️ 🏡 🏨\"",
+      "trail": [
+        {
+          "url": "http://chat.whatsapp.com/HG7FRoZMBJYLumQu8fdZ5B",
+          "method": "GET",
+          "status": 403
+        }
+      ],
+      "httpsAlternative": {
+        "url": "https://chat.whatsapp.com/HG7FRoZMBJYLumQu8fdZ5B",
+        "works": true,
+        "classification": "ok",
+        "httpStatus": 200,
+        "finalUrl": "https://chat.whatsapp.com/HG7FRoZMBJYLumQu8fdZ5B",
+        "note": "200 — OK",
+        "trail": [
+          {
+            "url": "https://chat.whatsapp.com/HG7FRoZMBJYLumQu8fdZ5B",
+            "method": "GET",
+            "status": 200
+          }
+        ],
+        "chainExceeded": false
+      },
+      "whatsapp": {
+        "state": "active",
+        "groupName": "TML - W2 Local Hosts, Camping, Airbnb, B&B, Hotels ⛺️ 🏡 🏨",
+        "evidence": "group name in invite page body"
+      }
+    },
+    {
+      "id": "wa-11",
+      "kind": "whatsapp",
+      "title": "Transport & Travel (Local Taxis, Buses) 🚖🚌",
+      "url": "http://chat.whatsapp.com/KWJ03eNmOek6q1SnakOWhZ",
+      "category": "Travel & Transport",
+      "classification": "insecure",
+      "httpStatus": 403,
+      "via": "GET",
+      "finalUrl": "http://chat.whatsapp.com/KWJ03eNmOek6q1SnakOWhZ",
+      "redirects": [],
+      "attempts": 1,
+      "note": "plain http:// (403) but the https twin answers 200; invite live at https://chat.whatsapp.com/KWJ03eNmOek6q1SnakOWhZ, group name shown: \"TML - W2 Local Transport - Taxi & Bus 🚌 🚖\"",
+      "trail": [
+        {
+          "url": "http://chat.whatsapp.com/KWJ03eNmOek6q1SnakOWhZ",
+          "method": "GET",
+          "status": 403
+        }
+      ],
+      "httpsAlternative": {
+        "url": "https://chat.whatsapp.com/KWJ03eNmOek6q1SnakOWhZ",
+        "works": true,
+        "classification": "ok",
+        "httpStatus": 200,
+        "finalUrl": "https://chat.whatsapp.com/KWJ03eNmOek6q1SnakOWhZ",
+        "note": "200 — OK",
+        "trail": [
+          {
+            "url": "https://chat.whatsapp.com/KWJ03eNmOek6q1SnakOWhZ",
+            "method": "GET",
+            "status": 200
+          }
+        ],
+        "chainExceeded": false
+      },
+      "whatsapp": {
+        "state": "active",
+        "groupName": "TML - W2 Local Transport - Taxi & Bus 🚌 🚖",
+        "evidence": "group name in invite page body"
+      }
+    },
+    {
+      "id": "wa-12",
+      "kind": "whatsapp",
+      "title": "NFT (Information & Exchange) 🥉",
+      "url": "http://chat.whatsapp.com/HoOuMFpuyXvHfkX46vk5VY",
+      "category": "Sales & Exchanges",
+      "classification": "insecure",
+      "httpStatus": 403,
+      "via": "GET",
+      "finalUrl": "http://chat.whatsapp.com/HoOuMFpuyXvHfkX46vk5VY",
+      "redirects": [],
+      "attempts": 1,
+      "note": "plain http:// (403) but the https twin answers 200; invite live at https://chat.whatsapp.com/HoOuMFpuyXvHfkX46vk5VY, group name shown: \"TML - NFT Info & FAQ🥉\"",
+      "trail": [
+        {
+          "url": "http://chat.whatsapp.com/HoOuMFpuyXvHfkX46vk5VY",
+          "method": "GET",
+          "status": 403
+        }
+      ],
+      "httpsAlternative": {
+        "url": "https://chat.whatsapp.com/HoOuMFpuyXvHfkX46vk5VY",
+        "works": true,
+        "classification": "ok",
+        "httpStatus": 200,
+        "finalUrl": "https://chat.whatsapp.com/HoOuMFpuyXvHfkX46vk5VY",
+        "note": "200 — OK",
+        "trail": [
+          {
+            "url": "https://chat.whatsapp.com/HoOuMFpuyXvHfkX46vk5VY",
+            "method": "GET",
+            "status": 200
+          }
+        ],
+        "chainExceeded": false
+      },
+      "whatsapp": {
+        "state": "active",
+        "groupName": "TML - NFT Info & FAQ🥉",
+        "evidence": "group name in invite page body"
+      }
+    },
+    {
+      "id": "wa-13",
+      "kind": "whatsapp",
+      "title": "Add-on Voucher Sales (Exchange & Swap) 🍽️🥂",
+      "url": "https://chat.whatsapp.com/Bu4EGrMSLy17tbQ3v698VH",
+      "category": "Sales & Exchanges",
+      "classification": "ok",
+      "httpStatus": 200,
+      "via": "GET",
+      "finalUrl": "https://chat.whatsapp.com/Bu4EGrMSLy17tbQ3v698VH",
+      "redirects": [],
+      "attempts": 1,
+      "note": "200 — OK; invite live, group name shown: \"TML - W2 Add-On & Vouchers Exchange 🍽️ 🥂\"",
+      "trail": [
+        {
+          "url": "https://chat.whatsapp.com/Bu4EGrMSLy17tbQ3v698VH",
+          "method": "GET",
+          "status": 200
+        }
+      ],
+      "whatsapp": {
+        "state": "active",
+        "groupName": "TML - W2 Add-On & Vouchers Exchange 🍽️ 🥂",
+        "evidence": "group name in invite page body"
+      }
+    },
+    {
+      "id": "wa-14",
+      "kind": "whatsapp",
+      "title": "Tickets (Exchange/Swap/Advice) 🎟️📷",
+      "url": "https://chat.whatsapp.com/DPFTB5gRUTLHv0yPZyYVF6",
+      "category": "Sales & Exchanges",
+      "classification": "ok",
+      "httpStatus": 200,
+      "via": "GET",
+      "finalUrl": "https://chat.whatsapp.com/DPFTB5gRUTLHv0yPZyYVF6",
+      "redirects": [],
+      "attempts": 1,
+      "note": "200 — OK; invite live, group name shown: \"TML - W1 - Ticket Swap & Exchange 🎫🎟️\"",
+      "trail": [
+        {
+          "url": "https://chat.whatsapp.com/DPFTB5gRUTLHv0yPZyYVF6",
+          "method": "GET",
+          "status": 200
+        }
+      ],
+      "whatsapp": {
+        "state": "active",
+        "groupName": "TML - W1 - Ticket Swap & Exchange 🎫🎟️",
+        "evidence": "group name in invite page body"
+      }
+    },
+    {
+      "id": "wa-15",
+      "kind": "whatsapp",
+      "title": "Fraud Protection (How to spot Scammers) ❗️❓",
+      "url": "https://chat.whatsapp.com/Hp8ob6MM1LI6s2pzgeJPHP",
+      "category": "Scam Protection",
+      "classification": "ok",
+      "httpStatus": 200,
+      "via": "GET",
+      "finalUrl": "https://chat.whatsapp.com/Hp8ob6MM1LI6s2pzgeJPHP",
+      "redirects": [],
+      "attempts": 1,
+      "note": "200 — OK; invite live, group name shown: \"TML - W2 Fraud Protection - How to spot Scammers ⁉️🚫\"",
+      "trail": [
+        {
+          "url": "https://chat.whatsapp.com/Hp8ob6MM1LI6s2pzgeJPHP",
+          "method": "GET",
+          "status": 200
+        }
+      ],
+      "whatsapp": {
+        "state": "active",
+        "groupName": "TML - W2 Fraud Protection - How to spot Scammers ⁉️🚫",
+        "evidence": "group name in invite page body"
+      }
+    },
+    {
+      "id": "wa-16",
+      "kind": "whatsapp",
+      "title": "Merchandise/Second Hand (Exchange & Swap) 🛒",
+      "url": "https://chat.whatsapp.com/FVf9DQZnv8y5h1jA1egMpW",
+      "category": "Sales & Exchanges",
+      "classification": "ok",
+      "httpStatus": 200,
+      "via": "GET",
+      "finalUrl": "https://chat.whatsapp.com/FVf9DQZnv8y5h1jA1egMpW",
+      "redirects": [],
+      "attempts": 1,
+      "note": "200 — OK; invite live, group name shown: \"TML - W2 Merchandise & Secondhand Stuff 💰🧢\"",
+      "trail": [
+        {
+          "url": "https://chat.whatsapp.com/FVf9DQZnv8y5h1jA1egMpW",
+          "method": "GET",
+          "status": 200
+        }
+      ],
+      "whatsapp": {
+        "state": "active",
+        "groupName": "TML - W2 Merchandise & Secondhand Stuff 💰🧢",
+        "evidence": "group name in invite page body"
+      }
+    },
+    {
+      "id": "wa-17",
+      "kind": "whatsapp",
+      "title": "First Timer FAQs ℹ️",
+      "url": "https://chat.whatsapp.com/LVHVVY3ayLVAPt97CsXz69",
+      "category": "Other",
+      "classification": "ok",
+      "httpStatus": 200,
+      "via": "GET",
+      "finalUrl": "https://chat.whatsapp.com/LVHVVY3ayLVAPt97CsXz69",
+      "redirects": [],
+      "attempts": 1,
+      "note": "200 — OK; invite live, group name shown: \"TML - W2 First Timer FAQ ℹ️🥇\"",
+      "trail": [
+        {
+          "url": "https://chat.whatsapp.com/LVHVVY3ayLVAPt97CsXz69",
+          "method": "GET",
+          "status": 200
+        }
+      ],
+      "whatsapp": {
+        "state": "active",
+        "groupName": "TML - W2 First Timer FAQ ℹ️🥇",
+        "evidence": "group name in invite page body"
+      }
+    },
+    {
+      "id": "wa-18",
+      "kind": "whatsapp",
+      "title": "Camping Equipment Rental ⛺️🌲",
+      "url": "https://chat.whatsapp.com/H1iVWLwyotp1GYERjbRqIl",
+      "category": "Camping & Accommodation",
+      "classification": "ok",
+      "httpStatus": 200,
+      "via": "GET",
+      "finalUrl": "https://chat.whatsapp.com/H1iVWLwyotp1GYERjbRqIl",
+      "redirects": [],
+      "attempts": 1,
+      "note": "200 — OK; invite live, group name shown: \"TML - W2 Camping Rental Equipment ⛺️🏕️\"",
+      "trail": [
+        {
+          "url": "https://chat.whatsapp.com/H1iVWLwyotp1GYERjbRqIl",
+          "method": "GET",
+          "status": 200
+        }
+      ],
+      "whatsapp": {
+        "state": "active",
+        "groupName": "TML - W2 Camping Rental Equipment ⛺️🏕️",
+        "evidence": "group name in invite page body"
+      }
+    },
+    {
+      "id": "wa-19",
+      "kind": "whatsapp",
+      "title": "Core (Medellin, COL) 🇨🇴",
+      "url": "https://chat.whatsapp.com/K5u56TF16ZAKTSHZnMhHf8",
+      "region": "Medellín, Colombia",
+      "category": "Tomorrowland Events",
+      "classification": "ok",
+      "httpStatus": 200,
+      "via": "GET",
+      "finalUrl": "https://chat.whatsapp.com/K5u56TF16ZAKTSHZnMhHf8",
+      "redirects": [],
+      "attempts": 1,
+      "note": "200 — OK; invite live, group name shown: \"TML - Core around the World ✈️🌍\"",
+      "trail": [
+        {
+          "url": "https://chat.whatsapp.com/K5u56TF16ZAKTSHZnMhHf8",
+          "method": "GET",
+          "status": 200
+        }
+      ],
+      "whatsapp": {
+        "state": "active",
+        "groupName": "TML - Core around the World ✈️🌍",
+        "evidence": "group name in invite page body"
+      }
+    },
+    {
+      "id": "wa-20",
+      "kind": "whatsapp",
+      "title": "Brazil (São Paulo) 🇧🇷",
+      "url": "http://chat.whatsapp.com/K7sVCLTQBDrLrbIMwmSmlm",
+      "region": "São Paulo, Brazil",
+      "category": "Tomorrowland Events",
+      "classification": "insecure",
+      "httpStatus": 403,
+      "via": "GET",
+      "finalUrl": "http://chat.whatsapp.com/K7sVCLTQBDrLrbIMwmSmlm",
+      "redirects": [],
+      "attempts": 1,
+      "note": "plain http:// (403) but the https twin answers 200; invite live at https://chat.whatsapp.com/K7sVCLTQBDrLrbIMwmSmlm, group name shown: \"TML - Brazil, São Paulo 🇧🇷\"",
+      "trail": [
+        {
+          "url": "http://chat.whatsapp.com/K7sVCLTQBDrLrbIMwmSmlm",
+          "method": "GET",
+          "status": 403
+        }
+      ],
+      "httpsAlternative": {
+        "url": "https://chat.whatsapp.com/K7sVCLTQBDrLrbIMwmSmlm",
+        "works": true,
+        "classification": "ok",
+        "httpStatus": 200,
+        "finalUrl": "https://chat.whatsapp.com/K7sVCLTQBDrLrbIMwmSmlm",
+        "note": "200 — OK",
+        "trail": [
+          {
+            "url": "https://chat.whatsapp.com/K7sVCLTQBDrLrbIMwmSmlm",
+            "method": "GET",
+            "status": 200
+          }
+        ],
+        "chainExceeded": false
+      },
+      "whatsapp": {
+        "state": "active",
+        "groupName": "TML - Brazil, São Paulo 🇧🇷",
+        "evidence": "group name in invite page body"
+      }
+    },
+    {
+      "id": "wa-21",
+      "kind": "whatsapp",
+      "title": "Winter (Alp d'Huez, FR) 🇫🇷",
+      "url": "http://chat.whatsapp.com/HZ3QTcMBXe82GRgLuQswcq",
+      "region": "Alpe d'Huez, France",
+      "category": "Tomorrowland Events",
+      "classification": "insecure",
+      "httpStatus": 403,
+      "via": "GET",
+      "finalUrl": "http://chat.whatsapp.com/HZ3QTcMBXe82GRgLuQswcq",
+      "redirects": [],
+      "attempts": 1,
+      "note": "plain http:// (403) but the https twin answers 200; invite live at https://chat.whatsapp.com/HZ3QTcMBXe82GRgLuQswcq, group name shown: \"TML - Winter ❄️ Alpe d’Huez 🇫🇷\"",
+      "trail": [
+        {
+          "url": "http://chat.whatsapp.com/HZ3QTcMBXe82GRgLuQswcq",
+          "method": "GET",
+          "status": 403
+        }
+      ],
+      "httpsAlternative": {
+        "url": "https://chat.whatsapp.com/HZ3QTcMBXe82GRgLuQswcq",
+        "works": true,
+        "classification": "ok",
+        "httpStatus": 200,
+        "finalUrl": "https://chat.whatsapp.com/HZ3QTcMBXe82GRgLuQswcq",
+        "note": "200 — OK",
+        "trail": [
+          {
+            "url": "https://chat.whatsapp.com/HZ3QTcMBXe82GRgLuQswcq",
+            "method": "GET",
+            "status": 200
+          }
+        ],
+        "chainExceeded": false
+      },
+      "whatsapp": {
+        "state": "active",
+        "groupName": "TML - Winter ❄️ Alpe d’Huez 🇫🇷",
+        "evidence": "group name in invite page body"
+      }
+    },
+    {
+      "id": "wa-22",
+      "kind": "whatsapp",
+      "title": "Terra Solis (Dubai) 🇦🇪",
+      "url": "https://chat.whatsapp.com/EpzYXADRagC7x0EG58MfbE",
+      "region": "Dubai, UAE",
+      "category": "Tomorrowland Events",
+      "classification": "ok",
+      "httpStatus": 200,
+      "via": "GET",
+      "finalUrl": "https://chat.whatsapp.com/EpzYXADRagC7x0EG58MfbE",
+      "redirects": [],
+      "attempts": 1,
+      "note": "200 — OK; invite live, group name shown: \"TML - Terra Solis - UAE, Dubai 🇦🇪\"",
+      "trail": [
+        {
+          "url": "https://chat.whatsapp.com/EpzYXADRagC7x0EG58MfbE",
+          "method": "GET",
+          "status": 200
+        }
+      ],
+      "whatsapp": {
+        "state": "active",
+        "groupName": "TML - Terra Solis - UAE, Dubai 🇦🇪",
+        "evidence": "group name in invite page body"
+      }
+    },
+    {
+      "id": "wa-23",
+      "kind": "whatsapp",
+      "title": "TML X INSOMNIAC - UNITY (LA, Sphere) 🇺🇸",
+      "url": "https://chat.whatsapp.com/CeI63us7R6z8xVsGB8tDD8",
+      "region": "Los Angeles, USA",
+      "category": "Tomorrowland Events",
+      "classification": "ok",
+      "httpStatus": 200,
+      "via": "GET",
+      "finalUrl": "https://chat.whatsapp.com/CeI63us7R6z8xVsGB8tDD8",
+      "redirects": [],
+      "attempts": 1,
+      "note": "200 — OK; invite live, group name shown: \"TML - Unity Sphere - USA, Las Vegas  🇺🇸\"",
+      "trail": [
+        {
+          "url": "https://chat.whatsapp.com/CeI63us7R6z8xVsGB8tDD8",
+          "method": "GET",
+          "status": 200
+        }
+      ],
+      "whatsapp": {
+        "state": "active",
+        "groupName": "TML - Unity Sphere - USA, Las Vegas  🇺🇸",
+        "evidence": "group name in invite page body"
+      }
+    },
+    {
+      "id": "wa-24",
+      "kind": "whatsapp",
+      "title": "👠✨ Festival Outfits 💫👗",
+      "url": "https://chat.whatsapp.com/K4PsxsSsqVPBkmJM3FoVfO",
+      "category": "Other",
+      "classification": "dead",
+      "httpStatus": 200,
+      "via": "GET",
+      "finalUrl": "https://chat.whatsapp.com/K4PsxsSsqVPBkmJM3FoVfO",
+      "redirects": [],
+      "attempts": 1,
+      "note": "invite link invalid or revoked — generic invite page with no group name (title: \"WhatsApp Group Invite\")",
+      "trail": [
+        {
+          "url": "https://chat.whatsapp.com/K4PsxsSsqVPBkmJM3FoVfO",
+          "method": "GET",
+          "status": 200
+        }
+      ],
+      "whatsapp": {
+        "state": "invalid",
+        "groupName": null,
+        "evidence": "generic invite page with no group name (title: \"WhatsApp Group Invite\")"
+      }
+    },
+    {
+      "id": "wa-25",
+      "kind": "whatsapp",
+      "title": "Female Only (General Chat) 💬👸",
+      "url": "https://chat.whatsapp.com/EDB3Pf2urIC0HFu3aPg8tt",
+      "category": "Female Only",
+      "classification": "ok",
+      "httpStatus": 200,
+      "via": "GET",
+      "finalUrl": "https://chat.whatsapp.com/EDB3Pf2urIC0HFu3aPg8tt",
+      "redirects": [],
+      "attempts": 1,
+      "note": "200 — OK; invite live, group name shown: \"TML - W2 Female Only - General Chat 💬🧝‍♀️\"",
+      "trail": [
+        {
+          "url": "https://chat.whatsapp.com/EDB3Pf2urIC0HFu3aPg8tt",
+          "method": "GET",
+          "status": 200
+        }
+      ],
+      "whatsapp": {
+        "state": "active",
+        "groupName": "TML - W2 Female Only - General Chat 💬🧝‍♀️",
+        "evidence": "group name in invite page body"
+      }
+    },
+    {
+      "id": "wa-26",
+      "kind": "whatsapp",
+      "title": "ADE (Amsterdam, NL) 🇳🇱",
+      "url": "https://chat.whatsapp.com/KykJ2awuelP1JL1ovoSjhg",
+      "region": "Amsterdam, Netherlands",
+      "category": "Tomorrowland Events",
+      "classification": "ok",
+      "httpStatus": 200,
+      "via": "GET",
+      "finalUrl": "https://chat.whatsapp.com/KykJ2awuelP1JL1ovoSjhg",
+      "redirects": [],
+      "attempts": 1,
+      "note": "200 — OK; invite live, group name shown: \"TML - ADE - Netherlands, Amsterdam 🇳🇱\"",
+      "trail": [
+        {
+          "url": "https://chat.whatsapp.com/KykJ2awuelP1JL1ovoSjhg",
+          "method": "GET",
+          "status": 200
+        }
+      ],
+      "whatsapp": {
+        "state": "active",
+        "groupName": "TML - ADE - Netherlands, Amsterdam 🇳🇱",
+        "evidence": "group name in invite page body"
+      }
+    },
+    {
+      "id": "partner-dca-travel",
+      "kind": "partner",
+      "title": "DCA Travel",
+      "url": "https://dca-travel.com",
+      "category": "Verified partner",
+      "classification": "ok",
+      "httpStatus": 200,
+      "via": "HEAD",
+      "finalUrl": "https://dca-travel.com/",
+      "redirects": [],
+      "attempts": 1,
+      "note": "200 — OK",
+      "trail": [
+        {
+          "url": "https://dca-travel.com/",
+          "method": "HEAD",
+          "status": 200
+        }
+      ]
+    },
+    {
+      "id": "partner-rent-a-tent",
+      "kind": "partner",
+      "title": "Rent-a-Tent",
+      "url": "https://www.rentatentfestival.nl",
+      "category": "Verified partner",
+      "classification": "ok",
+      "httpStatus": 200,
+      "via": "HEAD",
+      "finalUrl": "https://www.rentatentfestival.nl/",
+      "redirects": [],
+      "attempts": 1,
+      "note": "200 — OK",
+      "trail": [
+        {
+          "url": "https://www.rentatentfestival.nl/",
+          "method": "HEAD",
+          "status": 200
+        }
+      ]
+    },
+    {
+      "id": "partner-beat-retreat",
+      "kind": "partner",
+      "title": "Beat Retreat",
+      "url": "https://www.yourbeatretreat.com/",
+      "category": "Verified partner",
+      "classification": "ok",
+      "httpStatus": 200,
+      "via": "HEAD",
+      "finalUrl": "https://www.yourbeatretreat.com/",
+      "redirects": [],
+      "attempts": 1,
+      "note": "200 — OK",
+      "trail": [
+        {
+          "url": "https://www.yourbeatretreat.com/",
+          "method": "HEAD",
+          "status": 200
+        }
+      ]
+    },
+    {
+      "id": "partner-eb-travel",
+      "kind": "partner",
+      "title": "EB Travel",
+      "url": "https://eventsbusreizen.nl",
+      "category": "Verified partner",
+      "classification": "ok",
+      "httpStatus": 200,
+      "via": "HEAD",
+      "finalUrl": "https://eventsbusreizen.nl/",
+      "redirects": [],
+      "attempts": 1,
+      "note": "200 — OK",
+      "trail": [
+        {
+          "url": "https://eventsbusreizen.nl/",
+          "method": "HEAD",
+          "status": 200
+        }
+      ]
+    },
+    {
+      "id": "partner-tomorrowcrazy",
+      "kind": "partner",
+      "title": "Tomorrowcrazy",
+      "url": "https://www.instagram.com/tomorrowcrazys/",
+      "category": "Verified partner",
+      "classification": "ok",
+      "httpStatus": 200,
+      "via": "HEAD",
+      "finalUrl": "https://www.instagram.com/tomorrowcrazys/",
+      "redirects": [],
+      "attempts": 1,
+      "note": "200 — OK",
+      "trail": [
+        {
+          "url": "https://www.instagram.com/tomorrowcrazys/",
+          "method": "HEAD",
+          "status": 200
+        }
+      ]
+    },
+    {
+      "id": "partner-buy-me-a-coffee",
+      "kind": "partner",
+      "title": "Support Our Community",
+      "url": "https://buymeacoffee.com/tmlcommunity",
+      "category": "Donations",
+      "classification": "ok",
+      "httpStatus": 200,
+      "via": "HEAD",
+      "finalUrl": "https://buymeacoffee.com/tmlcommunity",
+      "redirects": [],
+      "attempts": 1,
+      "note": "200 — OK",
+      "trail": [
+        {
+          "url": "https://buymeacoffee.com/tmlcommunity",
+          "method": "HEAD",
+          "status": 200
+        }
+      ]
+    }
+  ]
+}

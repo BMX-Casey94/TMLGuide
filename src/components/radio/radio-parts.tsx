@@ -7,26 +7,20 @@ import { RADIO_STATUS_MESSAGES, type RadioStatus } from "./radio-context";
 /*
   Presentation shared by the floating player, the docked mini-player and the page panel.
 
-  The keyframes live in a hoisted <style> because the equaliser needs per-bar delays and a
-  height animation that a utility class cannot express, and the shared stylesheet is owned
-  elsewhere. The reduced-motion query is repeated here so the bars stay still even if the
-  global rule is ever removed.
+  The keyframes (live-dot pulse, mobile slide-out) and the custom volume slider styles live in
+  a hoisted <style> because utility classes cannot express them. The reduced-motion query is
+  repeated here so motion stays off even if the global rule is ever removed.
 */
 export function RadioStyles() {
   return (
     <style href="tml-radio-player" precedence="default">{`
-      @keyframes tml-radio-eq { 0%, 100% { height: 5px } 50% { height: 22px } }
       @keyframes tml-radio-pulse {
         0%, 100% { box-shadow: 0 0 0 0 rgb(240 82 127 / 0.5) }
         50% { box-shadow: 0 0 0 4px rgb(240 82 127 / 0.16) }
       }
-      .tml-radio-eq-bar {
-        width: 3px;
-        height: 6px;
-        border-radius: 2px;
-        background: var(--ea);
-        opacity: 0.45;
-      }
+      @keyframes tml-radio-slide { from { transform: translateX(calc(100% + 12px)); opacity: 0 } to { transform: none; opacity: 1 } }
+      .tml-radio-slide { animation: tml-radio-slide 0.28s cubic-bezier(0.22, 1, 0.36, 1) }
+      @media (prefers-reduced-motion: reduce) { .tml-radio-slide { animation: none } }
       .tml-radio-range {
         -webkit-appearance: none;
         appearance: none;
@@ -76,16 +70,8 @@ export function RadioStyles() {
       .tml-radio-range:hover::-webkit-slider-thumb,
       .tml-radio-range:active::-webkit-slider-thumb { transform: scale(1.2) }
       .tml-radio-range:focus-visible { outline: 2px solid var(--ea); outline-offset: 2px; border-radius: 8px }
-      [data-eq="playing"] .tml-radio-eq-bar {
-        opacity: 1;
-        animation: tml-radio-eq 1s ease-in-out infinite;
-      }
-      [data-eq="playing"] .tml-radio-eq-bar:nth-child(2) { animation-delay: -0.3s }
-      [data-eq="playing"] .tml-radio-eq-bar:nth-child(3) { animation-delay: -0.6s }
-      [data-eq="playing"] .tml-radio-eq-bar:nth-child(4) { animation-delay: -0.15s }
       .tml-radio-dot[data-live="true"] { animation: tml-radio-pulse 2s ease-in-out infinite }
       @media (prefers-reduced-motion: reduce) {
-        [data-eq="playing"] .tml-radio-eq-bar { animation: none; height: 6px }
         .tml-radio-dot[data-live="true"] { animation: none; box-shadow: 0 0 0 3px rgb(240 82 127 / 0.22) }
       }
     `}</style>
@@ -220,18 +206,47 @@ export function StatusIndicator({
   );
 }
 
-/** Four CSS-only bars. Only the playing state animates, and reduced motion stops it. */
-export function Equaliser({ status, className = "" }: { status: RadioStatus; className?: string }) {
+/**
+ * Headphones glyph shown beside the station name. It turns accent-coloured while audio is
+ * connecting or playing, and a small live dot (static under reduced motion) marks playback.
+ * Decorative: the status is announced by the provider's live region.
+ */
+export function Headphones({
+  status,
+  className = "",
+  size = "default",
+}: {
+  status: RadioStatus;
+  className?: string;
+  size?: "default" | "large";
+}) {
+  const active = status === "playing" || status === "loading";
   return (
     <span
       aria-hidden="true"
-      data-eq={status === "playing" ? "playing" : "idle"}
-      className={`flex h-[22px] flex-none items-end gap-[3px] ${className}`}
+      className={`relative grid flex-none place-items-center transition-colors ${
+        active ? "text-accent" : "text-cream-mute"
+      } ${className}`}
     >
-      <b className="tml-radio-eq-bar" />
-      <b className="tml-radio-eq-bar" />
-      <b className="tml-radio-eq-bar" />
-      <b className="tml-radio-eq-bar" />
+      <svg
+        viewBox="0 0 24 24"
+        className={size === "large" ? "size-7" : "size-6"}
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M4 15v-3a8 8 0 0 1 16 0v3" />
+        <rect x="3" y="14" width="4.5" height="7" rx="1.6" />
+        <rect x="16.5" y="14" width="4.5" height="7" rx="1.6" />
+      </svg>
+      {status === "playing" ? (
+        <span
+          data-live="true"
+          className="tml-radio-dot absolute -top-0.5 -right-0.5 size-[7px] rounded-full bg-rose"
+        />
+      ) : null}
     </span>
   );
 }

@@ -27,8 +27,8 @@ const jetbrains = JetBrains_Mono({
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"),
   title: {
-    default: "TMLGUIDE: independent Tomorrowland guide",
-    template: "%s | TMLGUIDE",
+    default: "TMLGuide — Independent Tomorrowland guide",
+    template: "%s | TMLGuide",
   },
   description:
     "An independent, fan-made guide to Tomorrowland: tickets, sale dates, DreamVille, travel, add-ons and Pearls, with every fact sourced and dated.",

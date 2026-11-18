@@ -62,14 +62,14 @@ export function EditionSwitcher({ variant = "inline", className }: EditionSwitch
   const layout =
     variant === "stacked"
       ? "grid w-full grid-cols-3 rounded-full border border-hair-strong bg-surface/60 p-[3px]"
-      : "inline-flex items-center rounded-full border border-hair-strong bg-surface/60 p-[3px]";
+      : "inline-flex items-center rounded-full bg-ground/70 p-[2px] ring-1 ring-inset ring-hair";
 
   // The inline pill tightens from 900px, where the header row also carries five tabs and a search
   // button; the stacked one keeps 48px segments so phones get comfortable targets.
   const optionSize =
     variant === "stacked"
       ? "h-12 w-full text-center text-[11px] tracking-[0.14em]"
-      : "min-h-[44px] px-2 text-[10px] tracking-[0.08em] min-[1100px]:px-3.5 min-[1100px]:text-[11px] min-[1100px]:tracking-[0.12em]";
+      : "h-8 px-2.5 text-[9px] tracking-[0.1em] min-[1100px]:px-3 min-[1100px]:text-[10px]";
 
   return (
     <div
@@ -88,6 +88,7 @@ export function EditionSwitcher({ variant = "inline", className }: EditionSwitch
             }}
             type="button"
             role="radio"
+            aria-label={option.label}
             aria-checked={isSelected}
             tabIndex={isSelected ? 0 : -1}
             data-edition={option.id}
@@ -95,7 +96,19 @@ export function EditionSwitcher({ variant = "inline", className }: EditionSwitch
             onKeyDown={(event) => handleKeyDown(event, index)}
             className={`${BASE_OPTION} ${optionSize}`}
           >
-            {option.label}
+            {variant === "inline" ? (
+              <>
+                {/* Short codes on narrow phones; the button's accessible name stays the full word. */}
+                <span aria-hidden="true" className="min-[430px]:hidden">
+                  {option.shortLabel}
+                </span>
+                <span aria-hidden="true" className="hidden min-[430px]:inline">
+                  {option.label}
+                </span>
+              </>
+            ) : (
+              option.label
+            )}
           </button>
         );
       })}

@@ -30,5 +30,5 @@ export {
   type ThreeDIconName,
 } from "./nav";
 export { INDEPENDENCE_DISCLAIMER, SOURCE_CAVEAT, SiteFooter } from "./site-footer";
-export { HEADER_HEIGHT_MOBILE_PX, HEADER_HEIGHT_PX, LOGO_OVERHANG_PX, SiteHeader } from "./site-header";
+export { HEADER_HEIGHT_MOBILE_PX, HEADER_HEIGHT_PX, SiteHeader } from "./site-header";
 export { SiteShell, type SiteShellProps } from "./site-shell";

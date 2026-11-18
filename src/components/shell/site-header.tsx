@@ -11,21 +11,8 @@ export const HEADER_HEIGHT_PX = 68;
 export const HEADER_HEIGHT_MOBILE_PX = 60;
 
 /**
- * How far the logo's bottom edge sits below the header row's bottom border.
- *
- * The header never clips, so the logo paints over the row's hairline and the space beneath it, and
- * the header's own stacking context (z-40) keeps it above page content.
- *
- * The logo is a direct child of a plain wrapper rather than of the blurred row. Both the row and
- * the mobile edition bar set backdrop-filter, and that alone creates a stacking context, so a logo
- * nested inside the row could never paint above the bar that follows it. From the wrapper, the
- * logo's z-index applies across the whole header and the overhang stays visible on phones, where it
- * sits in the edition bar's top padding.
- */
-export const LOGO_OVERHANG_PX = 8;
-
-/**
- * Site header: sticky, blurred, hairline-ruled, with the logo overhanging the bottom edge.
+ * Site header: sticky, blurred and hairline-ruled. The logo sits inside the row, vertically
+ * centred, so it is the first tab stop and nothing hangs below the bar.
  *
  * A Server Component. The edition switcher and the tab links are the only interactive pieces.
  *
@@ -34,104 +21,82 @@ export const LOGO_OVERHANG_PX = 8;
  * node_modules/next/dist/docs/01-app/03-api-reference/04-functions/use-pathname.md). The fallback
  * renders the same list with nothing marked current, so nothing shifts when the pathname arrives.
  *
- * Space at 900px is tight: five tracked labels, the edition group and the search button must all
- * fit on one row beside a 190px logo. The sizes below are the ones at which that fits, and they
- * relax from 1100px where there is room.
+ * Space at 900px is tight: five tracked labels and the search pill (with the edition switcher
+ * inside it) must fit on one row beside the logo. The sizes below are the ones at which that
+ * fits, and they relax from 1100px where there is room.
  */
 export function SiteHeader() {
   return (
     <header className="sticky top-0 z-40">
-      <div className="relative">
-        {/*
-          The logo comes first in the DOM so it is the first tab stop in the header; it is
-          absolutely positioned, so DOM order has no visual effect. Its box is exactly the row's
-          height, and the link is pushed LOGO_OVERHANG_PX below it. The box must not intercept
-          pointer events: only the link does.
-        */}
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-[60px] min-[900px]:h-[68px]">
-          <div className="relative mx-auto h-full max-w-[1240px]">
-          <Link
-            href="/"
-            className="pointer-events-auto absolute bottom-0 left-4 z-10 block min-[900px]:left-7"
-            style={{ transform: `translateY(${LOGO_OVERHANG_PX}px)` }}
-          >
+      <div className="border-b border-hair bg-ground/85 backdrop-blur-xl">
+        <div className="mx-auto flex h-[60px] max-w-[1280px] items-center gap-4 pl-4 pr-3 min-[900px]:h-[68px] min-[900px]:gap-4 min-[900px]:pl-6 min-[900px]:pr-3 min-[1100px]:gap-5 min-[1100px]:pr-4">
+          <Link href="/" className="block shrink-0">
             {/* The image's alt text is the link's accessible name. */}
             <Image
               src="/brand/logo-640.webp"
               alt="TMLGuide home"
               width={1682}
               height={488}
-              sizes="(min-width: 1100px) 236px, (min-width: 900px) 200px, 160px"
+              sizes="(min-width: 1100px) 188px, (min-width: 900px) 160px, 120px"
               loading="eager"
               fetchPriority="high"
-              className="h-auto w-[160px] min-[900px]:w-[200px] min-[1100px]:w-[236px]"
+              className="h-auto w-[120px] min-[900px]:w-[160px] min-[1100px]:w-[188px]"
             />
           </Link>
-          </div>
-        </div>
 
-        <div className="border-b border-hair bg-ground/85 backdrop-blur-xl">
-          <div className="mx-auto flex h-[60px] max-w-[1240px] items-center gap-3 px-4 min-[900px]:h-[68px] min-[900px]:gap-4 min-[1100px]:gap-5 min-[900px]:px-7">
-            {/* Reserves the logo's horizontal space; the logo itself is out of flow. */}
-            <div aria-hidden="true" className="w-[160px] shrink-0 min-[900px]:w-[200px] min-[1100px]:w-[236px]" />
+          <nav
+            aria-label="Primary"
+            className="hidden min-w-0 flex-1 items-center justify-center gap-5 min-[900px]:flex min-[1100px]:gap-8"
+          >
+            <Suspense fallback={<HeaderTabs pathname={null} />}>
+              <HeaderTabsLive />
+            </Suspense>
+          </nav>
 
-            <nav
-              aria-label="Primary"
-              className="hidden min-w-0 flex-1 items-center justify-center gap-4 min-[900px]:flex min-[1100px]:gap-5"
-            >
-              <Suspense fallback={<HeaderTabs pathname={null} />}>
-                <HeaderTabsLive />
-              </Suspense>
-            </nav>
-
-            <div className="ml-auto flex items-center gap-2 min-[900px]:gap-3">
-              <div className="hidden min-[900px]:block">
-                <EditionSwitcher variant="inline" />
-              </div>
-              {/*
-                The search overlay is built by another workstream and mounts on this button, found
-                by the data-search-trigger attribute. No handler belongs here until then.
-              */}
-              <button
-                type="button"
-                aria-label="Search the guide"
-                data-search-trigger=""
-                className="inline-flex h-11 min-w-11 items-center justify-center gap-2 rounded-full border border-hair-strong bg-surface/60 px-3 font-mono text-[11px] uppercase tracking-[0.12em] text-cream-mute transition-colors hover:border-accent hover:text-cream min-[1100px]:w-[260px] min-[1100px]:justify-start min-[1100px]:px-4"
+          {/*
+            One pill: the search field on the left, the edition switcher inside its right-hand
+            end. They are siblings, because a button cannot contain a radio group.
+          */}
+          <div className="group ml-auto flex h-11 min-w-0 max-w-[208px] flex-1 items-center rounded-full border border-hair-strong bg-surface/60 pr-1 transition-[border-color,box-shadow] duration-200 hover:border-accent/60 has-[input:focus]:border-accent has-[input:focus]:shadow-[0_0_0_3px_rgb(255_200_61/0.14)] min-[900px]:w-[280px] min-[900px]:max-w-none min-[900px]:flex-none min-[1100px]:w-[420px]">
+            {/*
+              A real text field. The results overlay and index come with the search workstream,
+              which attaches to the data-search-trigger attribute; until then the field accepts
+              input and nothing is submitted. The focus ring is drawn on the pill (border and
+              glow), so the input itself shows no outline.
+            */}
+            <label className="flex h-full min-w-0 flex-1 cursor-text items-center gap-2 pl-3.5 pr-2">
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 20 20"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={1.7}
+                strokeLinecap="round"
+                className="h-4 w-4 shrink-0 text-cream-mute transition-colors group-has-[input:focus]:text-accent"
               >
-                <svg
-                  aria-hidden="true"
-                  viewBox="0 0 20 20"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={1.7}
-                  strokeLinecap="round"
-                  className="h-4 w-4 shrink-0"
-                >
-                  <circle cx="8.5" cy="8.5" r="5.5" />
-                  <path d="m12.9 12.9 4 4" />
-                </svg>
-                <span className="hidden min-[1100px]:inline">Search the guide</span>
-              </button>
+                <circle cx="8.5" cy="8.5" r="5.5" />
+                <path d="m12.9 12.9 4 4" />
+              </svg>
+              <input
+                type="search"
+                name="q"
+                autoComplete="off"
+                enterKeyHint="search"
+                aria-label="Search the guide"
+                placeholder="Search"
+                data-search-trigger=""
+                className="search-field h-full min-w-0 flex-1 bg-transparent font-mono text-[11px] uppercase tracking-[0.12em] text-cream outline-none! ring-0! placeholder:text-cream-mute [&::-webkit-search-cancel-button]:hidden"
+              />
+            </label>
+            {/*
+              On phones, focusing the field folds the edition switcher away so the field has the
+              room; it unfolds again when focus leaves. From 900px there is room for both.
+            */}
+            <div className="max-w-[140px] overflow-hidden transition-[max-width,opacity] duration-300 ease-out group-has-[input:focus]:max-w-0 group-has-[input:focus]:opacity-0 min-[900px]:max-w-none min-[900px]:group-has-[input:focus]:max-w-none min-[900px]:group-has-[input:focus]:opacity-100">
+              <EditionSwitcher variant="inline" />
             </div>
           </div>
         </div>
-
-        {/*
-          Phones get the edition switch in a slim bar under the header. The top padding leaves the
-          logo's overhang a clear strip of empty bar, so the logo never lands on the segments.
-        */}
-        <div className="border-b border-hair bg-ground/90 px-4 pb-2 pt-7 backdrop-blur-xl min-[900px]:hidden">
-          <EditionSwitcher variant="stacked" />
-        </div>
-
-        {/*
-          From 900px up nothing clears the logo overhang except this strip, so the header reserves
-          the space itself instead of leaving every page to add top padding. It is transparent, so
-          the logo still reads as overhanging the row's hairline, and content scrolling up passes
-          behind it exactly as the design calls for. Phones need no strip: the edition bar above
-          already has padding over the same distance.
-        */}
-        <div aria-hidden="true" className="hidden min-[900px]:block" style={{ height: LOGO_OVERHANG_PX }} />
       </div>
     </header>
   );

@@ -1,0 +1,240 @@
+import type { AddOn } from "../schemas";
+
+/**
+ * Winter 2027 add-ons with a published price.
+ *
+ * `addOnSchema` has no notes field, so the qualifiers that make a price
+ * meaningful (duration, group size, timing, weight limit) are carried in the
+ * name. Prices come from the published 2027 add-on pages; the 2027 Add-On Sale
+ * opens on 26 November 2026.
+ *
+ * Deliberately absent: ski and snowboard equipment hire, towels, ski insurance,
+ * restaurant experiences and lockers, none of which has a published 2027 price.
+ * See `docs/data/winter-omissions.md`.
+ */
+export const winterAddOns: readonly AddOn[] = [
+  {
+    id: "dogsled-ride-2027",
+    edition: "winter",
+    name: "Dogsled Ride (2027 add-on): 30 minutes, Sunday to Friday, two people per sled",
+    priceEur: 60,
+    category: "experience",
+    source: {
+      url: "https://winter.tomorrowland.com/en/add-ons/activities/",
+      title: "Tomorrowland Winter 2027 activities",
+      retrievedOn: "2026-11-18",
+    },
+    lastVerified: "2026-11-18",
+    confidence: "official",
+  },
+  {
+    id: "paragliding-2027",
+    edition: "winter",
+    name: "Paragliding (2027 add-on): maximum weight 90 kg, ski or snowboard equipment mandatory",
+    priceEur: 135,
+    category: "experience",
+    source: {
+      url: "https://winter.tomorrowland.com/en/add-ons/activities/",
+      title: "Tomorrowland Winter 2027 activities",
+      retrievedOn: "2026-11-18",
+    },
+    lastVerified: "2026-11-18",
+    confidence: "official",
+  },
+  {
+    id: "electric-bike-ride-2027",
+    edition: "winter",
+    name: "Electric Bike Ride (2027 add-on)",
+    priceEur: 74,
+    category: "experience",
+    source: {
+      url: "https://winter.tomorrowland.com/en/add-ons/activities/",
+      title: "Tomorrowland Winter 2027 activities",
+      retrievedOn: "2026-11-18",
+    },
+    lastVerified: "2026-11-18",
+    confidence: "official",
+  },
+  {
+    id: "alpine-coaster-two-rides-2027",
+    edition: "winter",
+    name: "Alpine Coaster rail sledge, 2 rides (2027 add-on): one voucher covers 2 rides, 10:30 to 18:00",
+    priceEur: 14,
+    category: "experience",
+    source: {
+      url: "https://winter.tomorrowland.com/en/add-ons/activities/",
+      title: "Tomorrowland Winter 2027 activities",
+      retrievedOn: "2026-11-18",
+    },
+    lastVerified: "2026-11-18",
+    confidence: "official",
+  },
+  {
+    id: "snowshoeing-2027",
+    edition: "winter",
+    name: "Snowshoeing (2027 add-on): 3 hours, 09:00 start",
+    priceEur: 52,
+    category: "experience",
+    source: {
+      url: "https://winter.tomorrowland.com/en/add-ons/activities/",
+      title: "Tomorrowland Winter 2027 activities",
+      retrievedOn: "2026-11-18",
+    },
+    lastVerified: "2026-11-18",
+    confidence: "official",
+  },
+  {
+    id: "outdoor-mountain-yoga-2027",
+    edition: "winter",
+    name: "Outdoor Mountain Yoga (2027 add-on): 2 hours including travel, at 2,700 m",
+    priceEur: 29,
+    category: "experience",
+    source: {
+      url: "https://winter.tomorrowland.com/en/add-ons/activities/",
+      title: "Tomorrowland Winter 2027 activities",
+      retrievedOn: "2026-11-18",
+    },
+    lastVerified: "2026-11-18",
+    confidence: "official",
+  },
+  {
+    id: "snake-gliss-2027",
+    edition: "winter",
+    name: "Snake Gliss (2027 add-on): 2-hour slot from 14:30",
+    priceEur: 27,
+    category: "experience",
+    source: {
+      url: "https://winter.tomorrowland.com/en/add-ons/activities/",
+      title: "Tomorrowland Winter 2027 activities",
+      retrievedOn: "2026-11-18",
+    },
+    lastVerified: "2026-11-18",
+    confidence: "official",
+  },
+  {
+    id: "start-to-dj-workshop-2027",
+    edition: "winter",
+    name: "Start to DJ Workshop (2027 add-on): 2 hours, Monday to Friday",
+    priceEur: 89,
+    category: "experience",
+    source: {
+      url: "https://winter.tomorrowland.com/en/add-ons/activities/",
+      title: "Tomorrowland Winter 2027 activities",
+      retrievedOn: "2026-11-18",
+    },
+    lastVerified: "2026-11-18",
+    confidence: "official",
+  },
+  {
+    id: "group-lesson-one-half-day-2027",
+    edition: "winter",
+    name: "Group ski or snowboard lesson, 1 half day (2027): 10:00 to 12:30, 1 to 8 people, per person",
+    priceEur: 74,
+    category: "experience",
+    source: {
+      url: "https://winter.tomorrowland.com/en/add-ons/slope-experiences/",
+      title: "Tomorrowland Winter 2027 slope experiences",
+      retrievedOn: "2026-11-18",
+    },
+    lastVerified: "2026-11-18",
+    confidence: "official",
+  },
+  {
+    id: "group-lessons-three-half-days-2027",
+    edition: "winter",
+    name: "Group ski or snowboard lessons, 3 half days (2027): 1 to 8 people, per person",
+    priceEur: 222,
+    category: "experience",
+    source: {
+      url: "https://winter.tomorrowland.com/en/add-ons/slope-experiences/",
+      title: "Tomorrowland Winter 2027 slope experiences",
+      retrievedOn: "2026-11-18",
+    },
+    lastVerified: "2026-11-18",
+    confidence: "official",
+  },
+  {
+    id: "group-lessons-six-half-days-2027",
+    edition: "winter",
+    name: "Group ski or snowboard lessons, 6 half days (2027): 1 to 8 people, per person",
+    priceEur: 275,
+    category: "experience",
+    source: {
+      url: "https://winter.tomorrowland.com/en/add-ons/slope-experiences/",
+      title: "Tomorrowland Winter 2027 slope experiences",
+      retrievedOn: "2026-11-18",
+    },
+    lastVerified: "2026-11-18",
+    confidence: "official",
+  },
+  {
+    id: "private-lesson-one-half-day-2027",
+    edition: "winter",
+    name: "Private ski or snowboard lesson, 1 half day (2027): up to 5 people, per group",
+    priceEur: 244,
+    category: "experience",
+    source: {
+      url: "https://winter.tomorrowland.com/en/add-ons/slope-experiences/",
+      title: "Tomorrowland Winter 2027 slope experiences",
+      retrievedOn: "2026-11-18",
+    },
+    lastVerified: "2026-11-18",
+    confidence: "official",
+  },
+  {
+    id: "off-slope-experience-half-day-2027",
+    edition: "winter",
+    name: "Off-Slope Experience, 1 half day (2027): 09:30 to 12:30, 1 to 8 people, per person",
+    priceEur: 124,
+    category: "experience",
+    source: {
+      url: "https://winter.tomorrowland.com/en/add-ons/slope-experiences/",
+      title: "Tomorrowland Winter 2027 slope experiences",
+      retrievedOn: "2026-11-18",
+    },
+    lastVerified: "2026-11-18",
+    confidence: "official",
+  },
+  {
+    id: "sarenne-first-track-2027",
+    edition: "winter",
+    name: "Sarenne First Track (2027): Monday 08:00 to 09:30, average and advanced skiers",
+    priceEur: 28,
+    category: "experience",
+    source: {
+      url: "https://winter.tomorrowland.com/en/add-ons/slope-experiences/",
+      title: "Tomorrowland Winter 2027 slope experiences",
+      retrievedOn: "2026-11-18",
+    },
+    lastVerified: "2026-11-18",
+    confidence: "official",
+  },
+  {
+    id: "sarenne-sunset-2027",
+    edition: "winter",
+    name: "Sarenne Sunset (2027): Sunday 16:30 to 21:30, includes a gourmet break in a mountain refuge",
+    priceEur: 64,
+    category: "experience",
+    source: {
+      url: "https://winter.tomorrowland.com/en/add-ons/slope-experiences/",
+      title: "Tomorrowland Winter 2027 slope experiences",
+      retrievedOn: "2026-11-18",
+    },
+    lastVerified: "2026-11-18",
+    confidence: "official",
+  },
+  {
+    id: "transportation-pass-2027",
+    edition: "winter",
+    name: "Transportation Pass: evening lift and night coaches to the surrounding villages",
+    priceEur: 40,
+    category: "transport",
+    source: {
+      url: "https://winter.tomorrowland.com/en/practical/how-to-get-there/transportation-pass/",
+      title: "Tomorrowland Winter: Transportation Pass",
+      retrievedOn: "2026-11-18",
+    },
+    lastVerified: "2026-11-18",
+    confidence: "official",
+  },
+];
