@@ -1,0 +1,85 @@
+.demo {
+  --ea: #ffc83d;
+}
+
+/* Scoped stand-ins for `body[data-ed]` so one page can show all three edition
+   accents. globals.css is the source of truth and is not modified here. */
+.demo[data-demo-ed="winter"] {
+  --ea: #8edbff;
+}
+
+.demo[data-demo-ed="brasil"] {
+  --ea: #ff8a5c;
+}
+
+.section {
+  position: relative;
+  overflow-x: clip;
+  padding-block: 3.5rem;
+}
+
+.trailStage {
+  position: relative;
+  overflow-x: clip;
+  isolation: isolate;
+  min-height: 16rem;
+  border: 1px solid var(--hair);
+  border-radius: var(--radius-panel);
+  background-image: linear-gradient(170deg, var(--surface-2), var(--surface));
+}
+
+.grid {
+  display: grid;
+  gap: 1rem;
+}
+
+@media (min-width: 760px) {
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.stack {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.875rem;
+  align-items: center;
+}
+
+.iconRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.25rem;
+  align-items: center;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.iconCell {
+  display: grid;
+  justify-items: center;
+  gap: 0.5rem;
+}
+
+.swatch {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.code {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--cream-mute);
+}
+
+.exampleText {
+  max-width: 62ch;
+  color: var(--cream-mute);
+  font-size: 1rem;
+  line-height: 1.6;
+}

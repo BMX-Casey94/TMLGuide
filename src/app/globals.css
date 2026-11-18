@@ -7,6 +7,7 @@
 */
 
 :root {
+  --tabbar-h: 64px; /* mobile bottom tab bar height; the radio dock sits above it */
   --ground: #0c0a09;
   --surface: #15110f;
   --surface-2: #1d1714;
@@ -57,6 +58,7 @@ body[data-ed="brasil"] {
 
 html {
   scroll-behavior: smooth;
+  scroll-padding-top: 88px; /* sticky header plus logo overhang */
   color-scheme: dark;
 }
 body {
@@ -72,7 +74,6 @@ body {
 :focus-visible {
   outline: 2px solid var(--ea);
   outline-offset: 4px;
-  border-radius: 6px;
 }
 
 /* ambient glow layer (apply to a fixed, pointer-events-none element) */

@@ -1,0 +1,745 @@
+/*
+  TMLGUIDE UI kit styles.
+
+  Why not CSS modules? next.config.ts applies `@tailwindcss/turbopack` to every
+  `*.css` file with `as: "*.css"`, which downgrades `*.module.css` to plain CSS:
+  the rules are emitted globally but the class-name exports are empty, so
+  `styles.card` renders as `class=""`. That file is outside this workstream's
+  ownership, so the kit uses one stylesheet with a hard `tml-` namespace instead.
+  Every selector below is prefixed, and nothing here targets an element type on
+  its own, so the kit cannot leak into other workstreams' pages.
+*/
+
+/* ---------- Icon3D ---------- */
+
+.tml-icon3d {
+  position: relative;
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  vertical-align: middle;
+}
+
+/* Accent glow behind the icon: a radial gradient of the edition accent at low
+   alpha, so it follows `--ea` automatically and needs no external image. */
+.tml-icon3d--glow::before {
+  content: "";
+  position: absolute;
+  inset: -34%;
+  border-radius: 50%;
+  background-image: radial-gradient(circle, var(--ea) 0%, transparent 68%);
+  opacity: 0.26;
+  filter: blur(6px);
+  pointer-events: none;
+}
+
+.tml-icon3d__img {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: auto;
+  filter: drop-shadow(0 10px 12px rgb(0 0 0 / 0.5));
+}
+
+/* ---------- Card ---------- */
+
+.tml-card {
+  position: relative;
+  isolation: isolate;
+  min-height: 19rem;
+  padding: 1.6rem 1.5rem 1.35rem;
+  color: var(--cream);
+  text-decoration: none;
+  background-image: linear-gradient(170deg, var(--surface-2), var(--surface) 60%);
+  border: 1px solid var(--hair);
+  border-radius: var(--radius-card);
+  box-shadow: inset 0 1px 0 rgb(244 236 224 / 0.06);
+  overflow: hidden;
+  transition:
+    transform 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.2),
+    border-color 0.3s ease,
+    box-shadow 0.35s ease;
+}
+
+/* soft accent bloom in the lower right, behind the icon and copy */
+.tml-card::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  right: -22%;
+  bottom: -32%;
+  width: 16rem;
+  height: 16rem;
+  border-radius: 50%;
+  background-image: radial-gradient(circle, var(--ea) 0%, transparent 64%);
+  opacity: 0.12;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+/* the accent edge: a 2px rule down the left, across the top, or in ember for alerts */
+.tml-card--left::before,
+.tml-card--top::before,
+.tml-card--alert::before {
+  content: "";
+  position: absolute;
+  border-radius: 2px;
+  pointer-events: none;
+}
+
+.tml-card--left::before {
+  inset: 1.35rem auto 1.35rem 0;
+  width: 2px;
+  background-image: linear-gradient(180deg, var(--ea), transparent 82%);
+  opacity: 0.7;
+}
+
+.tml-card--top::before {
+  inset: 0 0 auto 0;
+  height: 2px;
+  background-image: linear-gradient(90deg, var(--ea), transparent 72%);
+  opacity: 0.8;
+}
+
+.tml-card--alert {
+  background-image: linear-gradient(
+    170deg,
+    rgb(255 106 61 / 0.11),
+    var(--surface-2) 45%,
+    var(--surface)
+  );
+  border-color: rgb(255 106 61 / 0.34);
+}
+
+.tml-card--alert::before {
+  inset: 0 0 auto 0;
+  height: 2px;
+  background-image: linear-gradient(90deg, var(--ember), var(--rose) 60%, transparent 88%);
+  opacity: 0.9;
+}
+
+.tml-card__body {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.tml-card__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.tml-card__icon {
+  margin-top: 1.15rem;
+  transition: transform 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.4);
+}
+
+.tml-card__icon--lg {
+  margin-top: 1.4rem;
+}
+
+.tml-card__title {
+  margin: 0;
+  max-width: 22ch;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 1.5rem;
+  line-height: 1.08;
+  letter-spacing: -0.018em;
+  font-variation-settings:
+    "SOFT" 100,
+    "WONK" 1;
+}
+
+.tml-card__title--feature {
+  max-width: 24ch;
+  font-size: clamp(1.75rem, 3.2vw, 2.15rem);
+}
+
+/* in a stat card the label is a caption, not a display heading */
+.tml-card__title--stat {
+  max-width: 26ch;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  line-height: 1.5;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--cream-mute);
+}
+
+.tml-card__prose {
+  max-width: 34ch;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  color: var(--cream-mute);
+}
+
+.tml-card__badge {
+  flex: none;
+  padding: 0.25rem 0.55rem;
+  border: 1px solid rgb(43 196 180 / 0.5);
+  border-radius: 999px;
+  color: var(--teal);
+  font-size: 0.5625rem;
+  letter-spacing: 0.16em;
+  white-space: nowrap;
+}
+
+.tml-card__status {
+  align-self: flex-start;
+  margin: 0.35rem 0 0;
+  padding: 0.3rem 0.6rem;
+  border: 1px solid rgb(255 106 61 / 0.55);
+  border-radius: 999px;
+  background-color: rgb(255 106 61 / 0.12);
+  color: #ffb9a3;
+  font-size: 0.5625rem;
+  letter-spacing: 0.16em;
+}
+
+.tml-card__stat-value {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin: 0.4rem 0 0;
+  font-family: var(--font-display);
+  font-weight: 300;
+  font-size: clamp(2.75rem, 7vw, 3.6rem);
+  line-height: 0.9;
+  letter-spacing: -0.03em;
+  color: var(--cream);
+}
+
+.tml-card__stat-unit {
+  font-size: 0.44em;
+  letter-spacing: 0;
+  color: var(--cream-mute);
+}
+
+.tml-card__checked {
+  margin-top: auto;
+  padding-top: 1rem;
+  color: var(--cream-mute);
+  font-size: 0.625rem;
+  letter-spacing: 0.14em;
+}
+
+.tml-card__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding-top: 0.9rem;
+  color: var(--cream);
+  font-size: 0.625rem;
+}
+
+.tml-card__arrow {
+  display: inline-block;
+  transition: transform 0.25s ease;
+}
+
+/* Lift only for linked cards, and only on devices with a real pointer. */
+@media (hover: hover) {
+  .tml-card--interactive:hover {
+    transform: translateY(-2px);
+    border-color: var(--hair-strong);
+    box-shadow:
+      inset 0 1px 0 rgb(244 236 224 / 0.1),
+      0 26px 44px -30px rgb(0 0 0 / 0.95);
+  }
+
+  .tml-card--interactive:hover::after {
+    opacity: 0.2;
+  }
+
+  .tml-card--interactive:hover .tml-card__arrow {
+    transform: translateX(4px);
+  }
+
+  .tml-card--interactive:hover .tml-card__icon {
+    transform: rotate(-6deg) scale(1.06);
+  }
+}
+
+.tml-card--interactive:focus-visible {
+  outline: 2px solid var(--ea);
+  outline-offset: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tml-card,
+  .tml-card__arrow,
+  .tml-card__icon,
+  .tml-card::after {
+    transition: none;
+  }
+
+  @media (hover: hover) {
+    .tml-card--interactive:hover,
+    .tml-card--interactive:hover .tml-card__icon,
+    .tml-card--interactive:hover .tml-card__arrow {
+      transform: none;
+    }
+  }
+}
+
+/* ---------- CardCarousel ---------- */
+
+.tml-carousel {
+  position: relative;
+}
+
+/* edge fades, fixed to the wrapper so they do not scroll with the track */
+.tml-carousel::before,
+.tml-carousel::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 1.5rem;
+  width: 1.75rem;
+  z-index: 2;
+  pointer-events: none;
+  display: none;
+}
+
+.tml-carousel::before {
+  left: 0;
+  background-image: linear-gradient(90deg, var(--ground) 15%, transparent);
+}
+
+.tml-carousel::after {
+  right: 0;
+  background-image: linear-gradient(270deg, var(--ground) 15%, transparent);
+}
+
+.tml-carousel__track {
+  display: flex;
+  gap: 0.875rem;
+  padding: 0.25rem 0 1.5rem;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.tml-carousel__track::-webkit-scrollbar {
+  display: none;
+}
+
+.tml-carousel__track > * {
+  flex: 0 0 82%;
+  min-width: 0;
+  scroll-snap-align: center;
+}
+
+.tml-carousel__track:focus-visible {
+  outline: 2px solid var(--ea);
+  outline-offset: 2px;
+  border-radius: var(--radius-card);
+}
+
+@media (max-width: 699px) {
+  .tml-carousel::before,
+  .tml-carousel::after {
+    display: block;
+  }
+}
+
+@media (min-width: 700px) {
+  .tml-carousel__track {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.125rem;
+    padding: 0;
+    overflow-x: visible;
+    scroll-snap-type: none;
+  }
+}
+
+@media (min-width: 1100px) {
+  .tml-carousel__track {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* ---------- SectionHeading ---------- */
+
+.tml-section-head {
+  display: grid;
+  gap: 1rem 3rem;
+  align-items: end;
+  padding-top: 1.375rem;
+  border-top: 1px solid var(--hair);
+}
+
+.tml-section-head__headline {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.tml-section-head__title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(2rem, 4.4vw, 3.5rem);
+  line-height: 1;
+  letter-spacing: -0.03em;
+  color: var(--cream);
+  text-wrap: balance;
+  font-variation-settings:
+    "SOFT" 100,
+    "WONK" 1;
+}
+
+.tml-section-head__aside {
+  display: flex;
+  flex-direction: column;
+  gap: 1.125rem;
+}
+
+.tml-section-head__lede {
+  margin: 0;
+  max-width: 62ch;
+  color: var(--cream-mute);
+  font-size: 1.0625rem;
+  line-height: 1.55;
+  text-wrap: pretty;
+}
+
+.tml-section-head__action {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.tml-section-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-height: 44px;
+  padding-block: 0.25rem;
+  border-bottom: 1px solid var(--hair-strong);
+  color: var(--cream);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  text-decoration: none;
+  transition: border-color 0.2s ease;
+}
+
+@media (hover: hover) {
+  .tml-section-link:hover {
+    border-color: var(--ea);
+  }
+}
+
+@media (min-width: 900px) {
+  .tml-section-head {
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  }
+
+  .tml-section-head__aside {
+    justify-self: end;
+    align-items: flex-start;
+    max-width: 62ch;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tml-section-link {
+    transition: none;
+  }
+}
+
+/* ---------- Button ---------- */
+
+.tml-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.tml-btn--md {
+  min-height: 44px;
+  padding: 0.75rem 1.5rem;
+}
+
+.tml-btn--lg {
+  min-height: 52px;
+  padding: 1rem 1.875rem;
+  font-size: 0.8125rem;
+}
+
+.tml-btn--primary {
+  background-color: var(--ea);
+  color: var(--on-accent);
+  box-shadow: 0 14px 34px -18px var(--ea);
+}
+
+.tml-btn--secondary {
+  background-color: transparent;
+  border-color: var(--hair-strong);
+  color: var(--cream);
+}
+
+.tml-btn--ghost {
+  background-color: transparent;
+  color: var(--cream);
+}
+
+.tml-btn:disabled,
+.tml-btn[aria-busy="true"] {
+  cursor: not-allowed;
+  opacity: 0.62;
+  box-shadow: none;
+}
+
+.tml-btn[aria-busy="true"] {
+  cursor: progress;
+}
+
+.tml-btn__spinner {
+  width: 0.85em;
+  height: 0.85em;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  animation: tml-spin 0.9s linear infinite;
+}
+
+.tml-btn__sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+@keyframes tml-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (hover: hover) {
+  .tml-btn--primary:hover:not(:disabled):not([aria-busy="true"]) {
+    transform: translateY(-2px);
+    box-shadow: 0 22px 40px -18px var(--ea);
+  }
+
+  .tml-btn--secondary:hover:not(:disabled) {
+    border-color: var(--ea);
+    color: var(--ea);
+  }
+
+  .tml-btn--ghost:hover:not(:disabled) {
+    background-color: rgb(244 236 224 / 0.08);
+  }
+}
+
+.tml-btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tml-btn {
+    transition: none;
+  }
+
+  .tml-btn--primary:hover:not(:disabled):not([aria-busy="true"]),
+  .tml-btn:active:not(:disabled) {
+    transform: none;
+  }
+
+  .tml-btn__spinner {
+    animation-duration: 2.4s;
+  }
+}
+
+/* ---------- GoldDivider ---------- */
+
+.tml-divider {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  margin-block: 2.75rem;
+  padding-block: 0.35rem;
+}
+
+.tml-divider__hair {
+  position: absolute;
+  inset-inline: 0;
+  top: 50%;
+  width: 100%;
+  height: 1px;
+  overflow: visible;
+}
+
+.tml-divider__ornament {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 164px;
+  height: 40px;
+  overflow: visible;
+  filter: drop-shadow(0 0 6px rgb(233 196 106 / 0.28));
+}
+
+/* a slow highlight travelling along the rule */
+.tml-divider__shimmer {
+  position: absolute;
+  inset-inline: 0;
+  top: 50%;
+  height: 1px;
+  overflow: hidden;
+  pointer-events: none;
+  mask-image: linear-gradient(90deg, transparent, #000 30%, #000 70%, transparent);
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 30%, #000 70%, transparent);
+}
+
+.tml-divider__shimmer::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -30%;
+  width: 30%;
+  height: 1px;
+  background-image: linear-gradient(90deg, transparent, #fff1c2, transparent);
+  animation: tml-divider-sweep 9s ease-in-out infinite;
+}
+
+@keyframes tml-divider-sweep {
+  0% {
+    transform: translateX(0);
+    opacity: 0;
+  }
+
+  12% {
+    opacity: 0.9;
+  }
+
+  70% {
+    opacity: 0.9;
+  }
+
+  100% {
+    transform: translateX(430%);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tml-divider__shimmer {
+    display: none;
+  }
+}
+
+/* ---------- ButterflyTrail ---------- */
+
+/*
+  The wrapper is absolutely positioned and inert: `pointer-events: none`, a
+  z-index below content, and a width capped at the viewport so the component can
+  never widen the page on its own. The parent section still has to clip overflow,
+  because the drift translates the artwork sideways as it scrolls.
+*/
+.tml-trail {
+  position: absolute;
+  top: 12%;
+  z-index: 0;
+  width: min(var(--bt-width), 100vw);
+  max-width: 100vw;
+  opacity: var(--bt-opacity);
+  pointer-events: none;
+  user-select: none;
+}
+
+.tml-trail--right {
+  right: max(-6%, -4rem);
+}
+
+.tml-trail--left {
+  left: max(-6%, -4rem);
+  transform: scaleX(-1);
+}
+
+.tml-trail__img {
+  display: block;
+  width: 100%;
+  height: auto;
+  filter: drop-shadow(0 24px 30px rgb(0 0 0 / 0.55)) saturate(1.05);
+}
+
+/*
+  Scroll-linked drift, progressive enhancement only. `view()` ties progress to the
+  element crossing the viewport, so no scroll listener runs and nothing happens
+  on the main thread while the user scrolls.
+*/
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .tml-trail__img {
+      animation: tml-trail-drift linear both;
+      animation-timeline: view();
+      animation-range: entry 0% exit 100%;
+    }
+
+    .tml-trail--left .tml-trail__img {
+      animation-name: tml-trail-drift-mirrored;
+    }
+  }
+}
+
+@keyframes tml-trail-drift {
+  from {
+    transform: translate3d(0, calc(var(--bt-drift) * -1), 0) rotate(-2.5deg);
+  }
+
+  to {
+    transform: translate3d(calc(var(--bt-drift) * 0.5), var(--bt-drift), 0) rotate(2.5deg);
+  }
+}
+
+@keyframes tml-trail-drift-mirrored {
+  from {
+    transform: translate3d(0, calc(var(--bt-drift) * -1), 0) rotate(2.5deg);
+  }
+
+  to {
+    transform: translate3d(calc(var(--bt-drift) * -0.5), var(--bt-drift), 0) rotate(-2.5deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tml-trail__img {
+    animation: none;
+  }
+}

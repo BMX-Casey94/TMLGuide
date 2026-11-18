@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Fraunces, Instrument_Sans, JetBrains_Mono } from "next/font/google";
+import { RadioPlayer, RadioProvider } from "@/components/radio";
+import { SiteShell } from "@/components/shell";
 import "./globals.css";
 
 const fraunces = Fraunces({
@@ -49,7 +51,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           Skip to content
         </a>
         <div className="ambient-glow" aria-hidden="true" />
-        {children}
+        <RadioProvider>
+          <SiteShell>{children}</SiteShell>
+          <RadioPlayer />
+        </RadioProvider>
       </body>
     </html>
   );
