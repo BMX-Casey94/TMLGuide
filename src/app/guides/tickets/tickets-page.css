@@ -1,0 +1,158 @@
+/*
+  Page-level layout for /guides/tickets.
+
+  Only the page frame lives here: spacing, the hero, section rhythm and the
+  Suspense placeholder. Component-level styling stays in
+  `src/components/tickets/tickets.css`, which travels with the components.
+
+  Why not a CSS module? next.config.ts applies `@tailwindcss/turbopack` to every
+  `*.css` file with `as: "*.css"`, which empties the class-name exports of a
+  `*.module.css`. The UI kit hit this first and uses one namespaced stylesheet, so
+  this file follows the same route with a `tml-tix-page` scope.
+*/
+
+.tml-tix-page {
+  width: 100%;
+  max-width: 1240px;
+  margin-inline: auto;
+  padding: 2.5rem 1.25rem 6rem;
+}
+
+@media (min-width: 640px) {
+  .tml-tix-page {
+    padding-inline: 1.75rem;
+  }
+}
+
+@media (min-width: 900px) {
+  .tml-tix-page {
+    padding-top: 3.5rem;
+  }
+}
+
+/* ---------- Hero ---------- */
+
+.tml-tix-hero {
+  padding-bottom: 1.5rem;
+}
+
+.tml-tix-hero__title {
+  margin: 0.6rem 0 0;
+  font-family: var(--font-display);
+  font-size: clamp(2.25rem, 6vw, 3.75rem);
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  color: var(--cream);
+  text-wrap: balance;
+  font-variation-settings:
+    "SOFT" 100,
+    "WONK" 1;
+}
+
+.tml-tix-hero__lede {
+  margin: 1.1rem 0 0;
+  max-width: 68ch;
+  color: var(--cream-mute);
+  font-size: 1.0625rem;
+  line-height: 1.6;
+  text-wrap: pretty;
+}
+
+.tml-tix-lede {
+  margin: 1.1rem 0 0;
+  color: var(--cream-mute);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  line-height: 1.6;
+}
+
+/* ---------- Sections ---------- */
+
+.tml-tix-section {
+  margin-top: 2.75rem;
+}
+
+.tml-tix-section__title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(1.6rem, 3.4vw, 2.25rem);
+  font-weight: 400;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: var(--cream);
+  text-wrap: balance;
+}
+
+.tml-tix-section__lede {
+  margin: 0.55rem 0 1.25rem;
+  max-width: 62ch;
+  color: var(--cream-mute);
+  font-size: 0.9375rem;
+  line-height: 1.6;
+}
+
+.tml-tix-section__title + .tml-tix-explain,
+.tml-tix-section__title + .tml-tix-timeline {
+  margin-top: 1.25rem;
+}
+
+/* ---------- Footnote ---------- */
+
+.tml-tix-footnote {
+  display: grid;
+  gap: 0.85rem;
+  max-width: 74ch;
+  color: var(--cream-mute);
+  font-size: 0.8125rem;
+  line-height: 1.6;
+}
+
+.tml-tix-footnote p {
+  margin: 0;
+}
+
+/* ---------- Suspense placeholder ---------- */
+
+/*
+  Sized to the real content so the swap does not shift the page. The blocks are
+  inert and hidden from assistive technology by the component's own aria-hidden,
+  so a screen reader hears nothing rather than a description of empty boxes.
+*/
+.tml-tix-pending {
+  padding-top: 1.5rem;
+}
+
+.tml-tix-pending__tabs {
+  height: 52px;
+  max-width: 26rem;
+  border-radius: 999px;
+  background-color: rgb(244 236 224 / 0.06);
+}
+
+.tml-tix-pending__grid {
+  display: grid;
+  gap: 1rem;
+  margin-top: 2.5rem;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.tml-tix-pending__card {
+  height: 15rem;
+  border: 1px solid var(--hair);
+  border-radius: var(--radius-card);
+  background-color: rgb(244 236 224 / 0.03);
+}
+
+@media (min-width: 700px) {
+  .tml-tix-pending__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1100px) {
+  .tml-tix-pending__grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}

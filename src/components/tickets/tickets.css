@@ -1,0 +1,776 @@
+/*
+  TMLGUIDE tickets page styles.
+
+  Why one namespaced stylesheet rather than CSS modules? next.config.ts applies
+  `@tailwindcss/turbopack` to every `*.css` file with `as: "*.css"`, which
+  downgrades `*.module.css` to plain CSS: the rules are emitted but the class-name
+  exports come back empty. The UI kit hit this first and took the same route, so
+  this file follows suit with a `tml-tix-` prefix.
+
+  Every selector is prefixed and nothing targets a bare element type, so these
+  rules cannot leak into another workstream's pages.
+*/
+
+/* ---------- Edition tabs ---------- */
+
+.tml-tix-tabs {
+  display: flex;
+  gap: 0.25rem;
+  padding: 0.25rem;
+  overflow-x: auto;
+  border: 1px solid var(--hair-strong);
+  border-radius: 999px;
+  background-color: rgb(21 17 15 / 0.6);
+  scrollbar-width: none;
+}
+
+.tml-tix-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.tml-tix-tab {
+  display: inline-flex;
+  flex: 1 1 0;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding-inline: 1.1rem;
+  border-radius: 999px;
+  color: var(--cream-mute);
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  text-decoration: none;
+  white-space: nowrap;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
+}
+
+@media (hover: hover) {
+  .tml-tix-tab:hover {
+    color: var(--cream);
+  }
+}
+
+/* The selected tab is marked with aria-current, so the state is announced as
+   well as painted: colour is never the only signal. */
+.tml-tix-tab[aria-current="page"] {
+  background-color: var(--ea);
+  color: var(--on-accent);
+  font-weight: 700;
+}
+
+/* ---------- Breadcrumb ---------- */
+
+.tml-tix-crumbs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--cream-mute);
+}
+
+.tml-tix-crumbs__sep {
+  color: var(--hair-strong);
+}
+
+.tml-tix-crumbs__link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--cream-mute);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+}
+
+@media (hover: hover) {
+  .tml-tix-crumbs__link:hover {
+    color: var(--cream);
+    border-bottom-color: var(--ea);
+  }
+}
+
+.tml-tix-crumbs__current {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--cream);
+}
+
+/* ---------- Category cards ---------- */
+
+.tml-tix-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+@media (min-width: 700px) {
+  .tml-tix-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1100px) {
+  .tml-tix-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.tml-tix-cat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-height: 15rem;
+  padding: 1.5rem 1.4rem 1.25rem;
+  color: var(--cream);
+  text-decoration: none;
+  background-image: linear-gradient(170deg, var(--surface-2), var(--surface) 60%);
+  border: 1px solid var(--hair);
+  border-radius: var(--radius-card);
+  transition:
+    border-color 0.25s ease,
+    transform 0.25s ease;
+}
+
+@media (hover: hover) {
+  .tml-tix-cat:hover {
+    border-color: var(--hair-strong);
+    transform: translateY(-2px);
+  }
+}
+
+.tml-tix-cat:focus-visible {
+  outline: 2px solid var(--ea);
+  outline-offset: 4px;
+}
+
+.tml-tix-cat__title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  font-weight: 400;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+.tml-tix-cat__count {
+  margin-top: auto;
+  color: var(--cream-mute);
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+/* ---------- Package card ---------- */
+
+.tml-tix-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  padding: 1.35rem 1.25rem 1.15rem;
+  background-image: linear-gradient(170deg, var(--surface-2), var(--surface) 62%);
+  border: 1px solid var(--hair);
+  border-radius: var(--radius-card);
+}
+
+.tml-tix-card--unpublished {
+  border-style: dashed;
+  border-color: var(--hair-strong);
+}
+
+.tml-tix-card__head {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.tml-tix-card__title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.375rem;
+  font-weight: 400;
+  line-height: 1.15;
+  letter-spacing: -0.015em;
+  color: var(--cream);
+}
+
+.tml-tix-card__qualifier {
+  margin: 0;
+  color: var(--cream-mute);
+  font-size: 0.875rem;
+}
+
+.tml-tix-card__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tml-tix-badge {
+  padding: 0.2rem 0.5rem;
+  border: 1px solid var(--hair-strong);
+  border-radius: 999px;
+  color: var(--cream-mute);
+  font-family: var(--font-mono);
+  font-size: 0.5625rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+/* ---------- Price tiers ---------- */
+
+.tml-tix-tiers {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.tml-tix-tier {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.25rem 0.75rem;
+  padding-block: 0.35rem;
+  border-bottom: 1px solid var(--hair);
+}
+
+.tml-tix-tier:last-child {
+  border-bottom: 0;
+}
+
+.tml-tix-tier__label {
+  color: var(--cream-mute);
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.tml-tix-tier__amount {
+  color: var(--cream);
+  font-family: var(--font-mono);
+  font-size: 0.9375rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.tml-tix-tier__unit {
+  display: block;
+  color: var(--cream-mute);
+  font-family: var(--font-sans);
+  font-size: 0.6875rem;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.tml-tix-unpublished {
+  padding: 0.65rem 0.8rem;
+  border: 1px solid rgb(255 106 61 / 0.4);
+  border-radius: 12px;
+  background-color: rgb(255 106 61 / 0.1);
+  font-size: 0.8125rem;
+  line-height: 1.45;
+}
+
+.tml-tix-unpublished__label {
+  margin: 0;
+  color: #ffcbbc;
+  font-weight: 700;
+}
+
+.tml-tix-unpublished__reason {
+  margin: 0.3rem 0 0;
+  color: var(--cream-mute);
+}
+
+.tml-tix-unpublished__link {
+  margin: 0.35rem 0 0;
+}
+
+.tml-tix-note {
+  margin: 0;
+  color: var(--cream-mute);
+  font-size: 0.8125rem;
+  line-height: 1.55;
+}
+
+/* ---------- Includes ---------- */
+
+.tml-tix-includes {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.tml-tix-includes li {
+  position: relative;
+  padding-left: 1.05rem;
+  color: var(--cream-mute);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}
+
+.tml-tix-includes li::before {
+  content: "";
+  position: absolute;
+  top: 0.5em;
+  left: 0;
+  width: 0.42rem;
+  height: 0.42rem;
+  border-radius: 1px;
+  background-color: var(--teal);
+}
+
+/* ---------- Source line ---------- */
+
+.tml-tix-source {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.5rem;
+  margin: 0;
+  color: var(--cream-mute);
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.1em;
+  line-height: 1.5;
+}
+
+.tml-tix-source__link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--cream);
+  text-decoration: none;
+  border-bottom: 1px solid var(--hair-strong);
+}
+
+@media (hover: hover) {
+  .tml-tix-source__link:hover {
+    border-bottom-color: var(--ea);
+  }
+}
+
+/* ---------- Card actions ---------- */
+
+.tml-tix-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: auto;
+  padding-top: 0.35rem;
+}
+
+.tml-tix-open {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 44px;
+  padding-inline: 1rem;
+  border: 1px solid var(--hair-strong);
+  border-radius: 999px;
+  color: var(--cream);
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  text-decoration: none;
+}
+
+@media (hover: hover) {
+  .tml-tix-open:hover {
+    border-color: var(--ea);
+    color: var(--ea);
+  }
+}
+
+.tml-tix-open:focus-visible {
+  outline: 2px solid var(--ea);
+  outline-offset: 3px;
+}
+
+/* The comparison control is a real checkbox with a 44px target; the label carries
+   the visible text so a screen reader announces "Add X to comparison". */
+.tml-tix-compare {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-height: 44px;
+  padding-inline: 0.25rem;
+  color: var(--cream-mute);
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.tml-tix-compare input {
+  inline-size: 1.15rem;
+  block-size: 1.15rem;
+  margin: 0;
+  accent-color: var(--ea);
+  cursor: pointer;
+}
+
+.tml-tix-compare--disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+@media (hover: hover) {
+  .tml-tix-compare:not(.tml-tix-compare--disabled):hover {
+    color: var(--cream);
+  }
+}
+
+/* ---------- Comparison ---------- */
+
+.tml-tix-compare-wrap {
+  margin-top: 2rem;
+  padding: 1.25rem 0 0.25rem;
+  border-top: 1px solid var(--hair-strong);
+}
+
+.tml-tix-compare-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+}
+
+.tml-tix-compare-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 400;
+  letter-spacing: -0.015em;
+}
+
+.tml-tix-compare-hint {
+  margin: 0.35rem 0 0;
+  color: var(--cream-mute);
+  font-size: 0.8125rem;
+}
+
+/* Horizontal scroll on narrow screens, with the first column pinned so the row
+   label stays visible while the package columns are swiped. */
+.tml-tix-table-scroll {
+  max-width: 100%;
+  margin-top: 1rem;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+}
+
+.tml-tix-table {
+  width: max-content;
+  min-width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+}
+
+.tml-tix-table caption {
+  padding-bottom: 0.6rem;
+  color: var(--cream-mute);
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.14em;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+.tml-tix-table th,
+.tml-tix-table td {
+  padding: 0.7rem 0.85rem;
+  border-bottom: 1px solid var(--hair);
+  text-align: left;
+  vertical-align: top;
+}
+
+.tml-tix-table thead th {
+  color: var(--cream);
+  font-family: var(--font-display);
+  font-size: 0.9375rem;
+  font-weight: 400;
+  line-height: 1.25;
+}
+
+.tml-tix-table tbody th {
+  color: var(--cream-mute);
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.tml-tix-table__sticky {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  min-width: 8.5rem;
+  background-color: var(--ground);
+  box-shadow: 1px 0 0 var(--hair);
+}
+
+.tml-tix-table__amount {
+  display: block;
+  color: var(--cream);
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.tml-tix-table__missing {
+  color: var(--cream-mute);
+}
+
+.tml-tix-table__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  max-width: 26ch;
+  color: var(--cream-mute);
+  line-height: 1.45;
+}
+
+/* ---------- Sale timeline ---------- */
+
+.tml-tix-timeline {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+}
+
+.tml-tix-window {
+  display: grid;
+  gap: 0.5rem 1.25rem;
+  padding-block: 1rem;
+  border-top: 1px solid var(--hair);
+}
+
+.tml-tix-window:last-child {
+  border-bottom: 1px solid var(--hair);
+}
+
+.tml-tix-window__when {
+  color: var(--ea);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.tml-tix-window__local {
+  display: block;
+  margin-top: 0.2rem;
+  color: var(--cream-mute);
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  text-transform: none;
+}
+
+.tml-tix-window__name {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  font-weight: 400;
+  line-height: 1.2;
+}
+
+.tml-tix-window__audience {
+  margin: 0.15rem 0 0;
+  color: var(--cream-mute);
+  font-size: 0.8125rem;
+}
+
+.tml-tix-window__status {
+  align-self: start;
+  justify-self: start;
+  padding: 0.2rem 0.5rem;
+  border: 1px solid var(--hair-strong);
+  border-radius: 999px;
+  color: var(--cream-mute);
+  font-family: var(--font-mono);
+  font-size: 0.5625rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+@media (min-width: 760px) {
+  .tml-tix-window {
+    grid-template-columns: minmax(0, 16rem) minmax(0, 1fr) auto;
+    align-items: baseline;
+  }
+}
+
+/* ---------- Explainer ---------- */
+
+.tml-tix-explain {
+  display: grid;
+  gap: 1px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  background-color: var(--hair);
+  border: 1px solid var(--hair);
+  border-radius: var(--radius-card);
+  overflow: hidden;
+}
+
+.tml-tix-explain__row {
+  padding: 1.15rem 1.25rem;
+  background-color: var(--surface);
+}
+
+.tml-tix-explain__term {
+  margin: 0;
+  color: var(--cream);
+  font-family: var(--font-display);
+  font-size: 1.125rem;
+  font-weight: 400;
+  line-height: 1.25;
+}
+
+.tml-tix-explain__detail {
+  margin: 0.45rem 0 0;
+  max-width: 74ch;
+  color: var(--cream-mute);
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+
+.tml-tix-explain__sources {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.9rem;
+  margin: 0.6rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (min-width: 760px) {
+  .tml-tix-explain {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* ---------- Notice and disclaimer ---------- */
+
+.tml-tix-notice {
+  padding: 1.15rem 1.25rem;
+  border: 1px solid rgb(255 106 61 / 0.36);
+  border-radius: var(--radius-card);
+  background-color: rgb(255 106 61 / 0.08);
+}
+
+.tml-tix-notice__label {
+  margin: 0 0 0.4rem;
+  color: #ffcbbc;
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.tml-tix-notice p {
+  margin: 0;
+  max-width: 74ch;
+  color: var(--cream);
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+
+.tml-tix-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.25rem;
+  margin: 1rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* ---------- Visually hidden ---------- */
+
+.tml-tix-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ---------- Category grid heading ---------- */
+
+.tml-tix-cat-heading {
+  margin: 0 0 1.25rem;
+  font-family: var(--font-display);
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  font-weight: 400;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: var(--cream);
+}
+
+/* ---------- Focus target ---------- */
+
+/* The heading that receives focus after a drill-down must not draw a ring: focus
+   is moved for screen-reader context, not to invite a keypress. */
+.tml-tix-focus:focus {
+  outline: none;
+}
+
+.tml-tix-focus:focus-visible {
+  outline: 2px solid var(--ea);
+  outline-offset: 6px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tml-tix-tab,
+  .tml-tix-cat {
+    transition: none;
+  }
+
+  @media (hover: hover) {
+    .tml-tix-cat:hover {
+      transform: none;
+    }
+  }
+}

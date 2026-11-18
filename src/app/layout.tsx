@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { Fraunces, Instrument_Sans, JetBrains_Mono } from "next/font/google";
+import { Suspense } from "react";
 import { RadioPlayer, RadioProvider } from "@/components/radio";
+import { SearchDialog } from "@/components/search";
 import { SiteShell } from "@/components/shell";
 import "./globals.css";
 
@@ -54,6 +56,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <RadioProvider>
           <SiteShell>{children}</SiteShell>
           <RadioPlayer />
+          <Suspense fallback={null}>
+            <SearchDialog />
+          </Suspense>
         </RadioProvider>
       </body>
     </html>

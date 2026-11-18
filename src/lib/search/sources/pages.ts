@@ -1,0 +1,106 @@
+import type { SourceEntry } from "./types";
+
+/**
+ * The site's own destinations, one entry per known route.
+ *
+ * These are the pages a reader can actually open today, so every one of them is
+ * indexed: a palette that omits `/about` or `/tools/budget` makes the site feel
+ * smaller than it is. Descriptions mirror each page's own metadata rather than
+ * describing a plan, and carry no fact the page does not state.
+ *
+ * `lastVerified` is deliberately absent. A page is not a checked fact: it is a
+ * view over facts that each carry their own date, and stamping today's date on
+ * the page would imply a check that did not happen.
+ */
+export const pageEntries: SourceEntry[] = [
+  {
+    slug: "home",
+    title: "Home",
+    snippet:
+      "The independent guide to Tomorrowland: tickets, sale dates, DreamVille, travel and budgeting for Belgium, Winter and Brasil.",
+    edition: "all",
+    href: "/",
+    source: "src/app/page.tsx",
+  },
+  {
+    slug: "guides",
+    title: "Guides",
+    snippet:
+      "The guide index: tickets and packages, sale dates and the planning pages, each built from sourced figures.",
+    edition: "all",
+    href: "/guides",
+    source: "src/app/guides/page.tsx",
+  },
+  {
+    slug: "tickets",
+    title: "Tickets and packages",
+    snippet:
+      "Every ticket, DreamVille package and travel package the official site prices for the 2027 editions, with the sale calendar and what each product includes.",
+    edition: "all",
+    href: "/guides/tickets",
+    source: "src/app/guides/tickets/page.tsx",
+  },
+  {
+    slug: "tools",
+    title: "Tools",
+    snippet:
+      "Independent planning tools: a festival budget calculator, a Pearl converter and a ticket sale timeline with calendar export.",
+    edition: "all",
+    href: "/tools",
+    source: "src/app/tools/page.tsx",
+  },
+  {
+    slug: "budget",
+    title: "Festival budget calculator",
+    snippet:
+      "Add tickets, accommodation, travel, food and extras for one person or a group, in euros or reais, with a category breakdown.",
+    edition: "all",
+    href: "/tools/budget",
+    source: "src/app/tools/budget/page.tsx",
+  },
+  {
+    slug: "pearls",
+    title: "Pearl calculator",
+    snippet:
+      "Convert between euros and Tomorrowland Pearls at a rate you supply. The 2027 Pearl rate is not published, so the tool asks for it rather than assuming one.",
+    edition: "all",
+    href: "/tools/pearls",
+    source: "src/app/tools/pearls/page.tsx",
+  },
+  {
+    slug: "sale-timeline",
+    title: "Ticket sale timeline",
+    snippet:
+      "Every published Tomorrowland ticket sale for Belgium, Winter and Brasil, with a live countdown, times in your own zone and Brussels time, and a calendar export.",
+    edition: "all",
+    href: "/tools/sale-timeline",
+    source: "src/app/tools/sale-timeline/page.tsx",
+  },
+  {
+    slug: "community",
+    title: "Community",
+    snippet:
+      "Attendee-run WhatsApp groups, third-party resources and partner offers, with every link checked and every partner disclosure printed in full.",
+    edition: "all",
+    href: "/community",
+    source: "src/app/community/page.tsx",
+  },
+  {
+    slug: "radio",
+    title: "One World Radio",
+    snippet:
+      "How to listen to One World Radio, Tomorrowland's own station: the official stream, the apps that carry it, and which countries have DAB+, FM or syndicated coverage.",
+    edition: "all",
+    href: "/radio",
+    source: "src/app/radio/page.tsx",
+  },
+  {
+    slug: "about",
+    title: "About this guide",
+    snippet:
+      "Who runs TMLGuide, how each fact is checked against Tomorrowland's own pages, how errors are corrected, and the official sites every figure comes from.",
+    edition: "all",
+    href: "/about",
+    source: "src/app/about/page.tsx",
+  },
+];

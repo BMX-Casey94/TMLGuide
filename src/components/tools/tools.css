@@ -1,0 +1,1370 @@
+/*
+  TMLGUIDE tools styles.
+
+  Follows the Dusk Programme direction in docs/design/direction.md: warm-black
+  ground, hairline rules, tracked mono labels and serif display type. Only design
+  tokens from globals.css are used, so the edition accent (--ea) follows the
+  reader's edition without any per-tool colour.
+
+  Every selector is prefixed `tool-` because Next merges CSS globally. Nothing
+  here targets a bare element type, so this file cannot leak into other
+  workstreams' pages.
+
+  Print: the budget summary is the part people print or save as a PDF, so a
+  dedicated print block at the end flattens the page to a legible, ink-light
+  sheet and hides every interactive control.
+*/
+
+/* ---------- Page frame ---------- */
+
+.tool-page {
+  position: relative;
+  overflow-x: clip;
+}
+
+.tool-page__inner {
+  width: 100%;
+  max-width: 1120px;
+  margin-inline: auto;
+  padding: 2rem 1.25rem 5rem;
+}
+
+@media (min-width: 700px) {
+  .tool-page__inner {
+    padding-inline: 1.75rem;
+  }
+}
+
+/* ---------- Breadcrumbs ---------- */
+
+.tool-crumbs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--cream-mute);
+}
+
+.tool-crumbs__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.tool-crumbs__item a {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  color: var(--cream-mute);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+@media (hover: hover) {
+  .tool-crumbs__item a:hover {
+    color: var(--cream);
+    border-bottom-color: var(--ea);
+  }
+}
+
+.tool-crumbs__item [aria-current="page"] {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  color: var(--cream);
+}
+
+.tool-crumbs__sep {
+  opacity: 0.55;
+}
+
+/* ---------- Title block ---------- */
+
+.tool-head {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  margin-top: 1.25rem;
+  padding-bottom: 2rem;
+  border-bottom: 1px solid var(--hair);
+}
+
+.tool-head__title {
+  margin: 0;
+  max-width: 20ch;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(2.25rem, 6vw, 3.6rem);
+  line-height: 1;
+  letter-spacing: -0.03em;
+  color: var(--cream);
+  text-wrap: balance;
+  font-variation-settings:
+    "SOFT" 100,
+    "WONK" 1;
+}
+
+.tool-head__intro {
+  max-width: 64ch;
+  color: var(--cream-mute);
+  font-size: 1.0625rem;
+  line-height: 1.6;
+  text-wrap: pretty;
+}
+
+.tool-head__intro p {
+  margin: 0 0 0.75rem;
+}
+
+.tool-head__intro p:last-child {
+  margin-bottom: 0;
+}
+
+/* ---------- Noscript notice ---------- */
+
+.tool-noscript {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 1.5rem;
+  padding: 1rem 1.15rem;
+  border: 1px solid rgb(255 106 61 / 0.4);
+  border-radius: 16px;
+  background-color: rgb(255 106 61 / 0.09);
+  color: var(--cream);
+  font-size: 0.9375rem;
+}
+
+.tool-noscript p {
+  margin: 0;
+  max-width: 68ch;
+  line-height: 1.55;
+}
+
+.tool-noscript .label {
+  color: #ffb9a3;
+}
+
+.tool-noscript__extra {
+  margin-top: 0.25rem;
+}
+
+/* ---------- Panels ---------- */
+
+.tool-panel {
+  position: relative;
+  margin-top: 2rem;
+  padding: 1.5rem 1.25rem;
+  border: 1px solid var(--hair);
+  border-radius: var(--radius-card);
+  background-image: linear-gradient(170deg, var(--surface-2), var(--surface) 70%);
+  box-shadow: inset 0 1px 0 rgb(244 236 224 / 0.05);
+}
+
+@media (min-width: 700px) {
+  .tool-panel {
+    padding: 1.85rem 1.75rem;
+  }
+}
+
+.tool-panel--flush {
+  padding: 0;
+  overflow: hidden;
+}
+
+.tool-panel__head {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-bottom: 1.25rem;
+}
+
+.tool-panel__title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 1.5rem;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  color: var(--cream);
+}
+
+.tool-panel__hint {
+  margin: 0;
+  max-width: 62ch;
+  color: var(--cream-mute);
+  font-size: 0.9375rem;
+  line-height: 1.55;
+}
+
+/* ---------- Form grid ---------- */
+
+.tool-fields {
+  display: grid;
+  gap: 1.25rem;
+}
+
+@media (min-width: 620px) {
+  .tool-fields--two {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.tool-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  min-width: 0;
+}
+
+.tool-field__label {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--cream-mute);
+}
+
+.tool-field__required {
+  color: var(--ea);
+}
+
+.tool-field__row {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  border: 1px solid var(--hair-strong);
+  border-radius: 14px;
+  background-color: rgb(12 10 9 / 0.55);
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.tool-field__row:focus-within {
+  border-color: var(--ea);
+  box-shadow: 0 0 0 3px rgb(255 200 61 / 0.14);
+}
+
+.tool-field__prefix,
+.tool-field__suffix {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  padding-inline: 0.85rem;
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  color: var(--cream-mute);
+  user-select: none;
+}
+
+.tool-field__prefix {
+  border-right: 1px solid var(--hair);
+}
+
+.tool-field__suffix {
+  border-left: 1px solid var(--hair);
+  padding-inline: 0.6rem;
+}
+
+/* Inline checkbox inside a field's suffix slot. */
+.tool-checkbox {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  gap: 0.45rem;
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--cream-mute);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.tool-checkbox input {
+  width: 1.1rem;
+  height: 1.1rem;
+  accent-color: var(--ea);
+  cursor: pointer;
+}
+
+.tool-input,
+.tool-select {
+  width: 100%;
+  min-width: 0;
+  min-height: 48px;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--hair-strong);
+  border-radius: 14px;
+  background-color: rgb(12 10 9 / 0.55);
+  color: var(--cream);
+  font-family: var(--font-mono);
+  font-size: 0.9375rem;
+  font-variant-numeric: tabular-nums;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+/* Inside a prefix/suffix row the input supplies no border of its own. */
+.tool-field__row .tool-input,
+.tool-field__row .tool-select {
+  border: 0;
+  border-radius: 0;
+  background-color: transparent;
+  box-shadow: none;
+}
+
+.tool-field__row .tool-input:focus,
+.tool-field__row .tool-select:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+.tool-input:focus,
+.tool-select:focus {
+  outline: none;
+  border-color: var(--ea);
+  box-shadow: 0 0 0 3px rgb(255 200 61 / 0.14);
+}
+
+.tool-select {
+  appearance: none;
+  padding-right: 2.4rem;
+  background-image: linear-gradient(45deg, transparent 50%, var(--cream-mute) 50%),
+    linear-gradient(135deg, var(--cream-mute) 50%, transparent 50%);
+  background-position:
+    calc(100% - 1.15rem) 1.35rem,
+    calc(100% - 0.8rem) 1.35rem;
+  background-size: 0.35rem 0.35rem, 0.35rem 0.35rem;
+  background-repeat: no-repeat;
+  cursor: pointer;
+}
+
+.tool-select option {
+  background-color: var(--surface-2);
+  color: var(--cream);
+}
+
+.tool-field__note {
+  margin: 0;
+  color: var(--cream-mute);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}
+
+.tool-field__error {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  margin: 0;
+  color: #ffb9a3;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+}
+
+.tool-field__error::before {
+  content: "!";
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: 1.05rem;
+  height: 1.05rem;
+  margin-top: 0.05rem;
+  border-radius: 50%;
+  background-color: rgb(255 106 61 / 0.22);
+  color: #ffd0c2;
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  font-weight: 700;
+}
+
+/* ---------- Segmented control ---------- */
+
+.tool-segmented {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.tool-segmented__option {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 1rem;
+  border: 1px solid var(--hair-strong);
+  border-radius: 999px;
+  background-color: transparent;
+  color: var(--cream-mute);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: color 0.18s ease, border-color 0.18s ease, background-color 0.18s ease;
+}
+
+@media (hover: hover) {
+  .tool-segmented__option:hover {
+    color: var(--cream);
+    border-color: var(--cream-mute);
+  }
+}
+
+/* Selection is carried by fill, weight and the tick, never by colour alone. */
+.tool-segmented__option[aria-pressed="true"],
+.tool-segmented__option[aria-checked="true"] {
+  border-color: var(--ea);
+  background-color: var(--ea);
+  color: var(--on-accent);
+  font-weight: 700;
+}
+
+.tool-segmented__tick {
+  font-size: 0.85em;
+}
+
+/* ---------- Actions ---------- */
+
+.tool-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1.75rem;
+}
+
+.tool-actions--end {
+  justify-content: flex-end;
+}
+
+/* Secondary actions in the tool pages are quieter than the kit's primary. */
+.tool-btn {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.65rem 1.15rem;
+  border: 1px solid var(--hair-strong);
+  border-radius: 999px;
+  background-color: transparent;
+  color: var(--cream);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  text-decoration: none;
+  cursor: pointer;
+  transition: border-color 0.18s ease, color 0.18s ease, background-color 0.18s ease;
+}
+
+@media (hover: hover) {
+  .tool-btn:hover {
+    border-color: var(--ea);
+    color: var(--ea);
+  }
+}
+
+.tool-btn--primary {
+  border-color: var(--ea);
+  background-color: var(--ea);
+  color: var(--on-accent);
+}
+
+@media (hover: hover) {
+  .tool-btn--primary:hover {
+    color: var(--on-accent);
+    background-color: var(--ea);
+    filter: brightness(1.06);
+  }
+}
+
+.tool-btn--quiet {
+  border-color: transparent;
+  color: var(--cream-mute);
+}
+
+.tool-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+/* ---------- Result readout ---------- */
+
+.tool-result {
+  display: grid;
+  gap: 1.25rem;
+  margin-top: 2rem;
+}
+
+@media (min-width: 760px) {
+  .tool-result {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+}
+
+.tool-total {
+  padding: 1.4rem 1.35rem;
+  border: 1px solid var(--hair);
+  border-radius: var(--radius-card);
+  background-image: linear-gradient(165deg, rgb(255 200 61 / 0.09), var(--surface) 62%);
+}
+
+.tool-total__label {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--cream-mute);
+}
+
+.tool-total__figure {
+  display: block;
+  margin: 0.5rem 0 0;
+  font-family: var(--font-display);
+  font-weight: 300;
+  font-size: clamp(2.4rem, 8vw, 3.4rem);
+  line-height: 0.95;
+  letter-spacing: -0.035em;
+  font-variant-numeric: tabular-nums;
+  color: var(--cream);
+  overflow-wrap: anywhere;
+}
+
+.tool-total__aside {
+  margin: 0.6rem 0 0;
+  color: var(--cream-mute);
+  font-size: 0.9375rem;
+}
+
+/* ---------- Breakdown table ---------- */
+
+.tool-table-wrap {
+  margin-top: 1.5rem;
+  overflow-x: auto;
+}
+
+.tool-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9375rem;
+}
+
+.tool-table caption {
+  padding-bottom: 0.75rem;
+  color: var(--cream-mute);
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.16em;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+.tool-table th,
+.tool-table td {
+  padding: 0.7rem 0.6rem;
+  border-bottom: 1px solid var(--hair);
+  text-align: left;
+  vertical-align: top;
+}
+
+.tool-table thead th {
+  color: var(--cream-mute);
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.tool-table tbody th {
+  font-weight: 500;
+  color: var(--cream);
+}
+
+.tool-table .tool-table__amount {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.tool-table tfoot th,
+.tool-table tfoot td {
+  border-bottom: 0;
+  border-top: 1px solid var(--hair-strong);
+  font-weight: 700;
+  color: var(--cream);
+}
+
+.tool-table tfoot .tool-table__amount {
+  font-size: 1.0625rem;
+}
+
+/* ---------- Bar chart ---------- */
+
+.tool-chart {
+  margin-top: 1.5rem;
+}
+
+.tool-chart__svg {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.tool-chart__bar {
+  fill: var(--ea);
+}
+
+.tool-chart__bar--dim {
+  fill: var(--ea);
+  opacity: 0.45;
+}
+
+.tool-chart__track {
+  fill: rgb(244 236 224 / 0.07);
+}
+
+.tool-chart__row-label {
+  fill: var(--cream);
+  font-family: var(--font-sans);
+  font-size: 13px;
+}
+
+.tool-chart__row-value {
+  fill: var(--cream-mute);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.tool-chart__axis {
+  stroke: var(--hair-strong);
+  stroke-width: 1;
+}
+
+/* The chart is a picture of the table beneath it, so the table is the
+   accessible route to the same numbers. */
+.tool-chart__summary {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ---------- Chart data table toggle ---------- */
+
+.tool-disclosure {
+  margin-top: 1rem;
+}
+
+.tool-disclosure > summary {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.9rem;
+  border: 1px solid var(--hair-strong);
+  border-radius: 999px;
+  color: var(--cream-mute);
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  cursor: pointer;
+  list-style: none;
+}
+
+.tool-disclosure > summary::-webkit-details-marker {
+  display: none;
+}
+
+.tool-disclosure > summary::marker {
+  content: "";
+}
+
+@media (hover: hover) {
+  .tool-disclosure > summary:hover {
+    border-color: var(--ea);
+    color: var(--cream);
+  }
+}
+
+.tool-disclosure[open] > summary {
+  border-color: var(--ea);
+  color: var(--cream);
+}
+
+/* ---------- Notes and callouts ---------- */
+
+.tool-note {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-top: 1.25rem;
+  padding: 0.95rem 1.1rem;
+  border: 1px solid var(--hair);
+  border-left: 2px solid var(--teal);
+  border-radius: 12px;
+  background-color: rgb(43 196 180 / 0.06);
+  color: var(--cream);
+  font-size: 0.9375rem;
+  line-height: 1.55;
+}
+
+.tool-note p {
+  margin: 0;
+  max-width: 70ch;
+}
+
+.tool-note__label {
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--teal);
+}
+
+.tool-note--warning {
+  border-left-color: var(--ember);
+  background-color: rgb(255 106 61 / 0.07);
+}
+
+.tool-note--warning .tool-note__label {
+  color: #ffb9a3;
+}
+
+.tool-note--info {
+  border-left-color: var(--hair-strong);
+  background-color: rgb(244 236 224 / 0.03);
+}
+
+.tool-note--info .tool-note__label {
+  color: var(--cream-mute);
+}
+
+/* ---------- Status pill ---------- */
+
+.tool-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.2rem 0.6rem;
+  border: 1px solid var(--hair-strong);
+  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-size: 0.5625rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* Status is always paired with its own word, so colour is a reinforcement. */
+.tool-status--past {
+  border-color: var(--hair-strong);
+  color: var(--cream-mute);
+}
+
+.tool-status--open {
+  border-color: rgb(240 82 127 / 0.55);
+  background-color: rgb(240 82 127 / 0.14);
+  color: #ffb6cb;
+}
+
+.tool-status--upcoming {
+  border-color: rgb(43 196 180 / 0.5);
+  background-color: rgb(43 196 180 / 0.1);
+  color: #9be9e1;
+}
+
+/* ---------- Hub cards ---------- */
+
+.tool-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-height: 17rem;
+  padding: 1.5rem 1.35rem 1.25rem;
+  overflow: hidden;
+  border: 1px solid var(--hair);
+  border-radius: var(--radius-card);
+  background-image: linear-gradient(170deg, var(--surface-2), var(--surface) 62%);
+  box-shadow: inset 0 1px 0 rgb(244 236 224 / 0.06);
+  color: var(--cream);
+  text-decoration: none;
+  transition: transform 0.32s cubic-bezier(0.2, 0.9, 0.3, 1.2), border-color 0.3s ease,
+    box-shadow 0.32s ease;
+}
+
+/* The accent edge, matching the kit's standard card. */
+.tool-card::before {
+  content: "";
+  position: absolute;
+  inset: 1.35rem auto 1.35rem 0;
+  width: 2px;
+  border-radius: 2px;
+  background-image: linear-gradient(180deg, var(--ea), transparent 82%);
+  opacity: 0.7;
+}
+
+.tool-card--link:focus-visible {
+  outline: 2px solid var(--ea);
+  outline-offset: 4px;
+}
+
+@media (hover: hover) {
+  .tool-card--link:hover {
+    transform: translateY(-2px);
+    border-color: var(--hair-strong);
+    box-shadow:
+      inset 0 1px 0 rgb(244 236 224 / 0.1),
+      0 26px 44px -30px rgb(0 0 0 / 0.95);
+  }
+}
+
+.tool-card--planned {
+  opacity: 0.72;
+}
+
+.tool-card__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.tool-card__status {
+  flex: none;
+  padding: 0.22rem 0.55rem;
+  border: 1px solid var(--hair-strong);
+  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-size: 0.5625rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--cream-mute);
+}
+
+.tool-card__status--live {
+  border-color: rgb(43 196 180 / 0.5);
+  color: var(--teal);
+}
+
+.tool-card__icon {
+  margin-top: 0.6rem;
+}
+
+.tool-card__title {
+  margin: 0.35rem 0 0;
+  max-width: 20ch;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 1.45rem;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: var(--cream);
+  font-variation-settings:
+    "SOFT" 100,
+    "WONK" 1;
+}
+
+.tool-card__body {
+  margin: 0;
+  max-width: 34ch;
+  color: var(--cream-mute);
+  font-size: 0.9375rem;
+  line-height: 1.5;
+}
+
+.tool-card__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: auto;
+  padding-top: 0.75rem;
+  color: var(--cream);
+}
+
+@media (hover: hover) {
+  .tool-card--link:hover .tool-card__cta {
+    color: var(--ea);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tool-card {
+    transition: none;
+  }
+
+  @media (hover: hover) {
+    .tool-card--link:hover {
+      transform: none;
+    }
+  }
+}
+
+.tool-hub-grid {
+  display: grid;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+@media (min-width: 760px) {
+  .tool-hub-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1080px) {
+  .tool-hub-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* ---------- Copy status ---------- */
+
+.tool-copy-status {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--teal);
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+/* ---------- Countdown ---------- */
+
+.countdown {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.countdown__digits {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.4rem;
+  margin: 0.35rem 0 0;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--cream);
+}
+
+.countdown__digits--pending {
+  color: var(--cream-mute);
+}
+
+.countdown__unit {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.3rem;
+}
+
+.countdown__value {
+  font-size: clamp(1.75rem, 5vw, 2.75rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.countdown__name {
+  font-size: 0.625rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--cream-mute);
+}
+
+.countdown__colon {
+  font-size: clamp(1.25rem, 3vw, 1.75rem);
+  color: var(--hair-strong);
+}
+
+.countdown__open {
+  margin: 0.35rem 0 0;
+  font-family: var(--font-display);
+  font-size: 1.75rem;
+  color: var(--cream);
+}
+
+.countdown__instant {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.1em;
+  color: var(--cream-mute);
+  overflow-wrap: anywhere;
+}
+
+.countdown__announcement {
+  margin: 0;
+  color: var(--cream-mute);
+  font-size: 0.8125rem;
+}
+
+/* ---------- Timeline ---------- */
+
+.timeline {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+}
+
+.timeline__row {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.15rem 0;
+  border-top: 1px solid var(--hair);
+}
+
+.timeline__row:first-child {
+  border-top: 0;
+}
+
+@media (min-width: 780px) {
+  .timeline__row {
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 2rem;
+  }
+}
+
+/* The next sale gets a hairline marker and its own word, not just a tint. */
+.timeline__row--next {
+  position: relative;
+}
+
+.timeline__row--next::before {
+  content: "";
+  position: absolute;
+  inset: 1.15rem auto 1.15rem 0;
+  width: 2px;
+  border-radius: 2px;
+  background-image: linear-gradient(180deg, var(--ea), transparent);
+}
+
+.timeline__row--next .timeline__main {
+  padding-left: 0.9rem;
+}
+
+.timeline__main {
+  min-width: 0;
+  flex: 1;
+}
+
+.timeline__headline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.timeline__title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 1.3rem;
+  line-height: 1.2;
+  letter-spacing: -0.015em;
+  color: var(--cream);
+}
+
+.timeline__audience {
+  margin: 0.35rem 0 0;
+  color: var(--cream-mute);
+  font-size: 0.9375rem;
+}
+
+.timeline__times {
+  display: grid;
+  gap: 0.4rem 1.5rem;
+  margin: 0.75rem 0 0;
+}
+
+@media (min-width: 520px) {
+  .timeline__times {
+    grid-template-columns: repeat(2, minmax(0, auto));
+    justify-content: start;
+  }
+}
+
+.timeline__times div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.timeline__times dt {
+  font-family: var(--font-mono);
+  font-size: 0.5625rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--cream-mute);
+}
+
+.timeline__times dd {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  color: var(--cream);
+}
+
+.timeline__notice {
+  margin: 0.5rem 0 0;
+  padding: 0.4rem 0.65rem;
+  border-left: 2px solid var(--ember);
+  background-color: rgb(255 106 61 / 0.08);
+  color: #ffd0c2;
+  font-size: 0.8125rem;
+}
+
+.timeline__notes {
+  margin: 0.6rem 0 0;
+  max-width: 64ch;
+  color: var(--cream-mute);
+  font-size: 0.8125rem;
+  line-height: 1.55;
+}
+
+.timeline__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+@media (min-width: 780px) {
+  .timeline__actions {
+    flex-direction: column;
+    align-items: stretch;
+    flex: none;
+    width: 12rem;
+  }
+}
+
+.timeline__source {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  color: var(--cream-mute);
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-decoration: underline;
+  text-decoration-color: var(--hair-strong);
+  text-underline-offset: 3px;
+}
+
+.timeline__source:hover {
+  color: var(--cream);
+}
+
+/* ---------- Footer, disclaimer and sources ---------- */
+
+.tool-foot {
+  margin-top: 3rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--hair);
+}
+
+.tool-sources {
+  margin: 0.75rem 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.tool-sources a {
+  display: inline-flex;
+  min-height: 32px;
+  align-items: center;
+  color: var(--cream);
+  text-decoration: underline;
+  text-decoration-color: var(--hair-strong);
+  text-underline-offset: 3px;
+  overflow-wrap: anywhere;
+}
+
+@media (hover: hover) {
+  .tool-sources a:hover {
+    text-decoration-color: var(--ea);
+  }
+}
+
+.tool-sources__date {
+  color: var(--cream-mute);
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.tool-disclaimer {
+  max-width: 68ch;
+  margin: 1.35rem 0 0;
+  padding-top: 1.1rem;
+  border-top: 1px solid var(--hair);
+  color: var(--cream-mute);
+  font-size: 0.8125rem;
+  line-height: 1.6;
+}
+
+/* ---------- Reduced motion ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .tool-crumbs__item a,
+  .tool-field__row,
+  .tool-input,
+  .tool-select,
+  .tool-segmented__option,
+  .tool-btn {
+    transition: none;
+  }
+}
+
+/* ---------- Print ----------
+   A reader prints the budget summary to take to the festival, so printing drops
+   everything interactive and every dark fill, and keeps the figures, the table
+   and the sources on white paper at a readable size.
+*/
+
+@media print {
+  /*
+    The site chrome is not part of the summary. `position: fixed` on the header
+    and tab bar would otherwise repeat them on every page.
+  */
+  header[class*="sticky"],
+  nav[aria-label="Mobile"],
+  nav[aria-label="Primary"],
+  nav[aria-label="Footer"],
+  footer,
+  .ambient-glow,
+  .skip-link,
+  .tool-noscript,
+  .tool-actions,
+  .tool-disclosure,
+  .tool-copy-status {
+    display: none !important;
+  }
+
+  :root {
+    color-scheme: light;
+  }
+
+  .tool-page,
+  .tool-page__inner {
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    overflow: visible;
+  }
+
+  .tool-page__inner {
+    color: #111;
+  }
+
+  .tool-head,
+  .tool-panel,
+  .tool-total,
+  .tool-foot {
+    border-color: #bbb;
+    background: #fff !important;
+    box-shadow: none !important;
+    break-inside: avoid;
+  }
+
+  .tool-head__title,
+  .tool-panel__title,
+  .tool-total__figure,
+  .tool-head__intro,
+  .tool-panel__hint,
+  .tool-note,
+  .tool-sources a,
+  .tool-disclaimer,
+  .tool-crumbs,
+  .tool-crumbs__item [aria-current="page"] {
+    color: #111 !important;
+  }
+
+  .tool-total__label,
+  .tool-field__label,
+  .tool-sources__date,
+  .label {
+    color: #444 !important;
+  }
+
+  /* The accent fill is a screen affordance; on paper the figure carries itself. */
+  .tool-total {
+    border-width: 1px;
+    border-style: solid;
+  }
+
+  .tool-table th,
+  .tool-table td {
+    border-bottom-color: #ccc;
+    color: #111;
+  }
+
+  .tool-table thead th,
+  .tool-table .tool-table__amount {
+    color: #333 !important;
+  }
+
+  /* Bars print as mid-grey so they stay visible on a mono laser printer. */
+  .tool-chart__bar,
+  .tool-chart__bar--dim {
+    fill: #555 !important;
+    opacity: 1;
+  }
+
+  .tool-chart__track {
+    fill: #e5e5e5;
+  }
+
+  .tool-chart__row-label,
+  .tool-chart__row-value {
+    fill: #111 !important;
+  }
+
+  .tool-chart__axis {
+    stroke: #999;
+  }
+
+  /* The data table is the printable form of the chart, so always show it. */
+  .tool-disclosure[data-print-open] > summary {
+    display: none;
+  }
+
+  a[href]::after {
+    content: "";
+  }
+}
