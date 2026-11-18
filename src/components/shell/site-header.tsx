@@ -22,7 +22,7 @@ export const HEADER_HEIGHT_MOBILE_PX = 60;
  * logo's z-index applies across the whole header and the overhang stays visible on phones, where it
  * sits in the edition bar's top padding.
  */
-export const LOGO_OVERHANG_PX = 20;
+export const LOGO_OVERHANG_PX = 8;
 
 /**
  * Site header: sticky, blurred, hairline-ruled, with the logo overhanging the bottom edge.
@@ -49,6 +49,7 @@ export function SiteHeader() {
           pointer events: only the link does.
         */}
         <div className="pointer-events-none absolute inset-x-0 top-0 h-[60px] min-[900px]:h-[68px]">
+          <div className="relative mx-auto h-full max-w-[1240px]">
           <Link
             href="/"
             className="pointer-events-auto absolute bottom-0 left-4 z-10 block min-[900px]:left-7"
@@ -60,18 +61,19 @@ export function SiteHeader() {
               alt="TMLGuide home"
               width={1682}
               height={488}
-              sizes="(min-width: 900px) 190px, 150px"
+              sizes="(min-width: 1100px) 236px, (min-width: 900px) 200px, 160px"
               loading="eager"
               fetchPriority="high"
-              className="h-auto w-[150px] min-[900px]:w-[190px]"
+              className="h-auto w-[160px] min-[900px]:w-[200px] min-[1100px]:w-[236px]"
             />
           </Link>
+          </div>
         </div>
 
         <div className="border-b border-hair bg-ground/85 backdrop-blur-xl">
           <div className="mx-auto flex h-[60px] max-w-[1240px] items-center gap-3 px-4 min-[900px]:h-[68px] min-[900px]:gap-4 min-[1100px]:gap-5 min-[900px]:px-7">
             {/* Reserves the logo's horizontal space; the logo itself is out of flow. */}
-            <div aria-hidden="true" className="w-[150px] shrink-0 min-[900px]:w-[190px]" />
+            <div aria-hidden="true" className="w-[160px] shrink-0 min-[900px]:w-[200px] min-[1100px]:w-[236px]" />
 
             <nav
               aria-label="Primary"
@@ -92,9 +94,9 @@ export function SiteHeader() {
               */}
               <button
                 type="button"
-                aria-label="Search"
+                aria-label="Search the guide"
                 data-search-trigger=""
-                className="inline-flex h-11 min-w-11 items-center justify-center gap-2 rounded-full border border-hair-strong px-3 font-mono text-[11px] uppercase tracking-[0.12em] text-cream-mute transition-colors hover:border-hair-strong hover:text-cream min-[1100px]:px-3.5"
+                className="inline-flex h-11 min-w-11 items-center justify-center gap-2 rounded-full border border-hair-strong bg-surface/60 px-3 font-mono text-[11px] uppercase tracking-[0.12em] text-cream-mute transition-colors hover:border-accent hover:text-cream min-[1100px]:w-[260px] min-[1100px]:justify-start min-[1100px]:px-4"
               >
                 <svg
                   aria-hidden="true"
@@ -108,7 +110,7 @@ export function SiteHeader() {
                   <circle cx="8.5" cy="8.5" r="5.5" />
                   <path d="m12.9 12.9 4 4" />
                 </svg>
-                <span className="hidden min-[1100px]:inline">Search</span>
+                <span className="hidden min-[1100px]:inline">Search the guide</span>
               </button>
             </div>
           </div>

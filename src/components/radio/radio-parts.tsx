@@ -27,6 +27,55 @@ export function RadioStyles() {
         background: var(--ea);
         opacity: 0.45;
       }
+      .tml-radio-range {
+        -webkit-appearance: none;
+        appearance: none;
+        flex: none;
+        width: 96px;
+        height: 44px;
+        margin: 0;
+        padding: 0;
+        background: transparent;
+        cursor: pointer;
+      }
+      .tml-radio-range::-webkit-slider-runnable-track {
+        height: 4px;
+        border-radius: 999px;
+        background: linear-gradient(to right, var(--ea) var(--vol), rgb(244 236 224 / 0.22) var(--vol));
+      }
+      .tml-radio-range::-moz-range-track {
+        height: 4px;
+        border-radius: 999px;
+        background: rgb(244 236 224 / 0.22);
+      }
+      .tml-radio-range::-moz-range-progress {
+        height: 4px;
+        border-radius: 999px;
+        background: var(--ea);
+      }
+      .tml-radio-range::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 14px;
+        height: 14px;
+        margin-top: -5px;
+        border-radius: 50%;
+        border: 2px solid var(--ground);
+        background: var(--cream);
+        box-shadow: 0 0 0 1px var(--ea), 0 2px 8px rgb(0 0 0 / 0.5);
+        transition: transform 0.15s ease;
+      }
+      .tml-radio-range::-moz-range-thumb {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        border: 2px solid var(--ground);
+        background: var(--cream);
+        box-shadow: 0 0 0 1px var(--ea), 0 2px 8px rgb(0 0 0 / 0.5);
+      }
+      .tml-radio-range:hover::-webkit-slider-thumb,
+      .tml-radio-range:active::-webkit-slider-thumb { transform: scale(1.2) }
+      .tml-radio-range:focus-visible { outline: 2px solid var(--ea); outline-offset: 2px; border-radius: 8px }
       [data-eq="playing"] .tml-radio-eq-bar {
         opacity: 1;
         animation: tml-radio-eq 1s ease-in-out infinite;
@@ -227,7 +276,8 @@ export function VolumeSlider({ id, volume, onVolume, className = "" }: VolumeSli
       aria-label="Radio volume"
       aria-valuetext={`${percent}%`}
       onChange={(event) => onVolume(Number(event.target.value) / 100)}
-      className={`h-11 flex-none cursor-pointer accent-accent ${className}`}
+      style={{ "--vol": `${percent}%` } as React.CSSProperties}
+      className={`tml-radio-range ${className}`}
     />
   );
 }

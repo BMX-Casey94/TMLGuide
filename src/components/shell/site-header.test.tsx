@@ -55,7 +55,7 @@ describe("SiteHeader", () => {
   it("exposes the search trigger as a real button", () => {
     renderHeader();
 
-    const search = screen.getByRole("button", { name: "Search" });
+    const search = screen.getByRole("button", { name: "Search the guide" });
     expect(search).toHaveAttribute("data-search-trigger");
     expect(search).toHaveAttribute("type", "button");
   });
@@ -96,8 +96,8 @@ describe("SiteHeader", () => {
 
     const link = screen.getByRole("link", { name: "TMLGuide home" });
     expect(link.style.transform).toBe(`translateY(${LOGO_OVERHANG_PX}px)`);
-    expect(LOGO_OVERHANG_PX).toBeGreaterThanOrEqual(18);
-    expect(LOGO_OVERHANG_PX).toBeLessThanOrEqual(22);
+    expect(LOGO_OVERHANG_PX).toBeGreaterThanOrEqual(4);
+    expect(LOGO_OVERHANG_PX).toBeLessThanOrEqual(12);
   });
 
   it("sets the edition bar's top padding clear of the logo overhang on phones", () => {
@@ -123,7 +123,8 @@ describe("SiteHeader", () => {
     // The wrapper is full-width across the header top, so it must not swallow clicks on the tabs,
     // edition switcher or search button beneath it; only the link may receive pointers.
     const link = screen.getByRole("link", { name: "TMLGuide home" });
-    const wrapper = link.parentElement as HTMLElement;
+    // link > container (aligned to the page width) > full-width wrapper
+    const wrapper = link.parentElement?.parentElement as HTMLElement;
     expect(wrapper.className).toContain("pointer-events-none");
     expect(link.className).toContain("pointer-events-auto");
   });
