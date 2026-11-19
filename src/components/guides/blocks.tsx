@@ -1,4 +1,4 @@
-import type { GuideBlock, GuideChapter, GuideSource } from "@/content/schema";
+﻿import type { GuideBlock, GuideChapter, GuideSource } from "@/content/schema";
 import { DataBlock } from "./data-block";
 import { InlineText } from "./inline-text";
 import "./guides.css";
@@ -186,7 +186,7 @@ export function GuideBlockView({ chapter, block, index }: BlockRendererProps & {
     case "facts":
       return (
         <div className="tml-guide-data">
-          <div className="tml-guide-data__scroll">
+          <div className="tml-guide-data__scroll" role="region" aria-label={block.caption} tabIndex={0}>
             <table className="tml-guide-table">
               <caption className="tml-guide-table__caption">{block.caption}</caption>
               <thead>

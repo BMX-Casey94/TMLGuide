@@ -1,4 +1,4 @@
-import { belgiumData } from "@/data/belgium";
+﻿import { belgiumData } from "@/data/belgium";
 import { brasilData, type BrasilTicket } from "@/data/brasil";
 import { winterData } from "@/data/winter";
 import type {
@@ -685,7 +685,7 @@ export function DataBlock({ edition, collection, idPrefix, caption }: DataBlockP
 
   return (
     <div className="tml-guide-data">
-      <div className="tml-guide-data__scroll">
+      <div className="tml-guide-data__scroll" role="region" aria-label={caption} tabIndex={0}>
         <table className="tml-guide-table">
           <caption className="tml-guide-table__caption">{caption}</caption>
           <thead>
