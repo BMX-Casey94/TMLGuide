@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+﻿import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 
 import { SaleTimeline } from "./sale-timeline";
@@ -139,7 +139,7 @@ describe("SaleTimeline", () => {
       vi.advanceTimersByTime(0);
     });
 
-    const buttons = screen.getAllByRole("button", { name: /Add .* to your calendar/i });
+    const buttons = screen.getAllByRole("button", { name: /Add to calendar for/i });
     await act(async () => {
       fireEvent.click(buttons[0]);
     });
@@ -195,7 +195,7 @@ describe("SaleTimeline", () => {
       vi.advanceTimersByTime(0);
     });
 
-    const links = screen.getAllByRole("link", { name: "Official page" });
+    const links = screen.getAllByRole("link", { name: /^Official page/ });
     expect(links).toHaveLength(2);
     for (const link of links) {
       expect(link).toHaveAttribute("rel", "noopener noreferrer");

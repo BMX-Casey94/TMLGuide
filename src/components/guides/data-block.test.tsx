@@ -1,4 +1,4 @@
-import { cleanup, render, screen, within } from "@testing-library/react";
+﻿import { cleanup, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import { belgiumData } from "@/data/belgium";
 import { brasilData } from "@/data/brasil";
@@ -170,10 +170,10 @@ describe("data table construction", () => {
     const first = belgiumData.tickets[0];
     if (first === undefined) throw new Error("no Belgium tickets in the fixture data");
 
-    const link = screen.getByRole("link", { name: `Source for ${first.name}: ${first.source.title}` });
+    const link = screen.getByRole("link", { name: `${new URL(first.source.url).hostname}: source for ${first.name}, ${first.source.title}` });
     expect(link).toHaveAttribute("href", first.source.url);
     // The visible text stays short enough for a narrow column.
-    expect(link.textContent).toBe(new URL(first.source.url).hostname);
+    expect(link.textContent?.startsWith(new URL(first.source.url).hostname)).toBe(true);
   });
 
   it("uses the oldest check date in the set, because the table is only as fresh as its stalest row", () => {
@@ -230,7 +230,7 @@ describe("the stage collection", () => {
     const first = winterData.stages[0];
     if (first === undefined) throw new Error("no winter stages in the data");
 
-    const link = screen.getByRole("link", { name: `Source for ${first.name}: ${first.source.title}` });
+    const link = screen.getByRole("link", { name: `${new URL(first.source.url).hostname}: source for ${first.name}, ${first.source.title}` });
     expect(link).toHaveAttribute("href", first.source.url);
     expect(link).toHaveAttribute("rel", "noopener noreferrer");
     expect(screen.getByText(/All records checked/)).toBeInTheDocument();

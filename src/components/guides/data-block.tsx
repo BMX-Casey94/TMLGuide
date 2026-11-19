@@ -737,9 +737,9 @@ export function DataBlock({ edition, collection, idPrefix, caption }: DataBlockP
                     href={row.sourceUrl}
                     rel="noopener noreferrer"
                     className="tml-guide-link"
-                    aria-label={`Source for ${row.label}: ${row.sourceTitle}`}
                   >
                     {hostOf(row.sourceUrl)}
+                    <span className="sr-only">{`: source for ${row.label}, ${row.sourceTitle}`}</span>
                   </a>
                 </td>
               </tr>

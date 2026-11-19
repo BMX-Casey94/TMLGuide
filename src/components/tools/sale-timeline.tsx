@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { buildEditionCalendar, buildSaleCalendar, editionFilename, saleFilename } from "./calendar-export";
@@ -189,9 +189,9 @@ export function SaleTimeline({ records, edition, editionLabel }: SaleTimelinePro
                       type="button"
                       className="tool-btn"
                       onClick={() => onDownloadOne(sale)}
-                      aria-label={`Add ${sale.name} to your calendar`}
                     >
-                      Add to calendar
+                      Add to calendar{" "}
+                      <span className="sr-only">{`for ${sale.name}`}</span>
                     </button>
                     <a
                       className="timeline__source"
@@ -199,7 +199,8 @@ export function SaleTimeline({ records, edition, editionLabel }: SaleTimelinePro
                       target="_blank"
                       rel="noopener noreferrer"
                     >
-                      Official page
+                      Official page{" "}
+                      <span className="sr-only">{`for ${sale.name} (opens in a new tab)`}</span>
                     </a>
                   </div>
                 </li>

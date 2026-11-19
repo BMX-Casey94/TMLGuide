@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
 import { GoldDivider } from "@/components/ui/gold-divider";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { RADIO_CREDIT } from "@/components/radio";
@@ -107,7 +107,12 @@ export default function RadioPage() {
           lede="A country appears only where an official page states the carriage. Coverage changes: this list was checked on the date below."
         />
 
-        <div className="mt-8 overflow-x-auto rounded-[var(--radius-card)] border border-hair">
+        <div
+          className="mt-8 overflow-x-auto rounded-[var(--radius-card)] border border-hair"
+          role="region"
+          aria-label="Countries with published One World Radio carriage"
+          tabIndex={0}
+        >
           <table className="w-full min-w-[36rem] border-collapse text-left text-sm">
             <caption className="sr-only">
               Countries with published One World Radio carriage, and how the station reaches each
