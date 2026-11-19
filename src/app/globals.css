@@ -106,6 +106,52 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
+/*
+  Form fields: the field itself highlights (accent border plus a 1px inner line, which keeps a
+  3:1 contrast against the ground), with no second ring outside it. Unlayered, so it beats
+  Tailwind's layered utilities and the global :focus-visible outline above.
+*/
+select,
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+textarea {
+  color-scheme: dark;
+}
+
+select:focus,
+select:focus-visible,
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):focus-visible,
+textarea:focus-visible {
+  outline: none;
+  border-color: var(--ea);
+  box-shadow: inset 0 0 0 1px var(--ea);
+}
+
+/* Dropdown: custom chevron in place of the system arrow, and dark option rows for the open list. */
+select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 2.5rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23b7ada3' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.9rem center;
+  background-size: 1.1rem;
+  cursor: pointer;
+}
+
+select option,
+select optgroup {
+  background-color: var(--surface);
+  color: var(--cream);
+  font-family: inherit;
+  padding: 0.5rem 0.75rem;
+}
+
+select option:checked,
+select option:hover {
+  background-color: var(--surface-2);
+  color: var(--cream);
+}
+
 .skip-link {
   position: absolute;
   left: -999px;
