@@ -8,6 +8,7 @@
 /** Broad grouping used for the result headings. */
 export type SearchKind =
   | "page"
+  | "guide"
   | "faq"
   | "ticket"
   | "accommodation"

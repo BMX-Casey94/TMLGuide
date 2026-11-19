@@ -31,7 +31,7 @@ describe("search exports", () => {
 
   it("builds an index whose hrefs all pass the route whitelist", () => {
     for (const entry of buildSearchIndex()) {
-      expect(isKnownRoute(entry.href), entry.id).toBe(true);
+      expect(isKnownRoute(entry.href) || entry.kind === "guide", entry.id).toBe(true);
     }
   });
 });

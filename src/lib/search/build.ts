@@ -6,6 +6,7 @@ import { accommodationEntries } from "./sources/accommodation";
 import { partnerEntries, resourceEntries, whatsappEntries } from "./sources/community";
 import { editionEntries } from "./sources/editions";
 import { faqEntries } from "./sources/faqs";
+import { guideEntries, isGuideChapterRoute } from "./sources/guides";
 import { pageEntries } from "./sources/pages";
 import { saleEntries } from "./sources/sales";
 import { ticketEntries } from "./sources/tickets";
@@ -25,6 +26,7 @@ const GROUPS: ReadonlyArray<{
   entries: readonly SourceEntry[];
 }> = [
   { kind: "page", entries: pageEntries },
+  { kind: "guide", entries: guideEntries },
   { kind: "sale", entries: saleEntries },
   { kind: "ticket", entries: ticketEntries },
   { kind: "accommodation", entries: accommodationEntries },
@@ -69,7 +71,7 @@ export function buildSearchIndex(): SearchEntry[] {
       const body = snippet(source.snippet);
       if (!body) throw new Error(`Search entry ${id} has no snippet`);
 
-      if (!isKnownRoute(source.href)) {
+      if (!isKnownRoute(source.href) && !isGuideChapterRoute(source.href)) {
         throw new Error(`Search entry ${id} links to unknown route ${source.href}`);
       }
 

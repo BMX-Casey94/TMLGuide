@@ -10,6 +10,7 @@ import type { SearchKind } from "./types";
  */
 export const KIND_ORDER: readonly SearchKind[] = [
   "page",
+  "guide",
   "sale",
   "ticket",
   "accommodation",
@@ -22,6 +23,7 @@ export const KIND_ORDER: readonly SearchKind[] = [
 
 export const KIND_LABELS: Readonly<Record<SearchKind, string>> = {
   page: "Page",
+  guide: "Guide",
   sale: "Sale",
   ticket: "Ticket",
   accommodation: "Accommodation",

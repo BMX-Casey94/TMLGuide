@@ -1,6 +1,5 @@
 import { sharedData } from "@/data/shared";
 import type { EditionScope } from "../types";
-import type { KnownRoute } from "../routes";
 
 /**
  * A search entry before the builder assigns its id, checks the route whitelist
@@ -12,7 +11,7 @@ export interface SourceEntry {
   title: string;
   snippet: string;
   edition: EditionScope;
-  href: KnownRoute;
+  href: string;
   /** Repo-relative file the facts came from, so drift is traceable. */
   source: string;
   /** The official page the record cites, when it has one. */

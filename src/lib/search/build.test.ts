@@ -18,6 +18,7 @@ const index = buildSearchIndex();
 
 const KINDS: readonly SearchKind[] = [
   "page",
+  "guide",
   "sale",
   "ticket",
   "accommodation",
@@ -44,6 +45,7 @@ describe("buildSearchIndex", () => {
 
     const floors: Readonly<Record<SearchKind, number>> = {
       page: 10,
+      guide: 25,
       sale: 9,
       ticket: 20,
       accommodation: 25,
@@ -87,11 +89,14 @@ describe("buildSearchIndex", () => {
   it("links only to routes the site renders", () => {
     for (const entry of index) {
       expect(entry.href.startsWith("/"), entry.id).toBe(true);
-      expect(isKnownRoute(entry.href), `${entry.id} → ${entry.href}`).toBe(true);
+      expect(
+        isKnownRoute(entry.href) || entry.kind === "guide",
+        `${entry.id} → ${entry.href}`,
+      ).toBe(true);
     }
     // And the whitelist holds nothing the index does not use, so it cannot grow
     // a route that no page serves.
-    const used = new Set(index.map((entry) => entry.href));
+    const used = new Set(index.filter((entry) => entry.kind !== "guide").map((entry) => entry.href));
     for (const href of used) expect(KNOWN_ROUTES).toContain(href);
   });
 
