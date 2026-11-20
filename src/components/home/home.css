@@ -225,6 +225,12 @@
   padding: 1.35rem 1.25rem 1.4rem;
   border: 1px solid var(--hair);
   border-radius: var(--radius-card);
+  /* The 2px accent rule inside `::before` runs across the top edge, so that one
+     corner is square; the other three stay rounded. `overflow` is left alone:
+     the rule is inset to the card's own box, so squaring the corner is enough
+     and clipping is not needed. `.home-edition` keeps its radius because its
+     rule runs down the left side. */
+  border-top-left-radius: 0;
   background-image: linear-gradient(168deg, var(--surface-2), var(--surface) 62%);
   box-shadow: inset 0 1px 0 rgb(244 236 224 / 0.06);
 }

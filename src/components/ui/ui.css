@@ -118,6 +118,18 @@
   opacity: 0.9;
 }
 
+/*
+  A card whose accent runs across the top squares off that one corner. The card
+  clips its own `::before` rule (`overflow: hidden`), so at a rounded top-left
+  corner the rule bends down along the curve instead of running straight along
+  the top edge. The other three corners stay rounded. `.tml-card--left` is
+  deliberately not in this list: its rule runs down the side, not across the top.
+*/
+.tml-card--top,
+.tml-card--alert {
+  border-top-left-radius: 0;
+}
+
 .tml-card__body {
   position: relative;
   z-index: 10;
