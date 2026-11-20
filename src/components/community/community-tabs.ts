@@ -35,13 +35,27 @@ export function tabFromHash(hash: string): CommunityTabId | null {
   return match?.id ?? null;
 }
 
-/** Maps a record anchor (`#wa-*`, `#resource-*`, `#partner-*`) to the tab that holds it. */
+/**
+ * Maps a record anchor (`#wa-*`, `#resource-*`, `#partner-*`) to the tab that holds it.
+ *
+ * The prefix alone is not a record: `#partner-` names nothing, and switching to
+ * the partners tab for it would move the reader away from where they were for
+ * an address that resolves to no card. The part after the hyphen has to be
+ * there, which is the same rule the anchor pattern applies to every id the index
+ * produces.
+ */
 export function panelForAnchor(hash: string): CommunityTabId | null {
   const value = hash.replace(/^#/, "").trim().toLowerCase();
-  if (value.startsWith("wa-")) return "whatsapp";
-  if (value.startsWith("resource-")) return "resources";
-  if (value.startsWith("partner-")) return "partners";
+  if (hasRecordSuffix(value, "wa")) return "whatsapp";
+  if (hasRecordSuffix(value, "resource")) return "resources";
+  if (hasRecordSuffix(value, "partner")) return "partners";
   return null;
+}
+
+/** True when `value` is `prefix-` followed by at least one more character. */
+function hasRecordSuffix(value: string, prefix: string): boolean {
+  const head = `${prefix}-`;
+  return value.startsWith(head) && value.length > head.length;
 }
 
 /** The hash for a tab, including "#". */

@@ -22,8 +22,16 @@ const STEP_BY_KEY: Readonly<Record<string, number>> = {
   ArrowUp: -1,
 };
 
+/**
+ * The shared skin for one option.
+ *
+ * The hover colour is gated behind `@media (hover: hover)`, so a tap on a touch device cannot leave
+ * an unselected option stuck in the bright cream that only a pointer's hover should produce. The
+ * checked state is deliberately independent of hover, so a selected option keeps its accent
+ * background and dark label whichever way it was chosen.
+ */
 const BASE_OPTION =
-  "cursor-pointer rounded-full font-mono uppercase text-cream-mute transition-colors hover:text-cream aria-checked:bg-accent aria-checked:font-bold aria-checked:text-on-accent aria-checked:hover:text-on-accent";
+  "cursor-pointer rounded-full font-mono uppercase text-cream-mute transition-colors [@media(hover:hover)]:hover:text-cream aria-checked:bg-accent aria-checked:font-bold aria-checked:text-on-accent [@media(hover:hover)]:aria-checked:hover:text-on-accent";
 
 /**
  * Edition selector. Implements the WAI-ARIA radio group pattern: one tab stop for the group,
@@ -64,12 +72,16 @@ export function EditionSwitcher({ variant = "inline", className }: EditionSwitch
       ? "grid w-full grid-cols-3 rounded-full border border-hair-strong bg-surface/60 p-[3px]"
       : "inline-flex items-center rounded-full bg-ground/70 p-[2px] ring-1 ring-inset ring-hair";
 
-  // The inline pill tightens from 900px, where the header row also carries five tabs and a search
-  // button; the stacked one keeps 48px segments so phones get comfortable targets.
+  /*
+    The inline pill sits inside the header's 44px search pill, so each option is a 36px-tall target
+    whose 34px minimum width keeps BE / WI / BR comfortably tappable. The horizontal padding only
+    grows from 1100px, where the header row has slack. The stacked variant keeps 48px segments so the
+    panel's own control gets full-width targets.
+  */
   const optionSize =
     variant === "stacked"
       ? "h-12 w-full text-center text-[11px] tracking-[0.14em]"
-      : "h-8 px-2.5 text-[9px] tracking-[0.1em] min-[1100px]:px-3 min-[1100px]:text-[10px]";
+      : "inline-flex h-9 min-w-[34px] items-center justify-center touch-manipulation select-none px-2.5 text-[10px] tracking-[0.08em] min-[1100px]:px-3";
 
   return (
     <div
@@ -98,11 +110,22 @@ export function EditionSwitcher({ variant = "inline", className }: EditionSwitch
           >
             {variant === "inline" ? (
               <>
-                {/* Short codes on narrow phones; the button's accessible name stays the full word. */}
-                <span aria-hidden="true" className="min-[430px]:hidden">
+                {/*
+                  Short codes below 1100px, full words from it.
+
+                  Measured for this breakpoint, with JetBrains Mono's 0.6em advance at 10px. Three
+                  short codes take about 105px of the pill; three full words take about 193px, and
+                  the label beside them (icon, gap, padding) needs another 42px. The pill is 208px
+                  on a phone, 280px at 900px and 340px at 1100px, so the words leave the search
+                  field about 37px at 900px — below the 40px the layout spec requires, and clipped
+                  outright by the wrapper's 140px cap below 900px. From 1100px they leave about
+                  85px and both fit. The accessible name is always the full word, so neither a
+                  screen reader nor a speech user ever hears "BE".
+                */}
+                <span aria-hidden="true" className="min-[1100px]:hidden">
                   {option.shortLabel}
                 </span>
-                <span aria-hidden="true" className="hidden min-[430px]:inline">
+                <span aria-hidden="true" className="hidden min-[1100px]:inline">
                   {option.label}
                 </span>
               </>

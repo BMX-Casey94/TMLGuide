@@ -154,6 +154,18 @@ describe("using the toolbar", () => {
     expect(text).toMatch(/Focus returns to the button/i);
   });
 
+  it("places the button in the header from 900px, not in the phone's bottom bar", () => {
+    const { container } = render(<AccessibilityPage />);
+    const text = visibleText(container);
+
+    // The button lives in the header only, and appears from 900px wide.
+    expect(text).toMatch(/right-hand end of the site\s+header/i);
+    expect(text).toMatch(/900px/);
+    // The dock is navigation only, and the page must not send a reader looking for a copy there.
+    expect(text).toMatch(/bottom bar on a phone carries navigation only/i);
+    expect(text).not.toMatch(/last\s+cell of the bottom bar/i);
+  });
+
   it("names the storage key and says nothing leaves the browser", () => {
     const { container } = render(<AccessibilityPage />);
     const text = visibleText(container);

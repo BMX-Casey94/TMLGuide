@@ -25,7 +25,7 @@ import { cx } from "@/components/ui/cx";
 import { Spinner } from "@/components/loading/spinner";
 import { settleNavigation, startNavigation } from "@/components/loading/navigation-store";
 import { Highlight } from "./highlight";
-import { scrollToHash } from "./scroll-to-hash";
+import { scrollToHash, wakeHashListeners } from "./scroll-to-hash";
 import { NAVIGATION_TIMEOUT_MS, waitForNavigation } from "./wait-for-navigation";
 import "./search-palette.css";
 
@@ -165,10 +165,33 @@ export function SearchPalette({
      cannot close a palette that has since been reopened. */
   const attemptRef = useRef(0);
 
+  /**
+   * The cancel handle for the wake sent alongside the most recent attempt.
+   *
+   * A wake is a timer, and a navigation the reader abandons — Escape, a new
+   * search, a second result — must not leave one running towards an event nobody
+   * wants. Cancelled in `close()` and before each new attempt, which are the two
+   * ways an attempt ends.
+   */
+  const cancelWakeRef = useRef<() => void>(() => {});
+
   /* Mirrors `isOpen` synchronously. A trigger fires `focusin` before `click`,
    * so the two handlers must not both act; a state read is flushed later than
    * this check needs it. */
   const isOpenRef = useRef(false);
+
+  /**
+   * The anchor a chosen result asked to land on, held until the palette has
+   * actually closed.
+   *
+   * The landing cannot happen at click time. While the dialog is open the page
+   * behind it is inert and `document.body.style.overflow` is `hidden`, so a
+   * `scrollIntoView` or a `scrollBy` against it is silently dropped; the scroll
+   * has to wait until `dialog.close()` and the scroll-lock cleanup have both run.
+   * A ref rather than state because it is consumed by an effect exactly once and
+   * must not cause a render of its own.
+   */
+  const pendingAnchorRef = useRef<string | null>(null);
 
   const baseId = useId();
   const listboxId = `${baseId}-listbox`;
@@ -209,8 +232,12 @@ export function SearchPalette({
       setEdition(resolveEdition ? resolveEdition() : null);
       setQuery(seed);
       setActiveIndex(0);
-      // A fresh opening starts with no navigation in flight and no stale error.
+      // A fresh opening starts with no navigation in flight, no stale error and
+      // no anchor left over from the last result that was chosen.
       attemptRef.current += 1;
+      pendingAnchorRef.current = null;
+      cancelWakeRef.current();
+      cancelWakeRef.current = () => {};
       setPending(null);
       setFailed(false);
       setIsOpen(true);
@@ -231,6 +258,8 @@ export function SearchPalette({
        palette that has since been closed or reopened. The store is cleared too,
        so the progress bar does not outlive a dismissed palette. */
     attemptRef.current += 1;
+    cancelWakeRef.current();
+    cancelWakeRef.current = () => {};
     setPending(null);
     setFailed(false);
     settleNavigation();
@@ -307,6 +336,40 @@ export function SearchPalette({
       body.style.overflow = previousOverflow;
       body.style.paddingRight = previousPadding;
     };
+  }, [isOpen]);
+
+  /**
+   * Land on the chosen record — once the palette is really gone.
+   *
+   * This effect exists for its position in the file. Effects run in declaration
+   * order, and React runs every cleanup before any effect body when a dependency
+   * changes, so by the time this one runs: the dialog-close effect above has
+   * called `dialog.close()` (releasing the top layer and the inert background),
+   * the scroll-lock cleanup has restored `document.body.style.overflow`, and the
+   * router has already been asked for the page.
+   *
+   * Landing at click time instead — as an earlier version did, synchronously
+   * after `setIsOpen(false)` — was silently dropped on a real browser: the body
+   * was still `overflow: hidden` and the page was still inert, so
+   * `scrollIntoView` and `scrollBy` were both ignored and the visitor arrived at
+   * the top of the page.
+   *
+   * A frame is given back first, so the scroll is measured against the page as
+   * it is after the dialog has gone rather than during the same commit.
+   */
+  useEffect(() => {
+    if (isOpen) return;
+    const anchor = pendingAnchorRef.current;
+    if (anchor === null) return;
+    // Consumed immediately: a later close must not replay this landing.
+    pendingAnchorRef.current = null;
+
+    const land = () => {
+      void scrollToHash(anchor, { timeoutMs: NAVIGATION_TIMEOUT_MS });
+    };
+
+    if (typeof requestAnimationFrame === "function") requestAnimationFrame(land);
+    else land();
   }, [isOpen]);
 
   /* A native `cancel` (Escape, and the dismiss gesture on some platforms) and a
@@ -406,9 +469,35 @@ export function SearchPalette({
         return;
       }
 
+      /*
+        Wake a page whose selected tab lives in the URL, and do it now rather
+        than at landing time.
+
+        `router.push` uses `history.pushState`, which fires no `hashchange`, so
+        `/community` and `/tools/sale-timeline` would never learn about a
+        same-page result and would keep the record inside a panel that is hidden
+        or not mounted. That is also why it has to happen before the arrival
+        check below: on the sale timeline the record does not exist until the tab
+        switches, and the arrival check is waiting for exactly that element. The
+        call waits for the router to write the hash — for as long as the
+        navigation itself is allowed — and only then dispatches, so the listener
+        never reads a stale tab. The handle is kept so `close()` can stop it.
+      */
+      cancelWakeRef.current();
+      cancelWakeRef.current =
+        anchor === null
+          ? () => {}
+          : wakeHashListeners(anchor, { timeoutMs: NAVIGATION_TIMEOUT_MS });
+
       void waitForNavigation(href, { from }).then((arrived) => {
         if (attemptRef.current !== attempt) return;
         settleNavigation();
+        /* The wake has served its purpose either way: on success the address
+           carries the hash and the tabbed page has already switched (or, on a
+           route change, the new page reads the hash when it mounts); on failure
+           there is nothing left to announce. */
+        cancelWakeRef.current();
+        cancelWakeRef.current = () => {};
         if (!arrived) {
           setPending(null);
           setFailed(true);
@@ -416,17 +505,17 @@ export function SearchPalette({
         }
         /* Close, but keep the attempt valid: `close()` abandons waits, and this
            one has already succeeded. Focus is not restored to the trigger: the
-           reader is being delivered to a record, and `scrollToHash` focuses it. */
+           reader is being delivered to a record, and `scrollToHash` focuses it.
+
+           The anchor is recorded for the close effect rather than scrolled to
+           here. The page behind the dialog is still inert and scroll-locked at
+           this instant, so a scroll now would be dropped; the effect that runs
+           after `dialog.close()` and the scroll-lock cleanup does the landing. */
+        pendingAnchorRef.current = anchor;
         setPending(null);
         navigatingRef.current = true;
         isOpenRef.current = false;
         setIsOpen(false);
-        /*
-          The page has arrived. A result that names a record asks the browser to
-          land on it: the hash is scrolled to and focused, retrying briefly
-          because a streamed page can render the target after its shell.
-        */
-        if (anchor !== null) void scrollToHash(anchor, { timeoutMs: NAVIGATION_TIMEOUT_MS });
       });
     },
     [navigate, pending, trimmedQuery],
@@ -653,8 +742,7 @@ export function SearchPalette({
          * re-announced on every arrow key, which is exhausting. The visible
          * footer below carries the per-row provenance instead. */}
         <p id={hintId} className="sr-only">
-          Type to search. Use the up and down arrow keys to move through results, and Enter to open
-          the highlighted one. Escape closes the search.
+          Type to search. Choose a result to open it. Escape closes the search.
         </p>
 
         <div
@@ -852,11 +940,11 @@ export function SearchPalette({
         ) : null}
 
         <p className="flex min-h-11 items-center justify-between gap-3 border-t border-hair px-4 py-2.5 text-[0.68rem] text-cream-mute sm:px-5">
-          {/* Provenance for the highlighted row, replacing the keyboard model
-           * only while there is something to attribute: the footer is one line,
-           * so it can say which page a figure came from or how to drive the
-           * palette, never both. Every price in a snippet is a figure from an
-           * official page, and this is where it names that page and its date. */}
+          {/* Provenance for the highlighted row. Every price in a snippet is a
+           * figure from an official page, and this is where it names that page
+           * and its date. There is no keyboard-model hint here: arrow and Enter
+           * handling is unreliable in this dialog, so the footer must not claim
+           * it works. */}
           {activeSourceUrl !== undefined && activeHost !== null ? (
             <span className="min-w-0 truncate">
               Source:{" "}
@@ -877,12 +965,6 @@ export function SearchPalette({
               )}
             </span>
           ) : (
-            <span className="hidden sm:inline">
-              <kbd className="font-mono">↑</kbd> <kbd className="font-mono">↓</kbd> to move ·{" "}
-              <kbd className="font-mono">Enter</kbd> to open
-            </span>
-          )}
-          {activeSourceUrl !== undefined && activeHost !== null ? null : (
             <span className="sm:hidden">Tap a result to open it</span>
           )}
           <span className="label shrink-0 text-cream-mute">TMLGUIDE</span>

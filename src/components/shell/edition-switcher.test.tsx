@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { EditionSync } from "@/components/tickets/edition-sync";
 import { EditionProvider, EDITION_STORAGE_KEY } from "./edition-context";
 import { EditionSwitcher } from "./edition-switcher";
 import { resetEditionState } from "./test-storage";
@@ -207,5 +208,122 @@ describe("EditionSwitcher", () => {
     const group = screen.getByRole("radiogroup", { name: "Choose edition" });
     expect(group).toHaveAttribute("data-variant", "stacked");
     await waitFor(() => expect(checkedRadio()).toHaveAccessibleName("Belgium"));
+  });
+
+  it("marks a whole-word tap on Brasil as checked in one pass, with the body accent following", async () => {
+    renderSwitcher();
+    await waitFor(() => expect(document.body.dataset.ed).toBe("belgium"));
+
+    fireEvent.click(screen.getByRole("radio", { name: "Brasil" }));
+
+    // A click must move the checked state on its own: no second click, no keyboard nudge.
+    await waitFor(() => expect(screen.getByRole("radio", { name: "Brasil" })).toHaveAttribute("aria-checked", "true"));
+    expect(screen.getByRole("radio", { name: "Belgium" })).toHaveAttribute("aria-checked", "false");
+    expect(screen.getByRole("radio", { name: "Winter" })).toHaveAttribute("aria-checked", "false");
+    expect(document.body.dataset.ed).toBe("brasil");
+    expect(storage.getItem(EDITION_STORAGE_KEY)).toBe("brasil");
+  });
+
+  it("gives every inline option a 36px-tall touch target and no unguarded hover colour", async () => {
+    renderSwitcher();
+
+    for (const radio of radios()) {
+      // The header pill is 44px tall; a 36px option inside it is comfortable to tap and still
+      // leaves the pill's own padding visible.
+      expect(radio).toHaveClass("h-9");
+      expect(radio).toHaveClass("min-w-[34px]");
+      expect(radio).toHaveClass("touch-manipulation");
+      expect(radio).toHaveClass("select-none");
+      /*
+        A bare `hover:text-cream` sticks after a tap on a touch device, leaving an unselected option
+        white. Every hover rule has to sit behind a pointer-capable media query.
+      */
+      expect(radio.className).toContain("[@media(hover:hover)]:hover:text-cream");
+      expect(radio.className).not.toMatch(/(^|\s)hover:text-cream(\s|$)/);
+      expect(radio.className).toContain(
+        "[@media(hover:hover)]:aria-checked:hover:text-on-accent",
+      );
+      // The checked skin itself is unconditional, so a selection is visible on any device.
+      expect(radio).toHaveClass("aria-checked:bg-accent");
+      expect(radio).toHaveClass("aria-checked:font-bold");
+      expect(radio).toHaveClass("aria-checked:text-on-accent");
+    }
+  });
+
+  it("shows the short codes on phones and the full words from 1100px, one of the two at a time", async () => {
+    renderSwitcher();
+
+    // Full words take about 193px of a pill that is only 208px on a phone, so the short codes are
+    // what renders there; the words join from 1100px, where the pill is 340px.
+    for (const radio of radios()) {
+      const [short, full] = Array.from(radio.querySelectorAll("span"));
+      expect(short.className).toContain("min-[1100px]:hidden");
+      expect(full.className).toContain("min-[1100px]:inline");
+      // Both are hidden from assistive tech; the button's aria-label is the accessible name.
+      expect(short).toHaveAttribute("aria-hidden", "true");
+      expect(full).toHaveAttribute("aria-hidden", "true");
+    }
+  });
+});
+
+describe("EditionSwitcher with the tickets page's EditionSync", () => {
+  function renderPage(edition: "belgium" | "winter" | "brasil") {
+    return render(
+      <EditionProvider>
+        <EditionSync edition={edition} />
+        <EditionSwitcher variant="inline" />
+      </EditionProvider>,
+    );
+  }
+
+  it("does not let the URL edition undo a click on Winter", async () => {
+    renderPage("belgium");
+    await waitFor(() => expect(document.body.dataset.ed).toBe("belgium"));
+
+    fireEvent.click(screen.getByRole("radio", { name: "Winter" }));
+    await waitFor(() => expect(document.body.dataset.ed).toBe("winter"));
+
+    // Give any effect that reads the shell edition back a chance to fire. None should.
+    await waitFor(() =>
+      expect(screen.getByRole("radio", { name: "Winter" })).toHaveAttribute("aria-checked", "true"),
+    );
+    expect(document.body.dataset.ed).toBe("winter");
+    expect(screen.getByRole("radio", { name: "Belgium" })).toHaveAttribute("aria-checked", "false");
+  });
+
+  it("does not let the URL edition undo a click on Brasil when the page re-renders", async () => {
+    const view = renderPage("belgium");
+    await waitFor(() => expect(document.body.dataset.ed).toBe("belgium"));
+
+    fireEvent.click(screen.getByRole("radio", { name: "Brasil" }));
+    await waitFor(() => expect(document.body.dataset.ed).toBe("brasil"));
+
+    // A parent re-render with the same `edition` prop must not re-apply it.
+    view.rerender(
+      <EditionProvider>
+        <EditionSync edition="belgium" />
+        <EditionSwitcher variant="inline" />
+      </EditionProvider>,
+    );
+
+    await waitFor(() =>
+      expect(screen.getByRole("radio", { name: "Brasil" })).toHaveAttribute("aria-checked", "true"),
+    );
+    expect(document.body.dataset.ed).toBe("brasil");
+  });
+
+  it("still applies a new URL edition when the visitor navigates", async () => {
+    const view = renderPage("belgium");
+    await waitFor(() => expect(document.body.dataset.ed).toBe("belgium"));
+
+    view.rerender(
+      <EditionProvider>
+        <EditionSync edition="winter" />
+        <EditionSwitcher variant="inline" />
+      </EditionProvider>,
+    );
+
+    await waitFor(() => expect(document.body.dataset.ed).toBe("winter"));
+    expect(screen.getByRole("radio", { name: "Winter" })).toHaveAttribute("aria-checked", "true");
   });
 });

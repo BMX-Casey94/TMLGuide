@@ -10,6 +10,12 @@ describe("KNOWN_ROUTES", () => {
       "/guides/tickets?edition=belgium",
       "/guides/tickets?edition=winter",
       "/guides/tickets?edition=brasil",
+      "/guides/tickets?category=festival-tickets",
+      "/guides/tickets?category=dreamville",
+      "/guides/tickets?category=montagoe",
+      "/guides/tickets?edition=winter&category=festival-tickets",
+      "/guides/tickets?edition=brasil&category=festival-tickets",
+      "/guides/tickets?edition=brasil&category=dreamville",
       "/tools",
       "/tools/budget",
       "/tools/pearls",
@@ -157,9 +163,62 @@ describe("ticketsRoute", () => {
     expect(ticketsRoute("brasil")).toBe("/guides/tickets?edition=brasil");
   });
 
+  it("addresses a category view, which is where a package card is rendered", () => {
+    expect(ticketsRoute("belgium", "festival-tickets")).toBe(
+      "/guides/tickets?category=festival-tickets",
+    );
+    expect(ticketsRoute("belgium", "dreamville")).toBe("/guides/tickets?category=dreamville");
+    expect(ticketsRoute("belgium", "montagoe")).toBe("/guides/tickets?category=montagoe");
+    expect(ticketsRoute("brasil", "dreamville")).toBe(
+      "/guides/tickets?edition=brasil&category=dreamville",
+    );
+  });
+
+  it("keeps the page's own parameter order: edition, then category", () => {
+    // The same shape `buildTicketHref` produces, so one view has one address.
+    expect(ticketsRoute("winter", "festival-tickets")).toBe(
+      "/guides/tickets?edition=winter&category=festival-tickets",
+    );
+    expect(ticketsRoute("brasil", "festival-tickets")).toBe(
+      "/guides/tickets?edition=brasil&category=festival-tickets",
+    );
+  });
+
+  it("omits the default edition, so Belgium keeps one canonical address", () => {
+    for (const route of [ticketsRoute("belgium"), ticketsRoute("belgium", "dreamville")]) {
+      expect(route).not.toContain("edition=");
+    }
+  });
+
   it("only ever returns a route on the whitelist", () => {
     for (const edition of ["belgium", "winter", "brasil"] as const) {
       expect(isKnownRoute(ticketsRoute(edition)), edition).toBe(true);
     }
+  });
+
+  it("only ever returns a category route on the whitelist", () => {
+    const views = [
+      ["belgium", "festival-tickets"],
+      ["belgium", "dreamville"],
+      ["belgium", "montagoe"],
+      ["winter", "festival-tickets"],
+      ["brasil", "festival-tickets"],
+      ["brasil", "dreamville"],
+    ] as const;
+
+    for (const [edition, category] of views) {
+      const route = ticketsRoute(edition, category);
+      expect(isKnownRoute(route), route).toBe(true);
+      expect(KNOWN_ROUTES, route).toContain(route);
+    }
+  });
+
+  it("refuses a category view the site does not serve, rather than link the grid", () => {
+    // Winter publishes no DreamVille package and no Montagoe lodge, so there is
+    // no such view to land on. A link there would render the category grid and
+    // leave the target missing, which is the bug this function prevents.
+    expect(() => ticketsRoute("winter", "dreamville")).toThrow(/winter/);
+    expect(() => ticketsRoute("winter", "montagoe")).toThrow(/winter/);
+    expect(() => ticketsRoute("brasil", "montagoe")).toThrow(/brasil/);
   });
 });

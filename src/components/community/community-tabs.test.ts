@@ -119,4 +119,21 @@ describe("panelForAnchor", () => {
     expect(panelForAnchor("")).toBeNull();
     expect(panelForAnchor("#")).toBeNull();
   });
+
+  it("treats a bare prefix as no record", () => {
+    /*
+      `#partner-` names nothing. Switching to a tab for it would move the reader
+      away from where they were for an id that resolves to no card, and the anchor
+      pattern the index enforces already refuses a one-word id like this.
+    */
+    for (const hash of ["#wa-", "#resource-", "#partner-", "wa-", "resource-", "partner-"]) {
+      expect(panelForAnchor(hash), hash).toBeNull();
+    }
+  });
+
+  it("accepts a record whose id is long, and one that repeats its own prefix", () => {
+    expect(panelForAnchor("#wa-wa-1")).toBe("whatsapp");
+    expect(panelForAnchor("#resource-resource-travel-partner")).toBe("resources");
+    expect(panelForAnchor("#partner-partner-partner-rent-a-tent")).toBe("partners");
+  });
 });

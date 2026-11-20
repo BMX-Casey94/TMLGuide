@@ -135,11 +135,20 @@ describe("ticketEntries", () => {
     expect(new Set(slugs).size).toBe(slugs.length);
   });
 
-  it("sends each edition to its own view of the tickets page", () => {
+  it("sends each edition to the ticket view that renders its package cards", () => {
+    // The card carries the `ticket-*` id an anchor names, and it exists only in
+    // a category view: the bare page renders the category grid instead.
     for (const entry of ticketEntries) {
-      if (entry.edition === "belgium") expect(entry.href).toBe("/guides/tickets");
-      if (entry.edition === "winter") expect(entry.href).toBe("/guides/tickets?edition=winter");
-      if (entry.edition === "brasil") expect(entry.href).toBe("/guides/tickets?edition=brasil");
+      expect(entry.href, entry.slug).toContain("category=festival-tickets");
+      if (entry.edition === "belgium") {
+        expect(entry.href).toBe("/guides/tickets?category=festival-tickets");
+      }
+      if (entry.edition === "winter") {
+        expect(entry.href).toBe("/guides/tickets?edition=winter&category=festival-tickets");
+      }
+      if (entry.edition === "brasil") {
+        expect(entry.href).toBe("/guides/tickets?edition=brasil&category=festival-tickets");
+      }
     }
   });
 });
@@ -162,6 +171,35 @@ describe("accommodationEntries", () => {
     for (const entry of accommodationEntries.filter((candidate) => candidate.edition === "belgium")) {
       expect(entry.snippet).toContain("for the whole stay");
     }
+  });
+
+  it("sends each stay to the category view that renders its card", () => {
+    // A `stay-*` id lives on a `PackageCard` inside a category's list. The bare
+    // tickets page shows the category grid, so an href without `category=` would
+    // have no target in the document at all.
+    for (const entry of accommodationEntries) {
+      if (entry.edition === "belgium") {
+        // DreamVille tent and pitch products sit in the DreamVille category,
+        // lodges in Montagoe — the same split `selectors.ts` makes.
+        expect(entry.href, entry.slug).toMatch(
+          /^\/guides\/tickets\?category=(dreamville|montagoe)$/,
+        );
+      }
+      if (entry.edition === "brasil") {
+        expect(entry.href).toBe("/guides/tickets?edition=brasil&category=dreamville");
+      }
+    }
+  });
+
+  it("puts a Belgium lodge in Montagoe and a tent in DreamVille", () => {
+    const lodge = accommodationEntries.find(
+      (entry) => entry.edition === "belgium" && entry.slug.includes("relax-room"),
+    );
+    const tent = accommodationEntries.find(
+      (entry) => entry.edition === "belgium" && entry.slug.includes("easy-tent-2p"),
+    );
+    expect(lodge?.href).toBe("/guides/tickets?category=montagoe");
+    expect(tent?.href).toBe("/guides/tickets?category=dreamville");
   });
 
   it("gives every row a unique slug", () => {

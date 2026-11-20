@@ -97,8 +97,13 @@ export function SiteHeader() {
             {/*
               On phones, focusing the field folds the edition switcher away so the field has the
               room; it unfolds again when focus leaves. From 900px there is room for both.
+
+              `shrink-0` keeps the three BE / WI / BR buttons at their own width: without it the
+              flex row can squeeze this wrapper below its content and clip the buttons, which is
+              what made them hard to read and harder to tap on a narrow phone. The fold still works
+              because it is driven by `max-width`, and `overflow-hidden` is what reveals it.
             */}
-            <div className="max-w-[140px] overflow-hidden transition-[max-width,opacity] duration-300 ease-out group-has-[input:focus]:max-w-0 group-has-[input:focus]:opacity-0 min-[900px]:max-w-none min-[900px]:group-has-[input:focus]:max-w-none min-[900px]:group-has-[input:focus]:opacity-100">
+            <div className="max-w-[140px] shrink-0 overflow-hidden transition-[max-width,opacity] duration-300 ease-out group-has-[input:focus]:max-w-0 group-has-[input:focus]:opacity-0 min-[900px]:max-w-none min-[900px]:group-has-[input:focus]:max-w-none min-[900px]:group-has-[input:focus]:opacity-100">
               <EditionSwitcher variant="inline" />
             </div>
           </div>
@@ -106,8 +111,8 @@ export function SiteHeader() {
           {/*
             The accessibility trigger is the last stop on the row, after the pill, so it moves
             neither the search field nor the edition switcher and the tabs stay centred between the
-            logo and this end. It is hidden below 900px, where the header is tight and the mobile
-            tab bar carries the same trigger as its sixth cell; the pill keeps its width there.
+            logo and this end. It is hidden below 900px, where the header is tight; the mobile tab
+            bar carries destinations only, so the pill keeps its width there.
           */}
           <A11yTrigger variant="header" className="hidden min-[900px]:grid" />
         </div>

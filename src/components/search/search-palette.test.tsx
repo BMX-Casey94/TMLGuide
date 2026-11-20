@@ -931,14 +931,16 @@ describe("SearchPalette provenance", () => {
     expect(document.getElementById(describedBy)!.textContent).toBe(before);
   });
 
-  it("shows the keyboard hint for a row with no citation", async () => {
+  it("shows no keyboard hint for a row with no citation", async () => {
     renderPalette();
     await openPalette();
     fireEvent.change(input(), { target: { value: "community" } });
     await waitFor(() => expect(screen.getByRole("listbox")).toBeTruthy());
 
     expect(footer().textContent).not.toContain("Source:");
-    expect(footer().textContent).toContain("to move");
+    expect(footer().textContent).not.toContain("to move");
+    expect(footer().textContent).not.toContain("Enter");
+    expect(footer().textContent).toContain("TMLGUIDE");
   });
 
   it("omits an unreadable check date rather than printing Invalid Date", async () => {
@@ -1137,15 +1139,77 @@ describe("SearchPalette anchors", () => {
     await waitFor(() => expect(screen.getByRole("listbox")).toBeTruthy());
     fireEvent.keyDown(input(), { key: "Enter" });
 
-    await waitFor(() => expect(scrollIntoView).toHaveBeenCalled());
-    // The palette also scrolls the highlighted row into view ("nearest"); the
-    // call this test is about is the one for the anchor.
+    /*
+      The landing is deferred by a frame after the palette closes: the scroll has
+      to run once the dialog is gone and the body is no longer scroll-locked, or
+      the browser drops it. So the assertion is a poll for the anchor's own call,
+      not for "something scrolled" — the list also scrolls the highlighted row
+      into view with `block: "nearest"`.
+    */
+    const anchorCall = () =>
+      scrollIntoView.mock.calls.find(
+        (call) => (call[0] as ScrollIntoViewOptions | undefined)?.block === "start",
+      );
+    await waitFor(() => expect(anchorCall()).toBeDefined());
+
+    const options = anchorCall()?.[0] as ScrollIntoViewOptions;
+    expect(["auto", "smooth"]).toContain(options.behavior);
+  });
+
+  /**
+   * The regression this whole file exists to keep fixed.
+   *
+   * While the dialog is open the background is inert and the body is
+   * `overflow: hidden`, and both make a scroll a no-op: the reader clicked a
+   * result, the page changed, and they were left at the top. The landing has to
+   * wait until the dialog has closed and the lock has been released.
+   */
+  it("scrolls only after the dialog has closed and the scroll lock is released", async () => {
+    const observations: { open: boolean; overflow: string }[] = [];
+    Element.prototype.scrollIntoView = function scrollIntoView(this: Element) {
+      if (this.id !== "faq-be-are-there-lockers") return;
+      observations.push({
+        open: document.querySelector("dialog")?.hasAttribute("open") ?? false,
+        overflow: document.body.style.overflow,
+      });
+    };
+
+    renderPalette();
+    await openPalette();
+    expect(document.body.style.overflow).toBe("hidden");
+
+    fireEvent.change(input(), { target: { value: "lockers" } });
+    await waitFor(() => expect(screen.getByRole("listbox")).toBeTruthy());
+    fireEvent.keyDown(input(), { key: "Enter" });
+
+    await waitFor(() => expect(observations.length).toBeGreaterThan(0));
+
+    for (const observation of observations) {
+      expect(observation.open).toBe(false);
+      expect(observation.overflow).not.toBe("hidden");
+    }
+  });
+
+  it("does not scroll at all when the palette is merely dismissed", async () => {
+    const scrollIntoView = vi.fn();
+    Element.prototype.scrollIntoView = scrollIntoView;
+
+    renderPalette();
+    await openPalette();
+    fireEvent.change(input(), { target: { value: "lockers" } });
+    await waitFor(() => expect(screen.getByRole("listbox")).toBeTruthy());
+
+    fireEvent.keyDown(dialog(), { key: "Escape" });
+    await waitFor(() => expect(dialog().open).toBe(false));
+
+    // Give the deferred landing a chance to run, if it were going to.
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 60));
+    });
     const anchorCall = scrollIntoView.mock.calls.find(
       (call) => (call[0] as ScrollIntoViewOptions | undefined)?.block === "start",
     );
-    expect(anchorCall).toBeDefined();
-    const options = anchorCall?.[0] as ScrollIntoViewOptions;
-    expect(["auto", "smooth"]).toContain(options.behavior);
+    expect(anchorCall).toBeUndefined();
   });
 
   it("still opens a page result with no anchor", async () => {
@@ -1173,5 +1237,59 @@ describe("SearchPalette anchors", () => {
     fireEvent.keyDown(input(), { key: "Enter" });
     await waitFor(() => expect(dialog().open).toBe(false));
     expect(screen.queryByRole("alert")).toBeNull();
+  });
+
+  /**
+   * A tabbed page keeps the record inside a hidden panel and only re-reads the
+   * URL when `hashchange` arrives, which a `pushState` never fires. The wake has
+   * to happen at click time, not at landing time: on the sale timeline the
+   * record is not mounted until the tab switches, and the palette waits for that
+   * record before it closes at all.
+   */
+  it("wakes a hashchange listener as soon as the result is chosen", async () => {
+    // The real App Router writes the full URL, fragment included.
+    const navigate = vi.fn((href: string) => {
+      window.history.pushState(null, "", href);
+      const anchor = href.split("#")[1];
+      if (anchor === undefined) return;
+      const target = document.createElement("div");
+      target.id = anchor;
+      document.body.appendChild(target);
+    });
+
+    const listener = vi.fn();
+    window.addEventListener("hashchange", listener);
+
+    renderPalette({ navigate });
+    await openPalette();
+    fireEvent.change(input(), { target: { value: "lockers" } });
+    await waitFor(() => expect(screen.getByRole("listbox")).toBeTruthy());
+    fireEvent.keyDown(input(), { key: "Enter" });
+
+    await waitFor(() => expect(listener).toHaveBeenCalled());
+    window.removeEventListener("hashchange", listener);
+    expect(window.location.hash).toBe("#faq-be-are-there-lockers");
+  });
+
+  it("does not wake a listener before the address names the anchor", async () => {
+    // A listener woken on the *old* hash would switch a tabbed page to the tab
+    // the reader is already on, which is the failure this guard prevents.
+    const listener = vi.fn();
+    window.addEventListener("hashchange", listener);
+
+    // This router moves the path but never writes the fragment.
+    const navigate = vi.fn((href: string) => {
+      window.history.pushState(null, "", href.split("#")[0]);
+    });
+    renderPalette({ navigate });
+    await openPalette();
+    fireEvent.change(input(), { target: { value: "lockers" } });
+    await waitFor(() => expect(screen.getByRole("listbox")).toBeTruthy());
+    fireEvent.keyDown(input(), { key: "Enter" });
+
+    expect(navigate).toHaveBeenCalled();
+    await waitFor(() => expect(dialog().open).toBe(false));
+    window.removeEventListener("hashchange", listener);
+    expect(listener).not.toHaveBeenCalled();
   });
 });

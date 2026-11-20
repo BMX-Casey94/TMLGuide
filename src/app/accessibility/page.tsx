@@ -180,9 +180,10 @@ export default function AccessibilityPage() {
         <div className="a11y-page-prose">
           <p>
             A display toolbar lets you adjust the site without changing anything in your browser or
-            your operating system. Its button is labelled{" "}
-            <strong>Accessibility settings</strong>: in the header on a wide screen, and as the last
-            cell of the bottom bar on a phone.
+            your operating system. Its button shows the letters <strong>Aa</strong> and is labelled{" "}
+            <strong>Accessibility settings</strong>. It sits at the right-hand end of the site
+            header, and appears from 900px wide. The bottom bar on a phone carries navigation only,
+            so on a narrower screen there is no copy of the button.
           </p>
           <ol className="a11y-page-steps">
             <li>Open the panel. Focus moves into it, and the first Tab reaches the first control.</li>

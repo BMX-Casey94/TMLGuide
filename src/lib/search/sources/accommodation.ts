@@ -19,7 +19,10 @@ import { pairTiers, productName, tierLabel } from "./tiers";
  * rows rather than a guessed one. Brasil sells DreamVille packages in reais per
  * unit: one person, a two-person tent, a four-person Grande.
  *
- * All of them link to the tickets page, which is where the site prices them.
+ * All of them link to the tickets page, which is where the site prices them, and
+ * to the category view that actually renders the card: a stay's `stay-*` id lives
+ * inside a category's package list, so an href naming the bare page would land on
+ * the category grid with no target in the document.
  */
 
 const KIND_TEXT: Readonly<Record<Accommodation["kind"], string>> = {
@@ -31,6 +34,18 @@ const KIND_TEXT: Readonly<Record<Accommodation["kind"], string>> = {
 };
 
 const belgiumYear = editionYear("belgium");
+
+/**
+ * The category of the tickets page that renders a DreamVille package's card.
+ *
+ * The same split `src/components/tickets/selectors.ts` makes when it builds the
+ * Belgium catalogue: tent and pitch products are DreamVille, lodges are Montagoe.
+ * The card — and therefore the `stay-*` id an anchor names — exists only inside
+ * that category's package list, so the href has to address it.
+ */
+function belgiumStayCategory(kind: Accommodation["kind"]): "dreamville" | "montagoe" {
+  return kind === "dreamville-lodge" ? "montagoe" : "dreamville";
+}
 
 const belgiumEntries: SourceEntry[] = pairTiers(belgiumAccommodation).map(
   ({ productId, records }) => {
@@ -55,7 +70,7 @@ const belgiumEntries: SourceEntry[] = pairTiers(belgiumAccommodation).map(
         `${first.record.capacity} ${first.record.capacity === 1 ? "person" : "people"}`,
       ]),
       edition: "belgium" as const,
-      href: ticketsRoute("belgium"),
+      href: ticketsRoute("belgium", belgiumStayCategory(first.record.kind)),
       anchor: recordAnchor("stay", productId),
       source: "src/data/belgium/accommodation.ts",
       sourceUrl: first.record.source.url,
@@ -83,7 +98,7 @@ const brasilEntries: SourceEntry[] = brasilData.dreamvillePackages.map((stay) =>
     stay.availability === "sold-out" ? "Sold out" : "On sale",
   ]),
   edition: "brasil" as const,
-  href: ticketsRoute("brasil"),
+  href: ticketsRoute("brasil", "dreamville"),
   anchor: recordAnchor("stay", stay.id),
   source: "src/data/brasil/facts.ts",
   sourceUrl: stay.source.url,

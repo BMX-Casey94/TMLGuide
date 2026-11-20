@@ -6,10 +6,18 @@
  * dead palette result. Routes are plain, locale-free paths (there is no i18n
  * layer in this app), so an href needs no rewriting before it reaches an anchor.
  *
- * `/guides/tickets` carries the edition in a query string, which is the
- * tickets page's own URL contract (`?edition=belgium|winter|brasil`), so the
- * three edition views are listed explicitly rather than matched by a pattern.
- * A pattern would let any string through the whitelist.
+ * `/guides/tickets` carries its edition and its category in a query string,
+ * which is the tickets page's own URL contract
+ * (`?edition=belgium|winter|brasil&category=<category>`), so the views the index
+ * links to are listed explicitly rather than matched by a pattern. A pattern
+ * would let any string through the whitelist.
+ *
+ * The category matters as much as the edition: the bare tickets page renders the
+ * category grid, and a `PackageCard` — the element that carries `ticket-*` and
+ * `stay-*` ids — exists only inside a category view. A result linking to the bare
+ * page therefore landed at the top of a page whose target had never been
+ * rendered. {@link ticketsRoute} builds these URLs from one table, and the table
+ * is typed against this list, so the two cannot drift.
  *
  * A known route may carry one fragment: `route#anchor`, where the anchor is the
  * DOM id of the record the result is about (see `anchors.ts`). The fragment does
@@ -27,6 +35,12 @@ export const KNOWN_ROUTES = [
   "/guides/tickets?edition=belgium",
   "/guides/tickets?edition=winter",
   "/guides/tickets?edition=brasil",
+  "/guides/tickets?category=festival-tickets",
+  "/guides/tickets?category=dreamville",
+  "/guides/tickets?category=montagoe",
+  "/guides/tickets?edition=winter&category=festival-tickets",
+  "/guides/tickets?edition=brasil&category=festival-tickets",
+  "/guides/tickets?edition=brasil&category=dreamville",
   "/tools",
   "/tools/budget",
   "/tools/pearls",
@@ -93,10 +107,64 @@ export function isKnownRoute(href: string): boolean {
   return split !== null && ROUTE_SET.has(split.path);
 }
 
+/** The editions the tickets page covers. */
+export type TicketEdition = "belgium" | "winter" | "brasil";
+
 /**
- * The tickets route for one edition, omitting the query for Belgium because
- * that is the page's default view and its canonical address.
+ * The category views the index links to.
+ *
+ * Not every category of every edition is here: the whitelist holds the views a
+ * search result can land on and nothing else, so a combination the site renders
+ * but no result needs is deliberately absent.
  */
-export function ticketsRoute(edition: "belgium" | "winter" | "brasil"): KnownRoute {
-  return edition === "belgium" ? "/guides/tickets" : `/guides/tickets?edition=${edition}`;
+export type TicketCategory = "festival-tickets" | "dreamville" | "montagoe";
+
+/**
+ * The canonical URL of each category view, in the same shape
+ * `buildTicketHref` produces: `edition=belgium` is omitted because it is the
+ * page's default, and the parameters keep the page's own order (edition, then
+ * category).
+ *
+ * Typed against {@link KnownRoute}, so a route that is not on the whitelist is a
+ * compile error here rather than a dead palette result at runtime.
+ */
+const TICKET_CATEGORY_ROUTES: Readonly<
+  Record<TicketEdition, Partial<Record<TicketCategory, KnownRoute>>>
+> = {
+  belgium: {
+    "festival-tickets": "/guides/tickets?category=festival-tickets",
+    dreamville: "/guides/tickets?category=dreamville",
+    montagoe: "/guides/tickets?category=montagoe",
+  },
+  winter: {
+    "festival-tickets": "/guides/tickets?edition=winter&category=festival-tickets",
+  },
+  brasil: {
+    "festival-tickets": "/guides/tickets?edition=brasil&category=festival-tickets",
+    dreamville: "/guides/tickets?edition=brasil&category=dreamville",
+  },
+};
+
+/**
+ * The tickets route for one edition, omitting the query for Belgium because that
+ * is the page's default view and its canonical address.
+ *
+ * With a category, the URL addresses the package list rather than the category
+ * grid, which is what a result about a single package needs: the card exists only
+ * in that view.
+ *
+ * @throws Error for a category view the site does not serve — a link that would
+ *   render the grid and leave the target missing, so it is failed at build time
+ *   instead of shipped.
+ */
+export function ticketsRoute(edition: TicketEdition, category?: TicketCategory): KnownRoute {
+  if (category === undefined) {
+    return edition === "belgium" ? "/guides/tickets" : `/guides/tickets?edition=${edition}`;
+  }
+
+  const route = TICKET_CATEGORY_ROUTES[edition][category];
+  if (route === undefined) {
+    throw new Error(`ticketsRoute: ${edition} serves no "${category}" view`);
+  }
+  return route;
 }

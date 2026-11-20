@@ -22,9 +22,23 @@ export interface SearchDialogClientProps {
 export function SearchDialogClient({ index }: SearchDialogClientProps) {
   const router = useRouter();
 
+  /**
+   * Navigate, and decide who owns the scroll.
+   *
+   * A href with a fragment is a request to land on one record, and the landing
+   * is `scrollToHash`'s job: it waits for the target, opens a closed `<details>`,
+   * clears the sticky header and focuses the record. Next's own scroll handling
+   * would run as well and put the page at the top — a second scroll, fighting
+   * the first, and the last one wins. `scroll: false` hands the scroll over
+   * cleanly, so the fragment landing is the only thing moving the page.
+   *
+   * Without a fragment there is nothing to land on, and the router's usual
+   * "start at the top" is exactly right.
+   */
   const navigate = useCallback(
     (href: string) => {
-      router.push(href);
+      if (href.includes("#")) router.push(href, { scroll: false });
+      else router.push(href);
     },
     [router],
   );

@@ -1,14 +1,17 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { waitFor } from "@testing-library/react";
 import {
   ANCHOR_POLL_MS,
   ANCHOR_TIMEOUT_MS,
   SCROLL_SETTLE_MS,
+  WAKE_RETRY_MS,
   focusTarget,
   hashId,
   prefersReducedMotion,
   scrollClearOfHeader,
   scrollOffset,
   scrollToHash,
+  wakeHashListeners,
 } from "./scroll-to-hash";
 
 /**
@@ -18,8 +21,13 @@ import {
  * wrong.
  */
 let scrollIntoView: ReturnType<typeof vi.fn>;
+/** The engine's own `scrollTo`, put back after each case that stubs it. */
+let originalScrollTo: typeof window.scrollTo;
+let originalScrollBy: typeof window.scrollBy;
 
 beforeEach(() => {
+  originalScrollTo = window.scrollTo;
+  originalScrollBy = window.scrollBy;
   scrollIntoView = vi.fn();
   Element.prototype.scrollIntoView = scrollIntoView as unknown as Element["scrollIntoView"];
   // jsdom leaves `scrollBy` unimplemented and logs an error when it is called;
@@ -32,6 +40,19 @@ beforeEach(() => {
 afterEach(() => {
   document.body.innerHTML = "";
   vi.restoreAllMocks();
+  // A stub installed with `defineProperty` survives `restoreAllMocks`, so the
+  // engine's own methods are put back explicitly; otherwise a later case in this
+  // file would inherit an assertion spy.
+  Object.defineProperty(window, "scrollTo", {
+    configurable: true,
+    writable: true,
+    value: originalScrollTo,
+  });
+  Object.defineProperty(window, "scrollBy", {
+    configurable: true,
+    writable: true,
+    value: originalScrollBy,
+  });
   document.documentElement.removeAttribute("data-a11y-motion");
 });
 
@@ -205,6 +226,264 @@ describe("scrollToHash", () => {
   });
 });
 
+/**
+ * A tabbed page keeps every panel mounted and hides the inactive ones with the
+ * `hidden` attribute. The record is therefore in the DOM from the first paint,
+ * but nothing can be scrolled to or focused inside it: landing on it before the
+ * tab switch would focus an invisible element and end the wait.
+ */
+describe("scrollToHash inside a hidden panel", () => {
+  function addHiddenPanelWithTarget(id: string): { panel: HTMLElement; target: HTMLElement } {
+    const panel = document.createElement("section");
+    panel.setAttribute("hidden", "");
+    const target = document.createElement("article");
+    target.id = id;
+    panel.appendChild(target);
+    document.body.appendChild(panel);
+    return { panel, target };
+  }
+
+  it("waits for the panel to be shown, then lands on the record", async () => {
+    const { panel, target } = addHiddenPanelWithTarget("partner-dca-travel");
+
+    const promise = scrollToHash("#partner-dca-travel", {
+      reducedMotion: true,
+      timeoutMs: 500,
+      pollMs: 10,
+    });
+    // The tab switch happens a render after the hash arrives.
+    setTimeout(() => panel.removeAttribute("hidden"), 40);
+
+    const reached = await promise;
+    expect(reached).toBe(target);
+    expect(scrollIntoView).toHaveBeenCalledWith({ behavior: "auto", block: "start" });
+    expect(document.activeElement).toBe(target);
+  });
+
+  it("resolves null when the panel never becomes visible, without scrolling", async () => {
+    addHiddenPanelWithTarget("partner-never-shown");
+
+    const reached = await scrollToHash("#partner-never-shown", {
+      reducedMotion: true,
+      timeoutMs: 60,
+      pollMs: 10,
+    });
+
+    expect(reached).toBeNull();
+    // Focusing an invisible record would have been worse than arriving nowhere.
+    expect(scrollIntoView).not.toHaveBeenCalled();
+  });
+
+  it("does not treat a hidden ancestor as an unreachable target forever", async () => {
+    // A record nested two levels down is still found once both wrappers show.
+    const outer = document.createElement("div");
+    outer.setAttribute("hidden", "");
+    const inner = document.createElement("div");
+    inner.setAttribute("hidden", "");
+    const target = document.createElement("div");
+    target.id = "wa-nested";
+    inner.appendChild(target);
+    outer.appendChild(inner);
+    document.body.appendChild(outer);
+
+    const promise = scrollToHash("#wa-nested", {
+      reducedMotion: true,
+      timeoutMs: 500,
+      pollMs: 10,
+    });
+    setTimeout(() => {
+      outer.removeAttribute("hidden");
+      inner.removeAttribute("hidden");
+    }, 30);
+
+    expect(await promise).toBe(target);
+  });
+});
+
+/**
+ * Every FAQ answer on `/guides` is a `<details>`, and a link to a collapsed one
+ * landed on a summary the reader had to open themselves — the record was on
+ * screen but its answer was not.
+ */
+describe("scrollToHash and closed details", () => {
+  function addDetails(id: string): HTMLDetailsElement {
+    const details = document.createElement("details");
+    details.id = id;
+    const summary = document.createElement("summary");
+    summary.textContent = "Are there lockers?";
+    const answer = document.createElement("p");
+    answer.textContent = "Yes, and they are best pre-booked.";
+    details.append(summary, answer);
+    document.body.appendChild(details);
+    return details;
+  }
+
+  it("opens a closed details element it is asked to land on", async () => {
+    const details = addDetails("faq-be-lockers");
+    expect(details.open).toBe(false);
+
+    const reached = await scrollToHash("#faq-be-lockers", { reducedMotion: true });
+    expect(reached).toBe(details);
+    expect(details.open).toBe(true);
+  });
+
+  it("opens a closed details ancestor, so a heading inside an answer is visible", async () => {
+    const details = addDetails("faq-be-ancestor");
+    const heading = document.createElement("h3");
+    heading.id = "faq-be-ancestor-heading";
+    details.appendChild(heading);
+
+    const reached = await scrollToHash("#faq-be-ancestor-heading", { reducedMotion: true });
+    expect(reached).toBe(heading);
+    expect(details.open).toBe(true);
+  });
+
+  it("opens details after expanding, but before scrolling, so the height is real", async () => {
+    const details = addDetails("faq-be-order");
+    let openAtScroll: boolean | null = null;
+    scrollIntoView.mockImplementation(() => {
+      openAtScroll = details.open;
+    });
+
+    await scrollToHash("#faq-be-order", { reducedMotion: true });
+    expect(openAtScroll).toBe(true);
+  });
+
+  it("leaves an already open details element open", async () => {
+    const details = addDetails("faq-be-already-open");
+    details.open = true;
+
+    await scrollToHash("#faq-be-already-open", { reducedMotion: true });
+    expect(details.open).toBe(true);
+  });
+});
+
+/**
+ * The App Router pushes with `history.pushState`, which fires no `hashchange`,
+ * so a page whose selected tab lives in the URL never hears about a same-page
+ * search result. One event, dispatched against a hash that really is the
+ * anchor's, is what wakes it.
+ */
+describe("wakeHashListeners", () => {
+  afterEach(() => {
+    window.history.replaceState(null, "", "/");
+  });
+
+  it("dispatches hashchange when the address names the anchor", () => {
+    window.history.replaceState(null, "", "/community#partner-dca-travel");
+    const listener = vi.fn();
+    window.addEventListener("hashchange", listener);
+
+    wakeHashListeners("#partner-dca-travel");
+    window.removeEventListener("hashchange", listener);
+
+    expect(listener).toHaveBeenCalledTimes(1);
+  });
+
+  it("stays quiet when the address still names something else", () => {
+    // A listener woken on the previous hash would read the wrong tab. A single
+    // check is enough here: the caller's own poll is what covers a late write.
+    window.history.replaceState(null, "", "/community#partners");
+    const listener = vi.fn();
+    window.addEventListener("hashchange", listener);
+
+    wakeHashListeners("#partner-dca-travel", { timeoutMs: 0 });
+    window.removeEventListener("hashchange", listener);
+
+    expect(listener).not.toHaveBeenCalled();
+  });
+
+  it("waits a moment for a router that writes the hash after the push returns", async () => {
+    window.history.replaceState(null, "", "/community");
+    const listener = vi.fn();
+    window.addEventListener("hashchange", listener);
+
+    wakeHashListeners("#partner-dca-travel", { timeoutMs: 500 });
+    // The router settles a frame later.
+    setTimeout(() => window.history.replaceState(null, "", "/community#partner-dca-travel"), 40);
+
+    await waitFor(() => expect(listener).toHaveBeenCalled());
+    window.removeEventListener("hashchange", listener);
+  });
+
+  it("stays quiet for a hash that names nothing", () => {
+    window.history.replaceState(null, "", "/community");
+    const listener = vi.fn();
+    window.addEventListener("hashchange", listener);
+
+    wakeHashListeners("#", { timeoutMs: 0 });
+    window.removeEventListener("hashchange", listener);
+
+    expect(listener).not.toHaveBeenCalled();
+  });
+
+  it("stops watching when the caller cancels", async () => {
+    // An abandoned navigation — Escape, or a second result — must not leave a
+    // timer running towards an event nobody wants.
+    window.history.replaceState(null, "", "/community");
+    const listener = vi.fn();
+    window.addEventListener("hashchange", listener);
+
+    const cancel = wakeHashListeners("#partner-dca-travel", { timeoutMs: 400 });
+    cancel();
+    window.history.replaceState(null, "", "/community#partner-dca-travel");
+
+    await new Promise((resolve) => setTimeout(resolve, 120));
+    window.removeEventListener("hashchange", listener);
+    expect(listener).not.toHaveBeenCalled();
+  });
+
+  it("is safe to cancel twice, and after it has already dispatched", () => {
+    window.history.replaceState(null, "", "/community#partner-dca-travel");
+    const listener = vi.fn();
+    window.addEventListener("hashchange", listener);
+
+    const cancel = wakeHashListeners("#partner-dca-travel", { timeoutMs: 0 });
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect(() => {
+      cancel();
+      cancel();
+    }).not.toThrow();
+
+    window.removeEventListener("hashchange", listener);
+  });
+
+  it("is dispatched by scrollToHash itself, so a caller cannot forget it", async () => {
+    window.history.replaceState(null, "", "/community#partner-dca-travel");
+    addTarget("partner-dca-travel");
+    const listener = vi.fn();
+    window.addEventListener("hashchange", listener);
+
+    await scrollToHash("#partner-dca-travel", { reducedMotion: true });
+    window.removeEventListener("hashchange", listener);
+
+    expect(listener).toHaveBeenCalled();
+  });
+
+  it("wakes again while the record stays hidden, in case the tab mounted late", async () => {
+    window.history.replaceState(null, "", "/tools/sale-timeline#sale-belgium-worldwide");
+    const panel = document.createElement("section");
+    panel.setAttribute("hidden", "");
+    const target = document.createElement("li");
+    target.id = "sale-belgium-worldwide";
+    panel.appendChild(target);
+    document.body.appendChild(panel);
+
+    const listener = vi.fn();
+    window.addEventListener("hashchange", listener);
+    const promise = scrollToHash("#sale-belgium-worldwide", {
+      reducedMotion: true,
+      timeoutMs: 1500,
+      pollMs: 10,
+    });
+    setTimeout(() => panel.removeAttribute("hidden"), WAKE_RETRY_MS + 60);
+
+    expect(await promise).toBe(target);
+    window.removeEventListener("hashchange", listener);
+    expect(listener.mock.calls.length).toBeGreaterThan(1);
+  }, 10_000);
+});
+
 describe("scrollOffset", () => {
   afterEach(() => {
     document.documentElement.style.removeProperty("--header-h");
@@ -238,8 +517,9 @@ describe("scrollClearOfHeader", () => {
 
   it("corrects the header offset after a smooth scroll has settled", () => {
     vi.useFakeTimers();
-    // jsdom reports every rect as 0, so `top < offset` holds and the correction
-    // runs. The spy replaces the method jsdom leaves unimplemented.
+    // jsdom reports every rect as 0, so the element is treated as unlaid-out and
+    // the correction is clamped to the top of the document. The spy replaces the
+    // method jsdom leaves unimplemented.
     const scrollBy = vi.fn();
     Object.defineProperty(window, "scrollBy", { configurable: true, writable: true, value: scrollBy });
     const target = addTarget("section-c");
@@ -251,6 +531,64 @@ describe("scrollClearOfHeader", () => {
     expect(scrollBy).toHaveBeenCalledWith(expect.objectContaining({ behavior: "auto" }));
 
     vi.useRealTimers();
+  });
+
+  it("does not correct against a layout it does not have", () => {
+    // jsdom reports a zero-height rect, which means nothing was laid out: a
+    // document position computed from it would be a guess, so only the
+    // relative form is used.
+    const scrollTo = vi.fn();
+    const scrollBy = vi.fn();
+    Object.defineProperty(window, "scrollTo", { configurable: true, writable: true, value: scrollTo });
+    Object.defineProperty(window, "scrollBy", { configurable: true, writable: true, value: scrollBy });
+    const target = addTarget("section-no-layout");
+
+    scrollClearOfHeader(target, { reducedMotion: true });
+
+    expect(scrollTo).not.toHaveBeenCalled();
+    // Clamped at the top of the document rather than a negative position.
+    expect(scrollBy).toHaveBeenCalledWith({ top: 0, behavior: "auto" });
+  });
+
+  it("uses the absolute position when there is a layout to measure", () => {
+    const scrollTo = vi.fn();
+    Object.defineProperty(window, "scrollTo", { configurable: true, writable: true, value: scrollTo });
+    const target = addTarget("section-laid-out");
+    // A real rect: 400px down the document, tall enough to be laid out.
+    target.getBoundingClientRect = () =>
+      ({ top: 400, height: 320, bottom: 720, left: 0, right: 0, width: 0, x: 0, y: 400 }) as
+        DOMRect;
+
+    scrollClearOfHeader(target, { reducedMotion: true });
+
+    // 400 down the document, minus the 92px header clearance.
+    expect(scrollTo).toHaveBeenCalledWith({ top: 308, behavior: "auto" });
+  });
+
+  it("uses the absolute position for an element already at the top of the document", () => {
+    // A zero height with a zero top is what jsdom reports, but a laid-out
+    // element sitting at the very top of the page is a real position, not a
+    // missing one: it still has a width.
+    const scrollTo = vi.fn();
+    Object.defineProperty(window, "scrollTo", { configurable: true, writable: true, value: scrollTo });
+    const target = addTarget("section-at-top");
+    target.getBoundingClientRect = () =>
+      ({ top: 0, height: 0, bottom: 0, left: 0, right: 640, width: 640, x: 0, y: 0 }) as DOMRect;
+
+    scrollClearOfHeader(target, { reducedMotion: true });
+    // Clamped at the top, expressed absolutely rather than as a delta.
+    expect(scrollTo).toHaveBeenCalledWith({ top: 0, behavior: "auto" });
+  });
+
+  it("never scrolls above the top of the document", () => {
+    const scrollTo = vi.fn();
+    Object.defineProperty(window, "scrollTo", { configurable: true, writable: true, value: scrollTo });
+    const target = addTarget("section-near-top");
+    target.getBoundingClientRect = () =>
+      ({ top: 20, height: 300, bottom: 320, left: 0, right: 0, width: 0, x: 0, y: 20 }) as DOMRect;
+
+    scrollClearOfHeader(target, { reducedMotion: true });
+    expect(scrollTo).toHaveBeenCalledWith({ top: 0, behavior: "auto" });
   });
 
   it("never throws when there is no viewport to correct against", () => {

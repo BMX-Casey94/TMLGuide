@@ -117,17 +117,19 @@ describe("MobileTabBar", () => {
     for (const link of links) expect(link).toHaveAccessibleName();
   });
 
-  it("adds the accessibility trigger as a sixth cell, after the five destinations", () => {
+  it("renders exactly five cells and no accessibility trigger", () => {
     render(<MobileTabBar pathname="/" />);
 
     const nav = screen.getByRole("navigation", { name: "Mobile" });
-    const trigger = within(nav).getByRole("button", { name: "Accessibility settings" });
 
-    expect(nav.querySelectorAll("li")).toHaveLength(6);
-    expect(trigger).toHaveAttribute("aria-expanded", "false");
-    expect(trigger).toHaveAttribute("aria-controls", "a11y-settings-panel");
-    // The visible word is part of the accessible name, which is what WCAG 2.5.3 requires.
-    expect(trigger.textContent).toContain("Settings");
+    expect(nav.querySelectorAll("li")).toHaveLength(5);
+    // The dock carries destinations only: the accessibility settings button is in the header.
+    expect(
+      within(nav).queryByRole("button", { name: "Accessibility settings" }),
+    ).not.toBeInTheDocument();
+    expect(within(nav).queryByRole("button", { name: /settings/i })).not.toBeInTheDocument();
+    expect(within(nav).queryAllByRole("button")).toHaveLength(0);
+    expect(nav.querySelector("ul")?.className).toContain("grid-cols-5");
   });
 
   it("marks the Home tab current at the root", () => {

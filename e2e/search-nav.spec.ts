@@ -214,8 +214,11 @@ test.describe("search navigation", () => {
    * The option is selected by its href rather than by position: "lockers" also
    * matches guide and section entries, and the first result is a chapter, not an
    * answer. Filtering on the fragment keeps the case about the FAQ anchor.
+   *
+   * Each answer is a collapsed `<details>`, so landing also has to open it:
+   * arriving at a summary whose answer is hidden is not landing on the record.
    */
-  test("an FAQ result lands on the answer", async ({ page }) => {
+  test("an FAQ result lands on the answer, and opens it", async ({ page }) => {
     await page.goto("/");
     await openPalette(page);
     await search(page, "lockers");
@@ -232,27 +235,151 @@ test.describe("search navigation", () => {
     await faq.click();
     await expect(page.locator("dialog[open]")).toHaveCount(0, { timeout: 12_000 });
     await page.waitForURL(new RegExp(`#${anchor}$`));
-    await expect(page.locator(`#${anchor}`)).toBeFocused();
+
+    const answer = page.locator(`details#${anchor}`);
+    await expect(answer).toHaveCount(1);
+    // `open` is the attribute a `<details>` carries only while expanded.
+    await expect(answer).toHaveAttribute("open", "");
+    await expect(answer.locator("summary")).toBeVisible();
+    await expect(answer).toBeFocused();
   });
 
+  /**
+   * A ticket result has to land on the card itself.
+   *
+   * The card carries the `ticket-*` id, and it is rendered inside the
+   * festival-tickets category view of the tickets page — the bare page shows the
+   * category grid instead, so this case also proves the href names that view.
+   * The card must be clear of the sticky header, not merely in the document.
+   */
   test("a ticket result lands on the package card", async ({ page }) => {
-    test.fixme(
-      true,
-      "Blocked: the package cards now carry ids, but the ticket hrefs still omit ?category=, so the card is not rendered on the bare tickets page. See docs/briefs/search-anchors.md §2.2.",
-    );
-
     await page.goto("/");
     await openPalette(page);
     await search(page, "day pass");
 
-    const ticket = page.locator('[role="option"]', { hasText: /Day Pass/i }).first();
+    const ticket = page
+      .locator('[role="option"][href*="category=festival-tickets#ticket-"]', { hasText: /Day Pass/i })
+      .first();
+    await expect(ticket).toBeVisible();
     const href = await ticket.getAttribute("href");
+    expect(href).toContain("category=festival-tickets");
     const anchor = href!.split("#")[1]!;
     expect(anchor).toMatch(/^ticket-/);
 
     await ticket.click();
     await expect(page.locator("dialog[open]")).toHaveCount(0, { timeout: 12_000 });
-    await expect(page.locator(`#${anchor}`)).toBeFocused();
+    await page.waitForURL(new RegExp(`#${anchor}$`));
+
+    const card = page.locator(`#${anchor}`);
+    await expect(card).toHaveCount(1);
+    // The card is the package card, not the category grid that would have been
+    // rendered by a href without `?category=`.
+    await expect(card).toHaveClass(/tml-tix-card/);
+
+    // Settled below the sticky header, not underneath it and not mid-scroll.
+    await expect
+      .poll(
+        async () => {
+          const box = await card.boundingBox();
+          if (box === null) return "missing";
+          return box.y >= 60 && box.y < 220 ? "settled" : `y=${Math.round(box.y)}`;
+        },
+        { timeout: 8000, intervals: [100, 200, 300] },
+      )
+      .toBe("settled");
+
+    await expect(card).toBeInViewport();
+    await expect(card).toBeFocused();
+  });
+
+  /**
+   * A same-page hash push fires no `hashchange` of its own, so the hub has to be
+   * woken by the landing. Without that, the partner card stays inside a `hidden`
+   * panel and the reader is left on the WhatsApp tab looking at nothing.
+   */
+  test("a partner result switches the community tab and lands on the card", async ({ page }) => {
+    await page.goto("/community");
+    await expect(page.getByRole("tab", { name: /WhatsApp groups/ })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+
+    await openPalette(page);
+    await search(page, "rent a tent");
+
+    const partner = page
+      .locator('[role="option"][href^="/community#partner-"]', { hasText: /Rent-a-Tent/i })
+      .first();
+    await expect(partner).toBeVisible();
+    const href = await partner.getAttribute("href");
+    expect(href).not.toBeNull();
+    const anchor = href!.split("#")[1]!;
+
+    await partner.click();
+    await expect(page.locator("dialog[open]")).toHaveCount(0, { timeout: 12_000 });
+    await page.waitForURL(new RegExp(`#${anchor}$`));
+
+    // The tab moved, and the panel holding the record is the visible one.
+    await expect(page.getByRole("tab", { name: /Partners/ })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+
+    const card = page.locator(`#${anchor}`);
+    await expect(card).toBeVisible();
+    await expect
+      .poll(
+        async () => {
+          const box = await card.boundingBox();
+          if (box === null) return "missing";
+          return box.y >= 0 && box.y < 260 ? "settled" : `y=${Math.round(box.y)}`;
+        },
+        { timeout: 8000, intervals: [100, 200, 300] },
+      )
+      .toBe("settled");
+    await expect(card).toBeFocused();
+  });
+
+  /**
+   * The Brasil timeline is a different tab, and its records are mounted only
+   * while that tab is selected. A same-page hash push fires no `hashchange`, so
+   * this is the case that proves the landing wakes the tab component: without
+   * it, the record would never appear and the palette would report that the page
+   * did not open.
+   */
+  test("a sale result switches the timeline tab and lands on the window", async ({ page }) => {
+    await page.goto("/tools/sale-timeline");
+    await expect(page.getByRole("tab", { name: /Belgium/ })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+
+    await openPalette(page);
+    /*
+      A window only Brasil publishes, so the result is unambiguously in the third
+      tab rather than in the one already showing. The href is filtered on, not the
+      position: the same words appear in ticket titles too.
+    */
+    await search(page, "pre-registration window");
+
+    const sale = page
+      .locator('[role="option"][href$="#sale-pre-registration-2027"]')
+      .first();
+    await expect(sale).toBeVisible();
+    const href = await sale.getAttribute("href");
+    const anchor = href!.split("#")[1]!;
+
+    await sale.click();
+    await expect(page.locator("dialog[open]")).toHaveCount(0, { timeout: 12_000 });
+    await page.waitForURL(new RegExp(`#${anchor}$`));
+
+    await expect(page.getByRole("tab", { name: /Brasil/ })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    const record = page.locator(`#${anchor}`);
+    await expect(record).toBeVisible();
+    await expect(record).toBeFocused();
   });
 
   test("a quick link still opens its page", async ({ page }) => {

@@ -4,16 +4,32 @@ import { expect, test, type Page } from "@playwright/test";
 /**
  * The accessibility toolbar, end to end against a production build.
  *
- * The trigger exists twice in the DOM — once in the header and once as the last cell of the mobile
- * tab bar — and each is display:none at the other breakpoint, so every locator starts from the one
- * that is actually visible. That keeps a single spec working for both Playwright projects rather
- * than branching on the viewport.
+ * The trigger exists once, in the header, and that button is display:none below 900px. The mobile
+ * tab bar carries destinations only, so a phone has no opener for the panel. The tests whose subject
+ * is the panel therefore widen the viewport to a desktop width first (see {@link wideEnough}), and
+ * the layout suite asserts the absent trigger at 390px. Widening rather than skipping keeps the
+ * panel covered in both Playwright projects: under the mobile project it runs with touch emulation,
+ * which is the configuration where `(hover: none)` applies and the hover styles must not stick.
  */
 
 const TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
 
+/** The header trigger is the sole opener, and the header hides it below this width. */
+const TRIGGER_MIN_WIDTH = 900;
+
 function visibleTrigger(page: Page) {
   return page.locator('[aria-controls="a11y-settings-panel"]:visible');
+}
+
+/**
+ * Gives the page a viewport where the header trigger is rendered, unless it already has one. Call it
+ * before `page.goto`: the width has to be in place before the first render, or the header would paint
+ * at the phone width and the locator would find nothing to click.
+ */
+async function wideEnough(page: Page): Promise<void> {
+  const width = page.viewportSize()?.width ?? 0;
+  if (width >= TRIGGER_MIN_WIDTH) return;
+  await page.setViewportSize({ width: 1280, height: 900 });
 }
 
 function panel(page: Page) {
@@ -34,6 +50,8 @@ async function openPanel(page: Page) {
 }
 
 test.describe("opening and closing", () => {
+  test.beforeEach(async ({ page }) => wideEnough(page));
+
   test("opens from the visible trigger and names itself", async ({ page }) => {
     await page.goto("/");
     const trigger = visibleTrigger(page);
@@ -82,6 +100,8 @@ test.describe("opening and closing", () => {
 });
 
 test.describe("a chosen text size", () => {
+  test.beforeEach(async ({ page }) => wideEnough(page));
+
   test("applies immediately, is announced, and survives a reload", async ({ page }) => {
     await page.goto("/");
     await openPanel(page);
@@ -193,6 +213,8 @@ test.describe("no flash of the wrong settings", () => {
 });
 
 test.describe("keyboard operation", () => {
+  test.beforeEach(async ({ page }) => wideEnough(page));
+
   test("reaches every group with Tab and changes a value with the arrow keys", async ({ page }) => {
     await page.goto("/");
     await openPanel(page);
@@ -225,6 +247,7 @@ test.describe("keyboard operation", () => {
 
 test.describe("automated WCAG scan", () => {
   test("the page with the panel open has no violations", async ({ page }) => {
+    await wideEnough(page);
     await page.goto("/");
     await openPanel(page);
     await page.waitForLoadState("networkidle");
@@ -239,6 +262,7 @@ test.describe("automated WCAG scan", () => {
   });
 
   test("the page in high contrast with the panel open has no violations", async ({ page }) => {
+    await wideEnough(page);
     await page.goto("/");
     await openPanel(page);
     await page.getByRole("radio", { name: "High" }).check();
@@ -270,29 +294,57 @@ test.describe("automated WCAG scan", () => {
 
 test.describe("layout", () => {
   for (const width of [1280, 900, 390]) {
-    test(`exactly one trigger is visible and the header is not cramped at ${width}px`, async ({
-      page,
-    }) => {
+    test(`the trigger count and the header row are correct at ${width}px`, async ({ page }) => {
       await page.setViewportSize({ width, height: 800 });
       await page.goto("/");
 
-      // The header button and the dock cell are never both on screen: the dock is hidden from
-      // 900px and the header button below it, so there is always exactly one control to reach.
-      await expect(visibleTrigger(page)).toHaveCount(1);
+      /*
+        One opener from 900px, none below it. The header hides its trigger under 900px and the
+        mobile tab bar no longer carries a copy, so a phone has no accessibility button at all:
+        asking for zero is what keeps this honest, rather than passing on a stale second trigger.
+      */
+      const expectedTriggers = width >= TRIGGER_MIN_WIDTH ? 1 : 0;
+      await expect(visibleTrigger(page)).toHaveCount(expectedTriggers);
 
-      // The header row holds the logo, five tabs, the search pill and the trigger without
-      // overflowing its own box, and the search field keeps usable width rather than collapsing.
+      /*
+        The header row holds the logo, five tabs, the search pill and (from 900px) the trigger
+        without overflowing its own box, and the search field keeps usable width rather than
+        collapsing.
+
+        The edition switcher's wrapper is the element that can clip it: it is `overflow-hidden`
+        because it folds away when the field takes focus. So the buttons are compared against that
+        wrapper as well as against the pill. A button's own `getBoundingClientRect` still reports
+        its full width when an ancestor clips it, which is why the wrapper is measured directly
+        rather than trusting the button boxes alone.
+      */
       const header = await page.evaluate(() => {
         const row = document.querySelector("header")?.firstElementChild?.firstElementChild;
         const search = document.querySelector<HTMLInputElement>('input[type="search"]');
-        if (!row || !search) return null;
+        const group = document.querySelector<HTMLElement>('[data-variant="inline"]');
+        if (!row || !search || !group) return null;
         const box = row.getBoundingClientRect();
+        const pill = group.getBoundingClientRect();
+        const wrapper = group.parentElement?.getBoundingClientRect();
+        const options = Array.from(group.querySelectorAll("button")).map((option) => {
+          const area = option.getBoundingClientRect();
+          return {
+            label: option.getAttribute("aria-label") ?? "",
+            width: Math.round(area.width),
+            height: Math.round(area.height),
+            left: Math.round(area.left),
+            right: Math.round(area.right),
+          };
+        });
         return {
           rowScroll: Math.round(row.scrollWidth),
           rowClient: Math.round(row.clientWidth),
           rowLeft: Math.round(box.left),
           rowRight: Math.round(box.right),
           searchWidth: Math.round(search.getBoundingClientRect().width),
+          groupLeft: Math.round(pill.left),
+          groupRight: Math.round(pill.right),
+          wrapperWidth: wrapper === undefined ? 0 : Math.round(wrapper.width),
+          options,
         };
       });
 
@@ -300,20 +352,47 @@ test.describe("layout", () => {
       expect(header!.rowScroll).toBeLessThanOrEqual(header!.rowClient);
       expect(header!.rowLeft).toBeGreaterThanOrEqual(0);
       expect(header!.rowRight).toBeLessThanOrEqual(width);
-      // From 900px the five tabs join the row and the trigger takes its 44px, so the field keeps
-      // enough room for its icon and a short query. Below 900px the header trigger is not rendered
-      // at all — the dock carries it — so the field keeps the width it has always had there (about
-      // 54px, because the edition switcher shares the pill); this asserts only that it is still
-      // present and not collapsed to zero.
-      if (width >= 900) {
+
+      /*
+        From 900px the five tabs join the row and the trigger takes its 44px, so the field keeps
+        enough room for its icon and a short query. Below 900px the header trigger is not rendered
+        at all, so the field keeps the width it has always had there (about 54px, because the
+        edition switcher shares the pill); this asserts only that it is still present and not
+        collapsed to zero.
+      */
+      if (width >= TRIGGER_MIN_WIDTH) {
         expect(header!.searchWidth).toBeGreaterThanOrEqual(40);
       } else {
         expect(header!.searchWidth).toBeGreaterThan(20);
       }
+
+      /*
+        The edition switcher is never squashed or clipped: all three options are present, each keeps
+        a real touch target at or above the 24px WCAG 2.5.8 minimum, the group is no wider than the
+        folding wrapper that contains it, and every option's left edge starts inside its neighbour's
+        right edge order (no overlap, no negative width).
+      */
+      expect(header!.options.map((option) => option.label)).toEqual([
+        "Belgium",
+        "Winter",
+        "Brasil",
+      ]);
+      expect(header!.wrapperWidth).toBeGreaterThanOrEqual(
+        header!.groupRight - header!.groupLeft,
+      );
+      for (const option of header!.options) {
+        expect(option.width).toBeGreaterThanOrEqual(24);
+        expect(option.height).toBeGreaterThanOrEqual(24);
+        expect(option.left).toBeGreaterThanOrEqual(0);
+        expect(option.right).toBeLessThanOrEqual(width);
+      }
+      expect(header!.groupLeft).toBeGreaterThanOrEqual(0);
+      expect(header!.groupRight).toBeLessThanOrEqual(width);
     });
   }
 
   test("the panel fits the viewport and the page does not scroll sideways", async ({ page }) => {
+    await wideEnough(page);
     await page.goto("/");
     await openPanel(page);
 
@@ -339,6 +418,7 @@ test.describe("layout", () => {
   });
 
   test("the panel's own content never overflows its box", async ({ page }) => {
+    await wideEnough(page);
     await page.goto("/");
     await openPanel(page);
 
@@ -359,6 +439,7 @@ test.describe("layout", () => {
   });
 
   test("every control in the panel is at least 44 by 44 CSS pixels", async ({ page }) => {
+    await wideEnough(page);
     await page.goto("/");
     await openPanel(page);
 

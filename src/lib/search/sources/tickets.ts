@@ -41,6 +41,10 @@ function euroTicketEntries(
   edition: "belgium" | "winter",
 ): SourceEntry[] {
   const year = editionYear(edition);
+  /* The package card lives inside the festival-tickets category view of the
+     tickets page; the bare page renders the category grid instead and the card —
+     the element the anchor names — never exists. */
+  const href = ticketsRoute(edition, "festival-tickets");
 
   return pairTiers(collection).map(({ productId, records }) => {
     const [first] = records;
@@ -57,7 +61,7 @@ function euroTicketEntries(
         first.record.includes.join("; "),
       ]),
       edition,
-      href: ticketsRoute(edition),
+      href,
       anchor: recordAnchor("ticket", productId),
       source: `src/data/${edition}/tickets.ts`,
       sourceUrl: first.record.source.url,
@@ -79,7 +83,7 @@ const brasilTicketEntries: SourceEntry[] = brasilData.tickets.map((ticket) => ({
     ticket.notes,
   ]),
   edition: "brasil",
-  href: ticketsRoute("brasil"),
+  href: ticketsRoute("brasil", "festival-tickets"),
   anchor: recordAnchor("ticket", ticket.id),
   source: "src/data/brasil/facts.ts",
   sourceUrl: ticket.source.url,

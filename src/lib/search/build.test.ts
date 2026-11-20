@@ -171,11 +171,19 @@ describe("buildSearchIndex", () => {
   it("anchors a ticket and a stay to the id their own target page renders", () => {
     const dayPass = index.find((entry) => entry.id === "ticket:belgium-belgium-2027-day-pass");
     expect(dayPass?.anchor).toBe(recordAnchor("ticket", "belgium-2027-day-pass"));
+    // And to the view that renders that card: a ticket card is a child of the
+    // festival-tickets package list, never of the bare tickets page.
+    expect(dayPass?.href).toBe(
+      `/guides/tickets?category=festival-tickets#${recordAnchor("ticket", "belgium-2027-day-pass")}`,
+    );
 
     const stay = index.find(
       (entry) => entry.kind === "accommodation" && entry.edition === "belgium",
     );
     expect(stay?.anchor).toMatch(/^stay-[a-z0-9-]+$/);
+    expect(stay?.href).toMatch(
+      /^\/guides\/tickets\?category=(dreamville|montagoe)#stay-[a-z0-9-]+$/,
+    );
 
     const sale = index.find((entry) => entry.kind === "sale");
     expect(sale?.anchor).toMatch(/^sale-[a-z0-9-]+$/);
@@ -295,7 +303,12 @@ describe("buildSearchIndex", () => {
   it("sends tickets, accommodation and sales to the pages that price them", () => {
     for (const entry of index) {
       if (entry.kind === "ticket" || entry.kind === "accommodation") {
-        expect(entry.href, entry.id).toMatch(/^\/guides\/tickets(\?edition=[a-z]+)?#/);
+        // The edition, then the category that renders the record's card: the
+        // bare page shows the category grid, so a card id would resolve to
+        // nothing and the reader would land at the top of the page.
+        expect(entry.href, entry.id).toMatch(
+          /^\/guides\/tickets\?(\S+&)?category=(festival-tickets|dreamville|montagoe)#/,
+        );
       }
       if (entry.kind === "sale") {
         expect(entry.href, entry.id).toMatch(/^\/tools\/sale-timeline#/);
