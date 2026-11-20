@@ -976,6 +976,11 @@
   position: relative;
 }
 
+/* This trail only. The shared left position sits too far into the panel. */
+.home-cta .tml-trail--left {
+  left: calc(max(-6%, -4rem) - 40px);
+}
+
 .home-cta__panel {
   position: relative;
   z-index: 10;
