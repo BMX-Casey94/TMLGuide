@@ -27,7 +27,7 @@ export function SiteShell({ children }: SiteShellProps) {
     <EditionProvider>
       <div id="content-start" className="flex min-h-dvh flex-col">
         <SiteHeader />
-        <div className="flex flex-1 flex-col">{children}</div>
+        <div className="flex min-w-0 flex-1 flex-col">{children}</div>
         <SiteFooter />
       </div>
       {/*

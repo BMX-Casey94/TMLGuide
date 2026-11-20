@@ -483,8 +483,16 @@
 
 /* The table scrolls as one piece on a phone. A pinned Package column left the
    prices sliding underneath it, and the row label was wide enough to cover
-   most of a 390px screen. From 900px there is room to keep the label in view. */
+   most of a 390px screen. From 900px there is room to keep the label in view.
+
+   `position: relative` is load-bearing. The visually hidden labels inside the
+   cells are `position: absolute`. Without a positioned ancestor they resolve
+   against the page and sit at their static position in the wide table, which
+   lets the whole document pan sideways on a phone. */
 .tml-tix-table-scroll {
+  position: relative;
+  width: 100%;
+  min-width: 0;
   max-width: 100%;
   margin-top: 1rem;
   overflow-x: auto;
@@ -499,6 +507,11 @@
 }
 
 .tml-tix-table caption {
+  /* A caption's max-content is the whole sentence on one line. Width 0 with a
+     100% minimum takes that sentence out of the table's width, so the caption
+     wraps inside the scrollport instead of stretching the page. */
+  width: 0;
+  min-width: 100%;
   padding-bottom: 0.6rem;
   color: var(--cream-mute);
   font-family: var(--font-mono);
@@ -539,9 +552,28 @@
 }
 
 @media (max-width: 899px) {
+  .tml-tix-table {
+    table-layout: fixed;
+  }
+
+  .tml-tix-table__sticky {
+    width: 6.75rem;
+  }
+
   .tml-tix-table thead th:not(.tml-tix-table__sticky),
   .tml-tix-table td {
-    min-width: 10.5rem;
+    width: 11rem;
+    min-width: 11rem;
+    max-width: 11rem;
+    overflow-wrap: anywhere;
+  }
+
+  /* The source link is an inline flex elsewhere, which sizes to the full title
+     on one line and drags the column out with it. Inside the table it wraps. */
+  .tml-tix-table .tml-tix-source__link {
+    display: inline;
+    overflow-wrap: anywhere;
+    white-space: normal;
   }
 }
 

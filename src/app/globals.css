@@ -93,7 +93,14 @@ body {
   font-family: var(--font-sans);
   font-size: 1.0625rem;
   line-height: 1.6;
-  overflow-x: hidden;
+  /*
+    `clip` rather than `hidden`. A phone will still pan the document sideways
+    when an absolutely positioned element (a visually hidden label inside a
+    wide table) lands past the viewport, and `hidden` on body does not stop
+    that pan in mobile Safari. Clip does. The header stays sticky because the
+    viewport remains the scrollport.
+  */
+  overflow-x: clip;
 }
 
 /* focus ring uses the edition accent */
