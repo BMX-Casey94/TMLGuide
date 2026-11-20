@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { CheckSeparator } from "@/components/ui/source-check";
 /* Kit styles travel with the component so any page that uses it is styled. */
 import "@/components/ui/ui.css";
 import "./tools.css";
@@ -134,12 +135,10 @@ export function ToolShell({
                     {source.label}
                   </a>
                   {checked === null ? null : (
-                    <>
-                      {" "}
-                      <span className="tool-sources__date">
-                        Checked <time dateTime={source.retrievedOn}>{checked}</time>
-                      </span>
-                    </>
+                    <span className="tool-sources__date">
+                      <CheckSeparator />
+                      Checked <time dateTime={source.retrievedOn}>{checked}</time>
+                    </span>
                   )}
                 </li>
               );

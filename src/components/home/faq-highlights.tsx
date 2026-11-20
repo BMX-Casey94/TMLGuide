@@ -1,5 +1,6 @@
 import type { Faq } from "@/data/schemas";
 import { SectionAction, SectionHeading } from "@/components/ui/section-heading";
+import { CheckSeparator } from "@/components/ui/source-check";
 import { highlightedFaqs, faqAnchor } from "./faq-selection";
 import { formatLongDate } from "./format";
 import { parseInline, parseRichText, type InlineRun } from "./rich-text";
@@ -104,7 +105,10 @@ export function FaqHighlights({ entries, idPrefix = "faq" }: FaqHighlightsProps)
                   {faq.source.title}
                   <span aria-hidden="true"> ↗</span>
                 </a>
-                <span>Checked {formatLongDate(faq.lastVerified)}</span>
+                <span>
+                  <CheckSeparator />
+                  Checked {formatLongDate(faq.lastVerified)}
+                </span>
               </p>
             </div>
           </details>

@@ -515,6 +515,8 @@ describe("PackageCard", () => {
     // The line is several inline fragments, so assert on the whole line's text.
     const line = container.querySelector(".tml-tix-source");
     expect(line?.textContent).toMatch(/Checked\s*18 Nov 2026/);
+    // The separator keeps the date off the underlined title.
+    expect(line?.textContent).toMatch(/—\s*Checked/);
   });
 
   it("renders the comparison control when one is supplied", () => {

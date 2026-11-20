@@ -105,6 +105,13 @@ describe("PartnerCard", () => {
     expect(screen.getByText("18 Nov 2026")).toHaveAttribute("datetime", "2026-11-18");
   });
 
+  it("separates the host from the check date so the two never run together", () => {
+    render(<PartnerCard partner={dcaTravel!} />);
+
+    const line = screen.getByText(/^(Source:|Partner link)/);
+    expect(line.textContent).toMatch(/—\s*Checked/);
+  });
+
   it("carries a disclosure of real length on every published partner", () => {
     for (const partner of partners) {
       expect(partner.disclosure.length).toBeGreaterThanOrEqual(20);

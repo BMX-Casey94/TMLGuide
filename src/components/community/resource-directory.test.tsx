@@ -57,6 +57,14 @@ describe("ResourceDirectory", () => {
     expect(screen.getAllByText(/^Source: /)).toHaveLength(resources.length);
   });
 
+  it("separates the host from the check date so the two never run together", () => {
+    render(<ResourceDirectory resources={resources} />);
+
+    for (const line of screen.getAllByText(/^Source: /)) {
+      expect(line.textContent).toMatch(/—\s*Checked/);
+    }
+  });
+
   it("gives every outbound link a distinct accessible name and the safe rel", () => {
     render(<ResourceDirectory resources={resources} />);
 

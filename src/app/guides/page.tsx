@@ -8,6 +8,7 @@ import type { Faq } from "@/data/schemas";
 import { ChapterCard, EditionCard } from "@/components/guides/chapter-cards";
 import { TICKETS_EXPLORER_HREF } from "@/components/guides/data-block";
 import { breadcrumbListJsonLd, serialiseJsonLd } from "@/components/guides/json-ld";
+import { CheckSeparator } from "@/components/ui/source-check";
 import { faqAnchor, type FaqCollection } from "@/lib/search/anchors";
 import { plainMarkdown } from "@/lib/search/sources/faqs";
 import "@/components/guides/guides.css";
@@ -196,7 +197,8 @@ export function GuidesHub({ chapters }: GuidesHubProps) {
                       {faq.source.title}{" "}
                       <span className="sr-only">{`for ${faq.question} (opens in a new tab)`}</span>
                     </a>
-                    {" · "}Checked <time dateTime={faq.lastVerified}>{faq.lastVerified}</time>
+                    <CheckSeparator />
+                    Checked <time dateTime={faq.lastVerified}>{faq.lastVerified}</time>
                   </p>
                 </details>
               ))}

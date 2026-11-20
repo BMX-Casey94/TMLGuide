@@ -5,6 +5,7 @@ import { useCallback, useEffect, useId, useMemo, useRef, useState, useSyncExtern
 import "@/components/tools/tools.css";
 import { useEdition } from "@/components/shell";
 import { GoldDivider } from "@/components/ui/gold-divider";
+import { CheckSeparator } from "@/components/ui/source-check";
 import {
   OFFICIAL_LABEL,
   PACKING_EDITIONS,
@@ -690,7 +691,7 @@ function SourceLine({ url, title, checkedOn, compact = false }: SourceLineProps)
         {title ?? url}
       </a>
       <span className="packing-source__date">
-        {" "}
+        <CheckSeparator />
         checked <time dateTime={checkedOn}>{formatChecked(checkedOn)}</time>
       </span>
     </span>

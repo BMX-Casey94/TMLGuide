@@ -13,6 +13,7 @@ import {
   type JourneyOption,
   type JourneySleep,
 } from "./journey-state";
+import { CheckSeparator } from "@/components/ui/source-check";
 import { commitJourneyState, journeyStore, resetJourneyState } from "./journey-store";
 import type { JourneyPlan, JourneyStep } from "./journey-logic";
 import "./journey.css";
@@ -358,12 +359,10 @@ export function JourneyPlanner({ plans }: JourneyPlannerProps) {
                     <span className="sr-only"> (opens in a new tab)</span>
                   </a>
                   {checked === null ? null : (
-                    <>
-                      {" "}
-                      <span className="journey-sources__date">
-                        Checked <time dateTime={source.checkedOn}>{checked}</time>
-                      </span>
-                    </>
+                    <span className="journey-sources__date">
+                      <CheckSeparator />
+                      Checked <time dateTime={source.checkedOn}>{checked}</time>
+                    </span>
                   )}
                 </li>
               );

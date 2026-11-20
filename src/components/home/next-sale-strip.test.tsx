@@ -88,6 +88,14 @@ describe("NextSaleStrip", () => {
     expect(screen.getByText(/Checked/)).toHaveTextContent(CHECKED_LABEL);
   });
 
+  it("separates the source title from the check date", () => {
+    const { container } = renderStrip();
+
+    const line = container.querySelector(".home-next__source");
+    expect(line?.textContent).toMatch(/—\s*Checked 18 November 2026/);
+    expect(line?.textContent).not.toContain("·");
+  });
+
   it("links to the full sale timeline", () => {
     renderStrip();
     const link = screen.getByRole("link", { name: /Full sale timeline/ });

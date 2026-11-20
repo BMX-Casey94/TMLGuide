@@ -1,3 +1,4 @@
+import { CheckSeparator } from "@/components/ui/source-check";
 import { SALE_EDITION_LABELS, type NextSale } from "./next-sale";
 import { SaleCountdown } from "./sale-countdown";
 
@@ -73,7 +74,8 @@ export function NextSaleStrip({ next, checkedOn, checkedOnLabel, serverNowIso }:
           {sale.source.title}
           <span aria-hidden="true"> ↗</span>
         </a>
-        . Checked <time dateTime={checkedOn}>{checkedOnLabel}</time>.{" "}
+        <CheckSeparator />
+        Checked <time dateTime={checkedOn}>{checkedOnLabel}</time>.{" "}
         <a className="home-next__source-link" href="/tools/sale-timeline">
           Full sale timeline
           <span aria-hidden="true"> →</span>

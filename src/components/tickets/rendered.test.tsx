@@ -108,6 +108,9 @@ describe("rendered Belgium page content", () => {
     expect(sourceLines).toHaveLength(category?.items.length ?? 0);
     for (const line of sourceLines) {
       expect(line.textContent).toMatch(/Checked\s*18 Nov 2026/);
+      // Every card separates the source title from the check date.
+      expect(line.textContent).toMatch(/—\s*Checked/);
+      expect(line.textContent).not.toContain("·");
     }
   });
 

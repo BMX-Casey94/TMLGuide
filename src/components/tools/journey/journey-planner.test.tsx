@@ -152,6 +152,17 @@ describe("JourneyPlanner", () => {
     expect(resultsRegion().querySelectorAll("time[datetime]").length).toBeGreaterThan(0);
   });
 
+  it("separates each source title from its check date", async () => {
+    renderPlanner();
+    await waitFor(() => expect(resultsRegion().textContent).toContain("Not published for 2027"));
+
+    const items = resultsRegion().querySelectorAll(".journey-sources__list li");
+    expect(items.length).toBeGreaterThan(0);
+    for (const item of items) {
+      expect(item.textContent).toMatch(/—\s*Checked/);
+    }
+  });
+
   it("reproduces the transport chapter's order of decisions", async () => {
     renderPlanner();
     const heading = screen.getByRole("heading", { name: "Order of decisions" });

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { CardCarousel } from "@/components/ui/card-carousel";
 import { SectionAction, SectionHeading } from "@/components/ui/section-heading";
+import { CheckSeparator } from "@/components/ui/source-check";
 import { editionFestivals, type EditionFestival, type OverviewRecord } from "./editions-summary";
 import { formatDateRange, formatLongDate } from "./format";
 import { belgiumFromPrice, brasilFromPrice, winterFromPrice, type FromPrice } from "./prices";
@@ -107,7 +108,8 @@ function EditionCard({ festival }: { festival: EditionFestival }) {
                 {price.source.title}
                 <span aria-hidden="true"> ↗</span>
               </a>
-              . Checked {formatLongDate(price.lastVerified)}.
+              <CheckSeparator />
+              Checked {formatLongDate(price.lastVerified)}.
             </p>
           </div>
         )}

@@ -78,6 +78,15 @@ describe("ToolShell", () => {
     expect(time).toHaveAttribute("datetime", "2026-11-18");
   });
 
+  it("separates each source label from its check date", () => {
+    renderShell();
+
+    const section = screen.getByRole("region", { name: "Sources" });
+    for (const item of within(section).getAllByRole("listitem")) {
+      expect(item.textContent).toMatch(/—\s*Checked 18 Nov 2026/);
+    }
+  });
+
   it("omits an unparseable source date rather than printing an invalid one", () => {
     render(
       <ToolShell

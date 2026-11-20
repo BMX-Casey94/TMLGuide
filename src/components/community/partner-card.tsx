@@ -1,6 +1,7 @@
 import { useId } from "react";
 import type { Partner } from "@/data/schemas";
 import { cx } from "@/components/ui/cx";
+import { CheckSeparator } from "@/components/ui/source-check";
 import { recordAnchor } from "@/lib/search/anchors";
 import { formatCheckDate, sourceHost } from "./card-format";
 import { PARTNER_CHECK_TERMS_LINE } from "./partner-disclosure";
@@ -95,7 +96,7 @@ export function PartnerCard({ partner, headingLevel = 3, className }: PartnerCar
           {host === null ? "Partner link" : `Source: ${host}`}
           {checked === null ? null : (
             <>
-              {" · "}
+              <CheckSeparator />
               Checked <time dateTime={partner.lastVerified}>{checked}</time>
             </>
           )}

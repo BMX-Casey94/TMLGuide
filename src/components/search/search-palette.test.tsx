@@ -905,6 +905,9 @@ describe("SearchPalette provenance", () => {
 
     expect(footer().textContent).toContain("Source:");
     expect(footer().textContent).toContain("Checked 18 Nov 2026");
+    // The host and the date are separated, so neither runs into the other.
+    expect(footer().textContent).toMatch(/—\s*Checked 18 Nov 2026/);
+    expect(footer().textContent).not.toContain("· Checked");
 
     const source = within(footer()).getByRole("link");
     expect(source.getAttribute("href")).toBe(

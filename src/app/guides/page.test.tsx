@@ -148,6 +148,20 @@ describe("the hub with chapters", () => {
     for (const time of times) expect(time).toHaveAttribute("datetime", "2026-11-18");
   });
 
+  it("separates each cited source title from its check date", () => {
+    const { container } = render(<GuidesHub chapters={FILLED} />);
+
+    /* The FAQ directory is the hub's only inline citation: each answer's source
+       link is followed by its check date on the same line. */
+    const citations = Array.from(container.querySelectorAll("details p a.tml-guide-link"));
+    expect(citations.length).toBeGreaterThan(0);
+    for (const link of citations) {
+      const line = link.closest("p");
+      expect(line?.textContent).toMatch(/—\s*Checked 2026-11-18/);
+      expect(line?.textContent).not.toContain("· Checked");
+    }
+  });
+
   it("lists general chapters as well as the three editions", () => {
     render(<GuidesHub chapters={FILLED} />);
 

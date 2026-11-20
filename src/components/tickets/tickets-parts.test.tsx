@@ -162,6 +162,18 @@ describe("SourceLine", () => {
     expect(screen.getByText("(opens in a new tab)")).toBeInTheDocument();
   });
 
+  it("separates the source title from the check date", () => {
+    const { container } = render(<SourceLine source={SOURCE} lastVerified="2026-11-18" />);
+
+    const line = container.querySelector(".tml-tix-source");
+    expect(line?.textContent).toMatch(/—\s*Checked 18 Nov 2026/);
+    // The old middot is gone: one separator, not two conventions.
+    expect(line?.textContent).not.toContain("·");
+    // The dash is decorative, so a screen reader hears the date on its own.
+    const separator = line?.querySelector(".tml-check-sep");
+    expect(separator?.querySelector('[aria-hidden="true"]')).toHaveTextContent("—");
+  });
+
   it("omits the date rather than printing an invalid one", () => {
     render(<SourceLine source={SOURCE} lastVerified="not-a-date" />);
 

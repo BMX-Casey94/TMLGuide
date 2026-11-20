@@ -122,6 +122,21 @@ body {
   text-transform: uppercase;
 }
 
+/*
+  The mark between a citation and the date it was checked, rendered by
+  `components/ui/source-check.tsx`. The left gap is a margin rather than a space
+  text node so it survives in a flex row, where a whitespace-only child is
+  dropped; the gap after the dash is a non-breaking space inside the component,
+  which keeps the mark on the same line as the date it introduces. The glyph is
+  decorative and `aria-hidden`, so the date still reads as "Checked 18 Nov 2026"
+  on its own.
+*/
+.tml-check-sep {
+  margin-inline-start: 0.3rem;
+  color: var(--cream-mute);
+  font-weight: 400;
+}
+
 /* The header search pill draws its own focus state (border and glow), so the field inside it must
    not also get the global outline. This rule is unlayered, so it beats Tailwind's layered utilities. */
 .search-field,

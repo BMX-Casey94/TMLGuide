@@ -10,6 +10,7 @@ import {
   type KeyboardEvent as ReactKeyboardEvent,
   type MouseEvent as ReactMouseEvent,
 } from "react";
+import { CheckSeparator } from "@/components/ui/source-check";
 import { flattenGroups, groupResults } from "@/lib/search/group";
 import { formatCheckedDate } from "@/lib/search/format";
 import { search } from "@/lib/search/rank";
@@ -868,7 +869,12 @@ export function SearchPalette({
                 {activeHost}
                 <span className="sr-only"> (opens in a new tab)</span>
               </a>
-              {activeChecked === null ? null : <> · Checked {activeChecked}</>}
+              {activeChecked === null ? null : (
+                <>
+                  <CheckSeparator />
+                  Checked {activeChecked}
+                </>
+              )}
             </span>
           ) : (
             <span className="hidden sm:inline">

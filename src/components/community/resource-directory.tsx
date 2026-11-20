@@ -1,5 +1,6 @@
 import type { Resource } from "@/data/schemas";
 import { cx } from "@/components/ui/cx";
+import { CheckSeparator } from "@/components/ui/source-check";
 import { recordAnchor } from "@/lib/search/anchors";
 import { formatCheckDate, sourceHost } from "./card-format";
 import {
@@ -94,7 +95,7 @@ export function ResourceDirectory({ resources, className }: ResourceDirectoryPro
                         {host === null ? "Source link" : `Source: ${host}`}
                         {checked === null ? null : (
                           <>
-                            {" · "}
+                            <CheckSeparator />
                             Checked <time dateTime={resource.lastVerified}>{checked}</time>
                           </>
                         )}

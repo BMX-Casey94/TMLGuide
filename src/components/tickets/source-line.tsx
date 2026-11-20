@@ -5,6 +5,7 @@
  * from data, so this component is used on cards, detail views and the explainer
  * rather than being optional decoration.
  */
+import { CheckSeparator } from "@/components/ui/source-check";
 import { formatCheckedDate } from "./format";
 import type { Source } from "@/data/schemas";
 import "./tickets.css";
@@ -32,12 +33,10 @@ export function SourceLine({ source, lastVerified, label = "Source" }: SourceLin
         <span className="tml-tix-sr"> (opens in a new tab)</span>
       </a>
       {checked === null ? null : (
-        <>
-          <span aria-hidden="true">·</span>
-          <span>
-            Checked <time dateTime={lastVerified}>{checked}</time>
-          </span>
-        </>
+        <span>
+          <CheckSeparator />
+          Checked <time dateTime={lastVerified}>{checked}</time>
+        </span>
       )}
     </p>
   );
