@@ -1,5 +1,6 @@
 import type { Resource } from "@/data/schemas";
 import { cx } from "@/components/ui/cx";
+import { recordAnchor } from "@/lib/search/anchors";
 import { formatCheckDate, sourceHost } from "./card-format";
 import {
   groupResourcesByCategory,
@@ -52,7 +53,7 @@ export function ResourceDirectory({ resources, className }: ResourceDirectoryPro
             </p>
           </div>
 
-          <ul className="mt-5 grid gap-4 md:grid-cols-2">
+          <ul className="mt-5 grid gap-4 sm:gap-6 md:grid-cols-2">
             {group.resources.map((resource) => {
               const badge = resourceBadge(resource);
               const checked = formatCheckDate(resource.lastVerified);
@@ -61,7 +62,10 @@ export function ResourceDirectory({ resources, className }: ResourceDirectoryPro
 
               return (
                 <li key={resource.id}>
-                  <article className="flex h-full flex-col rounded-[var(--radius-card)] border border-hair bg-gradient-to-b from-surface-2 to-surface p-5">
+                  <article
+                    id={recordAnchor("resource", resource.id)}
+                    className="flex h-full flex-col rounded-[var(--radius-card)] border border-hair bg-gradient-to-b from-surface-2 to-surface p-5"
+                  >
                     <div className="flex flex-wrap items-center gap-2">
                       {badge === null ? null : (
                         <span

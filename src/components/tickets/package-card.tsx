@@ -8,6 +8,7 @@
  */
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { recordAnchor } from "@/lib/search/anchors";
 import { PriceTiers } from "./price-tiers";
 import { SourceLine } from "./source-line";
 import type { CatalogueItem } from "./types";
@@ -34,6 +35,7 @@ export function PackageCard({
 
   return (
     <article
+      id={recordAnchor(item.categoryId === "festival-tickets" ? "ticket" : "stay", item.id)}
       className={
         unpublished ? "tml-tix-card tml-tix-card--unpublished" : "tml-tix-card"
       }

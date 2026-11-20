@@ -30,8 +30,11 @@ describe("search exports", () => {
   });
 
   it("builds an index whose hrefs all pass the route whitelist", () => {
+    // A guide chapter route is dynamic, so it is checked against the content
+    // registry rather than the static list; every other kind against the list.
     for (const entry of buildSearchIndex()) {
-      expect(isKnownRoute(entry.href) || entry.kind === "guide", entry.id).toBe(true);
+      const chapterRoute = entry.kind === "guide" || entry.kind === "guide-section";
+      expect(isKnownRoute(entry.href) || chapterRoute, `${entry.id} → ${entry.href}`).toBe(true);
     }
   });
 });

@@ -204,7 +204,7 @@ export function WhatsappDirectory({ groups, className }: WhatsappDirectoryProps)
                     {countGroups(section.groups.length)}
                   </p>
                 </div>
-                <ul className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <ul className="mt-5 grid gap-4 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3">
                   {section.groups.map((group) => (
                     <li key={group.id} className="flex">
                       <WhatsappGroupCard group={group} className="w-full" />

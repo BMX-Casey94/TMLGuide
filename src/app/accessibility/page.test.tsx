@@ -4,6 +4,10 @@ import { cleanup, render, screen, within } from "@testing-library/react";
 import AccessibilityPage, { metadata } from "@/app/accessibility/page";
 import { CORRECTIONS_EMAIL } from "@/components/home/contact";
 import { expectResolvableLinks, expectSoundHeadingOrder } from "@/components/home/page-assertions";
+import {
+  expectDividerCount,
+  expectNoAdjacentRules,
+} from "@/components/guides/divider-guard";
 
 /**
  * Page-level tests for the accessibility statement.
@@ -211,6 +215,54 @@ describe("the review date", () => {
     expect(time).toHaveAttribute("datetime", "2026-11-19");
     expect(time).toHaveTextContent("19 November 2026");
     expect(visibleText(container)).toMatch(/Last reviewed\s+19 November 2026/);
+  });
+});
+
+/*
+  Presentation conventions this page has to hold, alongside the wording the sections
+  above guard. The owner asked for a redesign that matches /about and the guides, so
+  the checks are the ones those two pages carry: one break per boundary, one review
+  line at the close, and no stacked rules.
+*/
+describe("presentation conventions", () => {
+  it("uses one GoldDivider per boundary that wants an ornament, and no more", () => {
+    const { container } = render(<AccessibilityPage />);
+    expectDividerCount(container, 2);
+  });
+
+  it("never puts two rules side by side in the page flow", () => {
+    const { container } = render(<AccessibilityPage />);
+    expectNoAdjacentRules(container);
+  });
+
+  it("marks the review line as one labelled block at the close of the page", () => {
+    const { container } = render(<AccessibilityPage />);
+    const reviewed = container.querySelector(".a11y-page-reviewed");
+
+    expect(reviewed).not.toBeNull();
+    expect(reviewed?.querySelector(".a11y-page-reviewed__label")).toHaveTextContent(
+      /Last reviewed/,
+    );
+    // It is the last thing in the page column, after the last section.
+    const main = container.querySelector("main");
+    expect(main?.lastElementChild).toBe(reviewed);
+  });
+
+  it("puts the no-conformance-claim statement in its own callout", () => {
+    const { container } = render(<AccessibilityPage />);
+    const caveat = container.querySelector(".a11y-page-callout--caveat");
+
+    expect(caveat).not.toBeNull();
+    expect(caveat?.textContent).toMatch(/does not claim conformance/i);
+    expect(caveat?.textContent).toMatch(/No conformance claim/);
+  });
+
+  it("keeps every section on the page's own class, so none draws a rule of its own", () => {
+    const { container } = render(<AccessibilityPage />);
+    const sections = Array.from(container.querySelectorAll("main > section"));
+
+    expect(sections).toHaveLength(6);
+    for (const section of sections) expect(section.className).toContain("a11y-page-section");
   });
 });
 

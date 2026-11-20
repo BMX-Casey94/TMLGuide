@@ -30,7 +30,7 @@ export function SiteHeader() {
   return (
     <header className="sticky top-0 z-40">
       <div className="border-b border-hair bg-ground/85 backdrop-blur-xl">
-        <div className="mx-auto flex h-[60px] max-w-[1280px] items-center gap-4 pl-4 pr-3 min-[900px]:h-[68px] min-[900px]:gap-4 min-[900px]:pl-6 min-[900px]:pr-3 min-[1100px]:gap-5 min-[1100px]:pr-4">
+        <div className="mx-auto flex h-[60px] max-w-[1240px] items-center gap-4 pl-5 pr-3 min-[390px]:pl-6 min-[900px]:h-[68px] min-[900px]:gap-4 min-[900px]:pr-3 min-[1100px]:gap-5 min-[1100px]:pr-4">
           <Link href="/" className="block shrink-0">
             {/* The image's alt text is the link's accessible name. */}
             <Image

@@ -1,0 +1,603 @@
+/*
+  My Trip styles.
+
+  Scoped to this tool: every selector starts with `trip-` (or is a descendant of
+  `.trip`), because Next merges CSS globally and this file must not touch any
+  other workstream's markup. Shared chrome (`.tool-panel`, `.tool-field`,
+  `.tool-btn`, `.tool-input`) comes from `tools.css` and is not redefined here.
+
+  Layout follows the wave 6 convention: three top-level sections separated by a
+  GoldDivider, no card chrome on the sections themselves, and hairlines only
+  inside lists and option rows. Type and colour come from the Dusk Programme
+  tokens, so the accent follows the reader's edition through `--ea`.
+*/
+
+.trip {
+  display: block;
+}
+
+/* ---------- Sections ---------- */
+
+/*
+  Spacing follows the wave 6 divider convention: the divider supplies its own
+  equal space above and below, so the sections carry no top margin. A section
+  edge that also drew a rule would put a second line beside the divider, so the
+  heading row is separated from its content by space alone.
+
+  The first section does need a top margin: `.tool-head` ends with its own
+  hairline, and without this the sheet's first heading sits directly on it.
+*/
+.trip-section {
+  margin-top: 0;
+}
+
+.trip-section:first-child {
+  margin-top: 2rem;
+}
+
+@media (min-width: 700px) {
+  .trip-section:first-child {
+    margin-top: 2.5rem;
+  }
+}
+
+.trip > .tml-divider {
+  margin-block: 2.75rem;
+}
+
+.trip-section__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.35rem 1rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.35rem;
+}
+
+.trip-section__title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(1.5rem, 4vw, 1.9rem);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: var(--cream);
+  font-variation-settings:
+    "SOFT" 100,
+    "WONK" 1;
+}
+
+.trip-section__intro {
+  margin: 0;
+  max-width: 62ch;
+  color: var(--cream-mute);
+  font-size: 0.9375rem;
+  line-height: 1.55;
+}
+
+/* ---------- Form ---------- */
+
+.trip-form {
+  display: grid;
+  gap: 1.6rem;
+}
+
+.trip-fieldset {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.trip-legend {
+  display: block;
+  padding: 0;
+  margin-bottom: 0.55rem;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--cream-mute);
+}
+
+.trip-hint {
+  margin: 0 0 0.75rem;
+  max-width: 62ch;
+  color: var(--cream-mute);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}
+
+/* ---------- Radio options (dated weekends and weeks) ---------- */
+
+.trip-options {
+  display: grid;
+  gap: 0.6rem;
+}
+
+@media (min-width: 720px) {
+  .trip-options {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.trip-option {
+  display: flex;
+  min-height: 44px;
+  align-items: flex-start;
+  gap: 0.7rem;
+  padding: 0.8rem 0.9rem;
+  border: 1px solid var(--hair);
+  border-radius: 14px;
+  background-color: rgb(12 10 9 / 0.42);
+  color: var(--cream);
+  cursor: pointer;
+  transition: border-color 0.18s ease, background-color 0.18s ease;
+}
+
+.trip-option input {
+  flex: none;
+  width: 1.15rem;
+  height: 1.15rem;
+  margin-top: 0.15rem;
+  accent-color: var(--ea);
+  cursor: pointer;
+}
+
+.trip-option__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.trip-option__name {
+  font-size: 0.9375rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.trip-option__meta {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--cream-mute);
+}
+
+/* The checked state adds a second cue beyond colour: a heavier border. */
+.trip-option:has(input:checked) {
+  border-color: var(--ea);
+  border-width: 2px;
+  padding: calc(0.8rem - 1px) calc(0.9rem - 1px);
+  background-color: color-mix(in srgb, var(--ea) 9%, transparent);
+}
+
+@media (hover: hover) {
+  .trip-option:hover {
+    border-color: var(--hair-strong);
+  }
+
+  .trip-option:has(input:checked):hover {
+    border-color: var(--ea);
+  }
+}
+
+/* ---------- Chosen ticket or package detail ---------- */
+
+.trip-detail {
+  margin-top: 0.75rem;
+  padding: 0.85rem 0.95rem;
+  border: 1px solid var(--hair);
+  border-radius: 14px;
+  background-color: rgb(244 236 224 / 0.03);
+  font-size: 0.875rem;
+  line-height: 1.55;
+  color: var(--cream-mute);
+}
+
+.trip-detail__figures {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 1.1rem;
+  margin: 0 0 0.35rem;
+}
+
+.trip-detail__price {
+  font-family: var(--font-mono);
+  font-size: 1rem;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
+  color: var(--cream);
+}
+
+.trip-detail__year {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--cream-mute);
+  align-self: center;
+}
+
+.trip-detail__text {
+  margin: 0;
+  max-width: 68ch;
+}
+
+.trip-detail__source {
+  margin: 0.5rem 0 0;
+  font-size: 0.8125rem;
+}
+
+.trip-detail__source a {
+  display: inline-flex;
+  min-height: 32px;
+  align-items: center;
+  color: var(--cream);
+  text-decoration: underline;
+  text-decoration-color: var(--hair-strong);
+  text-underline-offset: 3px;
+  overflow-wrap: anywhere;
+}
+
+.trip-flag {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem 0.5rem;
+  border: 1px solid var(--hair-strong);
+  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-size: 0.5625rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--cream-mute);
+}
+
+/* ---------- Text fields ---------- */
+
+.trip-textarea {
+  width: 100%;
+  min-height: 5.2rem;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--hair-strong);
+  border-radius: 14px;
+  background-color: rgb(12 10 9 / 0.55);
+  color: var(--cream);
+  font-family: var(--font-sans);
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  resize: vertical;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.trip-textarea::placeholder {
+  color: rgb(244 236 224 / 0.4);
+}
+
+.trip-textarea:focus {
+  outline: none;
+  border-color: var(--ea);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ea) 22%, transparent);
+}
+
+.trip-count {
+  align-self: flex-end;
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.1em;
+  color: var(--cream-mute);
+}
+
+/* ---------- Save status ---------- */
+
+.trip-save {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--teal);
+}
+
+.trip-save--warning {
+  color: #ffb9a3;
+}
+
+.trip-save--idle {
+  color: var(--cream-mute);
+}
+
+.trip-save__time {
+  color: var(--cream-mute);
+  letter-spacing: 0.06em;
+}
+
+/* ---------- Actions ---------- */
+
+.trip-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1.75rem;
+}
+
+.trip-confirm {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid rgb(255 106 61 / 0.35);
+  border-radius: 14px;
+  background-color: rgb(255 106 61 / 0.07);
+}
+
+.trip-confirm__question {
+  margin: 0;
+  flex: 1 1 18rem;
+  color: var(--cream);
+  font-size: 0.9375rem;
+  line-height: 1.5;
+}
+
+.trip-file {
+  display: none;
+}
+
+/* ---------- Dates to remember ---------- */
+
+.trip-windows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.trip-window {
+  padding: 1.1rem 0;
+  border-top: 1px solid var(--hair);
+}
+
+.trip-window:first-child {
+  border-top: 0;
+  padding-top: 0.25rem;
+}
+
+.trip-window__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+}
+
+.trip-window__name {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 1.15rem;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  color: var(--cream);
+}
+
+.trip-window__audience {
+  margin: 0.3rem 0 0;
+  color: var(--cream-mute);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.trip-window__times {
+  display: grid;
+  gap: 0.4rem 1.6rem;
+  margin: 0.7rem 0 0;
+}
+
+@media (min-width: 560px) {
+  .trip-window__times {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.trip-window__times div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.trip-window__times dt {
+  font-family: var(--font-mono);
+  font-size: 0.5625rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--cream-mute);
+}
+
+.trip-window__times dd {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--cream);
+  overflow-wrap: anywhere;
+}
+
+.trip-window__notice {
+  margin: 0.5rem 0 0;
+  padding: 0.35rem 0.6rem;
+  border-left: 2px solid var(--ember);
+  background-color: rgb(255 106 61 / 0.08);
+  color: #ffd0c2;
+  font-size: 0.8125rem;
+}
+
+.trip-window__notes {
+  margin: 0.55rem 0 0;
+  max-width: 66ch;
+  color: var(--cream-mute);
+  font-size: 0.8125rem;
+  line-height: 1.55;
+}
+
+.trip-window__foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.55rem;
+}
+
+.trip-window__link {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  color: var(--cream-mute);
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-decoration: underline;
+  text-decoration-color: var(--hair-strong);
+  text-underline-offset: 3px;
+}
+
+@media (hover: hover) {
+  .trip-window__link:hover {
+    color: var(--cream);
+    text-decoration-color: var(--ea);
+  }
+}
+
+/* ---------- Next steps ---------- */
+
+.trip-steps {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (min-width: 760px) {
+  .trip-steps {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 1rem;
+  }
+}
+
+.trip-step {
+  margin: 0;
+}
+
+.trip-step__link {
+  display: flex;
+  min-height: 44px;
+  align-items: flex-start;
+  gap: 0.85rem;
+  height: 100%;
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--hair);
+  border-radius: 16px;
+  background-color: rgb(244 236 224 / 0.025);
+  color: var(--cream);
+  text-decoration: none;
+  transition: border-color 0.18s ease, background-color 0.18s ease;
+}
+
+@media (hover: hover) {
+  .trip-step__link:hover {
+    border-color: var(--hair-strong);
+    background-color: rgb(244 236 224 / 0.05);
+  }
+}
+
+.trip-step__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.trip-step__label {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+}
+
+.trip-step__why {
+  color: var(--cream-mute);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}
+
+/* ---------- Notes ---------- */
+
+.trip-note {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-top: 1.25rem;
+  padding: 0.9rem 1.05rem;
+  border: 1px solid var(--hair);
+  border-left: 2px solid var(--hair-strong);
+  border-radius: 12px;
+  background-color: rgb(244 236 224 / 0.03);
+  font-size: 0.875rem;
+  line-height: 1.55;
+  color: var(--cream);
+}
+
+.trip-note p {
+  margin: 0;
+  max-width: 70ch;
+}
+
+.trip-note__label {
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--cream-mute);
+}
+
+.trip-note--warning {
+  border-left-color: var(--ember);
+  background-color: rgb(255 106 61 / 0.07);
+}
+
+.trip-note--warning .trip-note__label {
+  color: #ffb9a3;
+}
+
+.trip-note--ok {
+  border-left-color: var(--teal);
+  background-color: rgb(43 196 180 / 0.06);
+}
+
+.trip-note--ok .trip-note__label {
+  color: var(--teal);
+}
+
+.trip-repairs {
+  margin: 0.35rem 0 0;
+  padding-left: 1.1rem;
+  color: var(--cream-mute);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trip-option,
+  .trip-step__link,
+  .trip-textarea {
+    transition: none;
+  }
+}

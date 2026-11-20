@@ -1,0 +1,195 @@
+/* ================================================================================================
+   Search palette
+   ================================================================================================
+
+   Two orange rectangles had to go, and neither was where it looked:
+
+   1. The whole dialog. `<dialog>` is the top-layer box, and the palette's radius lives on the panel
+      *inside* it. The global `:focus-visible` outline in `globals.css` therefore drew a square
+      around a rounded card, 4px outside it. The dialog is focused programmatically, so its own
+      focus state is invisible by design: it is a scroll container and a focus trap, not a control
+      the visitor activates.
+
+   2. The text field. `globals.css` styles every `input` with `box-shadow: inset 0 0 0 1px var(--ea)`
+      on focus, which is right for a stacked form field and wrong here: the field is borderless
+      inside a shared row, so the shadow drew a square inside a rounded header.
+
+   The replacement is one indicator, on the field's own rounded box: an accent border plus a 3px
+   outer glow, both following the 12px radius. Measured against the panel (--ea #ffc83d on --surface
+   #15110f) that border is about 11:1, far above the 3:1 non-text contrast WCAG 2.2 asks of a focus
+   indicator, and the glow is an additional cue rather than the only one. The header row's hairline
+   also strengthens to accent while the field has focus, as a second, non-colour-independent signal.
+   Nothing draws a ring on the header row itself: it is a full-width rectangle, so a halo there
+   would be exactly the rectangle this change removes.
+
+   Verified in a real browser with `Emulation.setFocusEmulationEnabled`: zero accent pixels outside
+   the dialog's rounded box and zero in the field's corners, with the field's side edges lit. A
+   square ring lights its corners; this one does not.
+
+   `!important` appears in three declarations and only those. The global form-field rule is
+   `input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):focus-visible`, which is
+   (0,4,1) — more specific than any sane class selector. Restating it here beats editing a global
+   rule that every other page depends on.
+   ============================================================================================= */
+
+/* ---------- The dialog itself ---------- */
+
+.tml-search-dialog:focus,
+.tml-search-dialog:focus-visible {
+  outline: none;
+}
+
+/*
+  Selection is tinted with the edition accent rather than the platform default,
+  which on this dark ground is an unreadable light blue. Text colour is left
+  alone: the browser picks a contrasting one for a custom selection colour.
+*/
+.tml-search-dialog ::selection {
+  background: color-mix(in srgb, var(--ea) 34%, transparent);
+  color: var(--cream);
+}
+
+/* ---------- The header row ---------- */
+
+.tml-search-head {
+  transition: border-color 160ms ease;
+}
+
+/* The row's hairline strengthens while the field has focus, as a secondary cue.
+   Deliberately no shadow here: the row is a full-width rectangle with square
+   corners, so a halo on it would be the rectangle this whole exercise is about
+   removing. The rounding lives on the field below. */
+.tml-search-head:focus-within {
+  border-bottom-color: var(--ea);
+}
+
+/*
+  The field carries the focus state itself, on its own rounded box: an accent
+  border around the pill plus a soft outer glow. Because the radius is set here,
+  both follow the curve — nothing square is drawn inside the panel.
+
+  Contrast: --ea is #ffc83d on a #15110f panel, about 11:1, so the 1px border
+  alone clears the 3:1 that WCAG 2.2 asks of a focus indicator, with the glow as
+  an additional cue rather than the only one.
+
+  `!important` on the three declarations is not decoration. The global rule in
+  `globals.css` is
+  `input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):focus-visible`,
+  specificity (0,4,1), which beats any class selector; restating it here is
+  cheaper and safer than editing a rule every form on the site depends on.
+*/
+.tml-search-field {
+  min-width: 0;
+  padding-inline: 0.6rem;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  background: transparent;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.tml-search-field:focus,
+.tml-search-field:focus-visible {
+  outline: none !important;
+  border-color: var(--ea) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ea) 26%, transparent) !important;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.tml-search-field::placeholder {
+  /* Placeholder text is not a label; keep it at the muted tone the palette already used. */
+  color: var(--cream-mute);
+  opacity: 1;
+}
+
+/* ---------- Result rows ---------- */
+
+/*
+  Rows are options in a listbox: they are reached with the arrow keys and never hold focus in normal
+  use, so the visible indicator is the left rule and the raised background. When one does take focus
+  (a pointer press, or a browser that focuses anchors on activation) it gets a rounded inset ring
+  that sits inside the row rather than a square drawn around it.
+*/
+.tml-search-option:focus,
+.tml-search-option:focus-visible {
+  outline: 2px solid var(--ea);
+  outline-offset: -2px;
+  border-radius: 10px;
+}
+
+.tml-search-option[aria-selected="true"] {
+  /* The accent bar is the primary indicator; the tint is a second, non-colour-only cue. */
+  background: var(--surface-2);
+}
+
+/* ---------- Controls ---------- */
+
+/*
+  The close button is round, so the global outline would follow its radius anyway. This makes the
+  offset tighter so the ring does not touch the row's border.
+*/
+.tml-search-close:focus-visible {
+  outline: 2px solid var(--ea);
+  outline-offset: -3px;
+}
+
+/* The Escape hint is a `<kbd>`, never focusable: it needs no focus state, and it is
+   hidden from assistive technology in the markup because the dialog's own hint
+   paragraph already explains Escape. */
+.tml-search-escape {
+  pointer-events: none;
+}
+
+/* ---------- Pending state (JOB 3a) ---------- */
+
+.tml-search-option[data-pending="true"] {
+  cursor: progress;
+  background: var(--surface-2);
+}
+
+.tml-search-option[data-pending="true"] .tml-search-option__label {
+  color: var(--cream-mute);
+}
+
+.tml-search-spinner {
+  display: inline-block;
+  flex: none;
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid color-mix(in srgb, var(--ea) 30%, transparent);
+  border-top-color: var(--ea);
+  border-radius: 50%;
+  animation: tml-search-spin 700ms linear infinite;
+}
+
+@keyframes tml-search-spin {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+/*
+  No spinning for a visitor who asked for less motion: the ring becomes a static accent dot, and the
+  "Opening…" label (which is text, not motion) carries the state on its own. `data-a11y-motion` wins
+  over the media query, exactly as it does in `a11y.css`.
+*/
+@media (prefers-reduced-motion: reduce) {
+  .tml-search-spinner {
+    animation: none;
+    border-color: var(--ea);
+  }
+}
+
+html[data-a11y-motion="reduce"] .tml-search-spinner {
+  animation: none !important;
+  border-color: var(--ea);
+}
+
+/* ---------- Inline failure (JOB 3a) ---------- */
+
+.tml-search-error {
+  border-top: 1px solid color-mix(in srgb, var(--ember) 40%, transparent);
+  background: color-mix(in srgb, var(--ember) 10%, transparent);
+  color: var(--cream);
+}

@@ -2,6 +2,7 @@ import { faqs as belgiumFaqs } from "@/data/belgium";
 import { winterFaqs } from "@/data/winter";
 import { sharedData } from "@/data/shared";
 import type { Faq } from "@/data/schemas";
+import { faqAnchor, type FaqCollection } from "../anchors";
 import type { SourceEntry } from "./types";
 
 /**
@@ -33,13 +34,23 @@ export function plainMarkdown(value: string): string {
 }
 
 /** One entry per question, with a prefix keeping ids unique across editions. */
-function entriesFor(collection: readonly Faq[], prefix: string): SourceEntry[] {
+function entriesFor(
+  collection: readonly Faq[],
+  prefix: string,
+  collectionKey: FaqCollection,
+): SourceEntry[] {
   return collection.map((faq) => ({
     slug: `${prefix}-${faq.id}`,
     title: faq.question,
     snippet: plainMarkdown(faq.answer),
     edition: faq.edition,
     href: "/guides",
+    /*
+      The collection prefix is part of the anchor, not just the entry id: two
+      collections answer the same question under the same record id (the shared
+      set restates a Belgium rule), and one anchor cannot be on the page twice.
+    */
+    anchor: faqAnchor(collectionKey, faq.id),
     source: faq.edition === "all" ? "src/data/shared/faqs.ts" : `src/data/${faq.edition}/faqs.ts`,
     sourceUrl: faq.source.url,
     lastVerified: faq.lastVerified,
@@ -47,7 +58,7 @@ function entriesFor(collection: readonly Faq[], prefix: string): SourceEntry[] {
 }
 
 export const faqEntries: SourceEntry[] = [
-  ...entriesFor(belgiumFaqs, "be"),
-  ...entriesFor(winterFaqs, "wi"),
-  ...entriesFor(sharedData.faqs, "sh"),
+  ...entriesFor(belgiumFaqs, "be", "belgium"),
+  ...entriesFor(winterFaqs, "wi", "winter"),
+  ...entriesFor(sharedData.faqs, "sh", "shared"),
 ];

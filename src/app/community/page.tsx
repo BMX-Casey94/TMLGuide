@@ -27,13 +27,23 @@ export const metadata: Metadata = {
  * Safety rule applied throughout: the WhatsApp groups and most of the resources
  * are run by other attendees, and the partners are commercial. Each of those gets
  * its warning where the reader meets it, not in a footnote.
+ *
+ * Layout: one 1240px column with the same inset as the site footer (20px at the
+ * narrowest phone, 24px from 390px, 28px from 640px). Each panel opens with a
+ * `SectionHeading`, whose hairline is the single break at that boundary, so the
+ * tab row above it carries no rule of its own. The one `GoldDivider` marks the
+ * boundary before the closing section, spaced by its own symmetric margin with no
+ * margin from the section it introduces.
  */
 export default function CommunityPage() {
   const counts = communityCounts(whatsappGroups, resources, partners);
 
   return (
-    <main id="main" className="mx-auto w-full max-w-6xl px-5 pb-24 sm:px-7">
-      <header className="pt-14 pb-4">
+    <main
+      id="main"
+      className="mx-auto w-full max-w-[1240px] px-5 pb-24 min-[390px]:px-6 sm:px-7"
+    >
+      <header className="pt-14 pb-4 min-[900px]:pt-16">
         <p className="label text-accent">Independent guide</p>
         <h1 className="mt-3 font-display text-4xl leading-none tracking-tight sm:text-5xl">
           Community
@@ -80,7 +90,7 @@ export default function CommunityPage() {
               lede={PARTNER_LIST_INTRO}
             />
             <PartnerDisclosure />
-            <ul className="mt-8 grid gap-4 md:grid-cols-2">
+            <ul className="mt-8 grid gap-4 sm:gap-6 md:grid-cols-2">
               {partners.map((partner) => (
                 <li key={partner.id} className="flex">
                   <PartnerCard partner={partner} className="w-full" />
@@ -93,7 +103,7 @@ export default function CommunityPage() {
 
       <GoldDivider butterfly="right" />
 
-      <section aria-labelledby="community-official" className="mt-4">
+      <section aria-labelledby="community-official">
         <h2 id="community-official" className="font-display text-2xl">
           Where the official answers are
         </h2>

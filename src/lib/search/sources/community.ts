@@ -1,4 +1,5 @@
 import { communityData } from "@/data/community";
+import { recordAnchor } from "../anchors";
 import { joinSnippet, stripEmoji } from "./types";
 import type { SourceEntry } from "./types";
 
@@ -33,6 +34,7 @@ export const resourceEntries: SourceEntry[] = communityData.resources.map((resou
   snippet: joinSnippet([RESOURCE_CATEGORY_TEXT[resource.category], resource.description]),
   edition: resource.edition,
   href: "/community",
+  anchor: recordAnchor("resource", resource.id),
   source: "src/data/community/resources.ts",
   sourceUrl: resource.source.url,
   lastVerified: resource.lastVerified,
@@ -53,6 +55,7 @@ export const whatsappEntries: SourceEntry[] = communityData.whatsappGroups.map((
   ]),
   edition: group.edition,
   href: "/community",
+  anchor: recordAnchor("whatsapp", group.id),
   source: "src/data/community/whatsapp-groups.ts",
   sourceUrl: group.source.url,
   lastVerified: group.lastVerified,
@@ -67,6 +70,7 @@ export const partnerEntries: SourceEntry[] = communityData.partners.map((partner
   ]),
   edition: partner.edition,
   href: "/community",
+  anchor: recordAnchor("partner", partner.id),
   source: "src/data/community/partners.ts",
   sourceUrl: partner.source.url,
   lastVerified: partner.lastVerified,

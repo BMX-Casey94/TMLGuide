@@ -16,28 +16,41 @@
 */
 
 .tml-guide-page {
+  --guide-gutter: 1.25rem;
   width: 100%;
   max-width: 1240px;
   margin-inline: auto;
-  padding: 2.25rem 1.25rem 6rem;
+  /* 48px below the sticky header on a phone, 64px from 900px. The header is 61px
+     tall below 900px and 69px above it, and it sits in normal flow, so this is the
+     space between the first line of the page and the bar itself. */
+  padding: 3rem var(--guide-gutter) 6rem;
+}
+
+@media (min-width: 390px) {
+  .tml-guide-page {
+    --guide-gutter: 1.5rem;
+  }
 }
 
 @media (min-width: 640px) {
   .tml-guide-page {
-    padding-inline: 1.75rem;
+    --guide-gutter: 1.75rem;
   }
 }
 
 @media (min-width: 900px) {
   .tml-guide-page {
-    padding-top: 3rem;
+    padding-top: 4rem;
   }
 }
 
 /* ---------- Hero ---------- */
 
+/* The chapter header ends on a hairline. It is the one rule at that boundary: the
+   breadcrumbs above carry none and the body below starts on a heading, so nothing
+   doubles it. */
 .tml-guide-hero {
-  padding-bottom: 1.5rem;
+  padding-bottom: 1.75rem;
   border-bottom: 1px solid var(--hair);
 }
 
@@ -148,7 +161,7 @@
 .tml-guide-chapter {
   display: grid;
   gap: 2rem;
-  padding-top: 2rem;
+  padding-top: 2.5rem;
   grid-template-columns: minmax(0, 1fr);
 }
 
@@ -341,8 +354,16 @@
 }
 
 /* The scroll container, not the table, is what keeps a wide table inside the
-   page: the table can be wider than the column without widening the document. */
+   page: the table can be wider than the column without widening the document.
+
+   `position: relative` is load-bearing, not decoration. A visually hidden span
+   (`.sr-only`) is `position: absolute`, so without a positioned ancestor here it
+   resolves against the initial containing block and lands at its static position
+   inside the wide table — which puts a 1px box at x=397 on a 320px viewport and
+   makes the page scroll sideways. As the containing block, this element clips it
+   along with the rest of the table. */
 .tml-guide-data__scroll {
+  position: relative;
   overflow-x: auto;
   border: 1px solid var(--hair);
   border-radius: 14px;
@@ -591,13 +612,16 @@
   }
 }
 
-/* ---------- Sources section ---------- */
-
+/*
+  No `border-top` on the sources block. The block above it is usually a callout or a
+  data table, both bordered, so a hairline here put a rule a few pixels under a card
+  edge: the redundant second break the divider convention forbids. The margin is the
+  separator, and the list's own row hairlines start below the heading, where they read
+  as table rows rather than as a section rule.
+*/
 .tml-guide-sources {
   max-width: 44rem;
   margin-top: 3rem;
-  padding-top: 1.5rem;
-  border-top: 1px solid var(--hair);
 }
 
 .tml-guide-sources__title {
@@ -673,16 +697,15 @@
 
 .tml-guide-pager {
   display: grid;
-  gap: 0.75rem;
+  gap: 1rem;
   max-width: 44rem;
   margin-top: 2.5rem;
-  padding-top: 1.5rem;
-  border-top: 1px solid var(--hair);
   grid-template-columns: minmax(0, 1fr);
 }
 
 @media (min-width: 620px) {
   .tml-guide-pager {
+    gap: 1.5rem;
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
@@ -752,7 +775,10 @@
   padding: 0;
   list-style: none;
   display: grid;
-  gap: 0.5rem;
+  /* 16px, the minimum gap between two adjacent cards on a phone. These are a
+     stacked list of bordered links, so the grid gap is the only space between
+     their edges. */
+  gap: 1rem;
 }
 
 .tml-guide-related__link {
@@ -786,13 +812,19 @@
 
 .tml-guide-note {
   max-width: 44rem;
-  margin-top: 2.5rem;
-  padding: 1rem 1.1rem;
+  margin-top: 3rem;
+  padding: 1.15rem 1.25rem;
   border: 1px solid var(--hair);
   border-radius: 14px;
   color: var(--cream-mute);
   font-size: 0.875rem;
   line-height: 1.6;
+}
+
+@media (min-width: 640px) {
+  .tml-guide-note {
+    padding: 1.25rem 1.5rem;
+  }
 }
 
 .tml-guide-note p {
@@ -801,8 +833,18 @@
 
 /* ---------- Hub cards ---------- */
 
+/*
+  The hub's sections, on the page rhythm. Each one starts on its own heading, with no
+  rule: the heading is the break, and a `border-top` here would be a second one.
+*/
 .tml-guide-section {
-  margin-top: 2.75rem;
+  margin-top: 3rem;
+}
+
+@media (min-width: 900px) {
+  .tml-guide-section {
+    margin-top: 3.5rem;
+  }
 }
 
 .tml-guide-section__title {
@@ -832,6 +874,7 @@
 
 @media (min-width: 700px) {
   .tml-guide-grid {
+    gap: 1.5rem;
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }

@@ -1,6 +1,7 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useEffect, useId, useState } from "react";
+import { recordAnchor } from "@/lib/search/anchors";
 import { SaleTimeline } from "./sale-timeline";
 import type { SaleRecord, TimelineEdition } from "./timeline-logic";
 
@@ -32,6 +33,20 @@ export interface SaleTimelineTabsProps {
 export function SaleTimelineTabs({ editions, initialEdition }: SaleTimelineTabsProps) {
   const [active, setActive] = useState<TimelineEdition>(initialEdition);
   const baseId = useId();
+
+  useEffect(() => {
+    const syncFromHash = () => {
+      const targetId = window.location.hash.replace(/^#/, "").trim();
+      if (!targetId.startsWith("sale-")) return;
+      const match = editions.find((entry) =>
+        entry.records.some((record) => recordAnchor("sale", record.id) === targetId),
+      );
+      if (match !== undefined) setActive(match.edition);
+    };
+    syncFromHash();
+    window.addEventListener("hashchange", syncFromHash);
+    return () => window.removeEventListener("hashchange", syncFromHash);
+  }, [editions]);
 
   const tabId = (edition: TimelineEdition) => `${baseId}-tab-${edition}`;
   const panelId = (edition: TimelineEdition) => `${baseId}-panel-${edition}`;

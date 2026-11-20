@@ -22,7 +22,8 @@ const INDEX: SearchEntry[] = [
     kind: "ticket",
     kindLabel: "Ticket",
     edition: "belgium",
-    href: "/guides/tickets",
+    href: "/guides/tickets#ticket-belgium-2027-day-pass",
+    anchor: "ticket-belgium-2027-day-pass",
     source: "src/data/belgium/tickets.ts",
     sourceUrl: "https://belgium.tomorrowland.com/en/tickets/festival-tickets/day-pass/",
     lastVerified: "2026-11-18",
@@ -34,7 +35,8 @@ const INDEX: SearchEntry[] = [
     kind: "ticket",
     kindLabel: "Ticket",
     edition: "winter",
-    href: "/guides/tickets?edition=winter",
+    href: "/guides/tickets?edition=winter#ticket-winter-four-day-festival-ticket",
+    anchor: "ticket-winter-four-day-festival-ticket",
     source: "src/data/winter/tickets.ts",
     sourceUrl: "https://winter.tomorrowland.com/fr/tickets/ticket-festival/",
     lastVerified: "2026-11-18",
@@ -46,10 +48,33 @@ const INDEX: SearchEntry[] = [
     kind: "faq",
     kindLabel: "FAQ",
     edition: "belgium",
-    href: "/guides",
+    href: "/guides#faq-be-are-there-lockers",
+    anchor: "faq-be-are-there-lockers",
     source: "src/data/belgium/faqs.ts",
     sourceUrl: "https://belgium.tomorrowland.com/en/practical/facilities/",
     lastVerified: "2026-11-18",
+  },
+  {
+    id: "guide:belgium-transport",
+    title: "Transport",
+    snippet: "Trains, shuttles and the walk from Boom station to De Schorre.",
+    kind: "guide",
+    kindLabel: "Guide",
+    edition: "belgium",
+    href: "/guides/belgium/transport#chapter-title",
+    anchor: "chapter-title",
+    source: "src/content/belgium/transport.ts",
+  },
+  {
+    id: "section:belgium-transport-arriving-by-train",
+    title: "Belgium: Transport: Arriving by train",
+    snippet: "The train from Brussels to Boom takes about 40 minutes.",
+    kind: "guide-section",
+    kindLabel: "In this chapter",
+    edition: "belgium",
+    href: "/guides/belgium/transport#arriving-by-train",
+    anchor: "arriving-by-train",
+    source: "src/content/belgium/transport.ts",
   },
   {
     id: "stay:belgium-stay-easy-tent-2p",
@@ -58,7 +83,8 @@ const INDEX: SearchEntry[] = [
     kind: "accommodation",
     kindLabel: "Accommodation",
     edition: "belgium",
-    href: "/guides/tickets",
+    href: "/guides/tickets#stay-belgium-easy-tent-2p",
+    anchor: "stay-belgium-easy-tent-2p",
     source: "src/data/belgium/accommodation.ts",
   },
   {
@@ -68,7 +94,8 @@ const INDEX: SearchEntry[] = [
     kind: "sale",
     kindLabel: "Sale",
     edition: "belgium",
-    href: "/tools/sale-timeline",
+    href: "/tools/sale-timeline#sale-worldwide-ticket-sale",
+    anchor: "sale-worldwide-ticket-sale",
     source: "src/data/belgium/sale-windows.ts",
     sourceUrl: "https://faq.tomorrowland.com/hc/en-us/articles/360037219532",
     lastVerified: "2026-11-18",
@@ -86,9 +113,33 @@ const INDEX: SearchEntry[] = [
 ];
 
 function renderPalette(overrides: Partial<Parameters<typeof SearchPalette>[0]> = {}) {
-  const navigate = vi.fn();
+  const navigate = overrides.navigate ?? installRouter();
   const utils = render(<SearchPalette index={INDEX} navigate={navigate} {...overrides} />);
-  return { ...utils, navigate };
+  return { ...utils, navigate: navigate as ReturnType<typeof vi.fn> };
+}
+
+/**
+ * A `navigate` that behaves like the router: it moves `location` to the href it
+ * was given, and — when the href names an anchor — writes an element with that
+ * id, which is what the palette waits for before it closes.
+ *
+ * `vi.stubGlobal` is not used: jsdom's `location` is writable through
+ * `history.replaceState` and that is exactly what the App Router does on a push,
+ * so the test exercises the same code path.
+ */
+function installRouter() {
+  const navigate = vi.fn((href: string) => {
+    const [pathAndQuery, fragment] = href.split("#");
+    const [pathname, search = ""] = (pathAndQuery ?? "/").split("?");
+    window.history.pushState(null, "", `${pathname}${search === "" ? "" : `?${search}`}`);
+    if (fragment !== undefined && fragment !== "") {
+      const target = document.createElement("div");
+      target.id = fragment;
+      target.setAttribute("tabindex", "-1");
+      document.body.appendChild(target);
+    }
+  });
+  return navigate;
 }
 
 function dialog(): HTMLDialogElement {
@@ -113,11 +164,23 @@ async function openPalette() {
 beforeEach(() => {
   installStorage();
   installDialog();
+  // The palette now watches the address, so each test starts from a known one.
+  window.history.replaceState(null, "", "/");
+  for (const node of Array.from(document.querySelectorAll("[data-test-anchor]"))) node.remove();
+  // jsdom implements neither method the anchor landing calls, and its stubs log
+  // "Not implemented" errors that are indistinguishable from real failures.
+  Element.prototype.scrollIntoView = () => {};
+  Object.defineProperty(window, "scrollBy", { configurable: true, writable: true, value: () => {} });
 });
 
 afterEach(() => {
   cleanup();
   localStorage.clear();
+  // Anchors written by `installRouter` are removed so the next test's address
+  // and DOM agree with a freshly opened palette.
+  for (const id of ["faq-be-are-there-lockers", "arriving-by-train", "chapter-title"]) {
+    document.getElementById(id)?.remove();
+  }
 });
 
 describe("SearchPalette opening", () => {
@@ -403,7 +466,8 @@ describe("SearchPalette keyboard navigation", () => {
 
     fireEvent.keyDown(input(), { key: "Enter" });
 
-    expect(navigate).toHaveBeenCalledWith("/guides");
+    expect(navigate).toHaveBeenCalledWith("/guides#faq-be-are-there-lockers");
+    // The palette closes when the page has arrived, not when the click happens.
     await waitFor(() => expect(dialog().open).toBe(false));
     expect(JSON.parse(localStorage.getItem(RECENT_SEARCHES_KEY)!)).toEqual(["lockers"]);
   });
@@ -464,7 +528,7 @@ describe("SearchPalette keyboard navigation", () => {
     expect(option.textContent).toContain("Easy Tent 2P");
     fireEvent.click(option);
 
-    expect(navigate).toHaveBeenCalledWith("/guides/tickets");
+    expect(navigate).toHaveBeenCalledWith("/guides/tickets#stay-belgium-easy-tent-2p");
     await waitFor(() => expect(dialog().open).toBe(false));
   });
 
@@ -477,7 +541,9 @@ describe("SearchPalette keyboard navigation", () => {
     expect(navigate).toHaveBeenCalled();
 
     // The close path must clear the "already open" guard, or the palette is
-    // permanently dead after the first navigation.
+    // permanently dead after the first navigation. The close is now deferred
+    // until the route arrives.
+    await waitFor(() => expect(dialog().open).toBe(false));
     await openPalette();
   });
 
@@ -488,11 +554,43 @@ describe("SearchPalette keyboard navigation", () => {
     fireEvent.click(screen.getByRole("link", { name: /Tickets and packages/ }));
     expect(navigate).toHaveBeenCalledWith("/guides/tickets");
 
+    // The close is deferred until the route arrives, and the guard must clear
+    // then, or the palette is permanently dead after one navigation.
+    await waitFor(() => expect(dialog().open).toBe(false));
     await openPalette();
   });
 });
 
 describe("SearchPalette closing", () => {
+  it("does not put focus back on the trigger after a result is chosen", async () => {
+    /*
+      The reader chose a result and is being delivered to a record. Restoring
+      focus to the header field would fight the anchor landing for focus and
+      drop a keyboard user at the top of the page they just navigated to.
+      Escape still restores focus, which is the behaviour the next test covers.
+    */
+    render(
+      <>
+        <input data-search-trigger aria-label="search" />
+        <SearchPalette index={INDEX} navigate={installRouter()} />
+      </>,
+    );
+
+    const trigger = screen.getByLabelText("search") as HTMLInputElement;
+    trigger.focus();
+    await waitFor(() => expect(dialog().open).toBe(true));
+
+    fireEvent.change(input(), { target: { value: "lockers" } });
+    await waitFor(() => expect(screen.getByRole("listbox")).toBeTruthy());
+    fireEvent.keyDown(input(), { key: "Enter" });
+
+    await waitFor(() => expect(dialog().open).toBe(false));
+    // The anchor target took focus, not the header field.
+    const anchor = document.getElementById("faq-be-are-there-lockers");
+    await waitFor(() => expect(document.activeElement).toBe(anchor));
+    expect(document.activeElement).not.toBe(trigger);
+  });
+
   it("closes on Escape and restores focus to the trigger", async () => {
     render(
       <>
@@ -587,7 +685,7 @@ describe("SearchPalette closing", () => {
     render(
       <>
         <input data-search-trigger aria-label="search" />
-        <SearchPalette index={INDEX} navigate={vi.fn()} />
+        <SearchPalette index={INDEX} navigate={installRouter()} />
       </>,
     );
 
@@ -886,5 +984,191 @@ describe("SearchPalette edition boost", () => {
     await openPalette();
     fireEvent.change(input(), { target: { value: "pass" } });
     await waitFor(() => expect(screen.getByRole("listbox")).toBeTruthy());
+  });
+});
+
+describe("SearchPalette pending and failure states", () => {
+  it("keeps the palette open and marks the chosen row as opening", async () => {
+    // A router that never moves the address stands in for a slow route.
+    const navigate = vi.fn();
+    renderPalette({ navigate });
+    await openPalette();
+    fireEvent.change(input(), { target: { value: "easy tent" } });
+    await waitFor(() => expect(screen.getByRole("listbox")).toBeTruthy());
+
+    const option = screen.getAllByRole("option")[0];
+    fireEvent.click(option);
+
+    expect(navigate).toHaveBeenCalledWith("/guides/tickets#stay-belgium-easy-tent-2p");
+    // Still open, with the row saying what is happening.
+    expect(dialog().open).toBe(true);
+    await waitFor(() => expect(option.getAttribute("data-pending")).toBe("true"));
+    expect(option.getAttribute("aria-busy")).toBe("true");
+    expect(option.textContent).toContain("Opening…");
+  });
+
+  it("moves focus out of the list while a result is opening", async () => {
+    const navigate = vi.fn();
+    renderPalette({ navigate });
+    await openPalette();
+    fireEvent.change(input(), { target: { value: "lockers" } });
+    await waitFor(() => expect(screen.getByRole("listbox")).toBeTruthy());
+
+    fireEvent.keyDown(input(), { key: "Enter" });
+    // A second Enter while a row is in flight must not start a second push.
+    fireEvent.keyDown(input(), { key: "Enter" });
+    expect(navigate).toHaveBeenCalledTimes(1);
+  });
+
+  it("says plainly when the page did not open, and re-enables the list", async () => {
+    const navigate = vi.fn();
+    renderPalette({ navigate });
+    await openPalette();
+    fireEvent.change(input(), { target: { value: "lockers" } });
+    await waitFor(() => expect(screen.getByRole("listbox")).toBeTruthy());
+
+    fireEvent.keyDown(input(), { key: "Enter" });
+
+    // The wait is 8 seconds; this test drives the clock rather than sleeping.
+    await waitFor(() => expect(screen.getByRole("alert").textContent).toContain("did not open"), {
+      timeout: 9000,
+    });
+    expect(dialog().open).toBe(true);
+    // The rows are usable again, and a retry is a fresh attempt.
+    const option = screen.getAllByRole("option")[0];
+    expect(option.getAttribute("data-pending")).toBeNull();
+    expect(option.getAttribute("aria-disabled")).toBeNull();
+    expect(screen.queryByText("Opening…")).toBeNull();
+  }, 15_000);
+
+  it("clears the error when the query changes", async () => {
+    const navigate = vi.fn();
+    renderPalette({ navigate });
+    await openPalette();
+    fireEvent.change(input(), { target: { value: "lockers" } });
+    fireEvent.keyDown(input(), { key: "Enter" });
+    await waitFor(() => expect(screen.getByRole("alert")).toBeTruthy(), { timeout: 9000 });
+
+    fireEvent.change(input(), { target: { value: "pass" } });
+    expect(screen.queryByRole("alert")).toBeNull();
+  }, 15_000);
+
+  it("reports a navigate that throws, rather than leaving a spinner forever", async () => {
+    const navigate = vi.fn(() => {
+      throw new Error("router refused");
+    });
+    renderPalette({ navigate });
+    await openPalette();
+    fireEvent.change(input(), { target: { value: "lockers" } });
+    await waitFor(() => expect(screen.getByRole("listbox")).toBeTruthy());
+
+    fireEvent.keyDown(input(), { key: "Enter" });
+    await waitFor(() => expect(screen.getByRole("alert").textContent).toContain("did not open"));
+    expect(screen.queryByText("Opening…")).toBeNull();
+  });
+
+  it("does not start a second navigation while the first is still opening", async () => {
+    const navigate = vi.fn();
+    renderPalette({ navigate });
+    await openPalette();
+    fireEvent.change(input(), { target: { value: "ticket" } });
+    await waitFor(() => expect(screen.getByRole("listbox")).toBeTruthy());
+
+    const rows = screen.getAllByRole("option");
+    expect(rows.length).toBeGreaterThan(1);
+    fireEvent.click(rows[0]);
+    fireEvent.click(rows[1]);
+    expect(navigate).toHaveBeenCalledTimes(1);
+  });
+
+  it("drops a wait whose palette was closed, so it cannot close a later opening", async () => {
+    const navigate = vi.fn();
+    renderPalette({ navigate });
+    await openPalette();
+    fireEvent.change(input(), { target: { value: "lockers" } });
+    fireEvent.keyDown(input(), { key: "Enter" });
+
+    fireEvent.keyDown(dialog(), { key: "Escape" });
+    await waitFor(() => expect(dialog().open).toBe(false));
+    await openPalette();
+    // The abandoned attempt resolves long before this, and must leave the new
+    // palette alone.
+    expect(dialog().open).toBe(true);
+  });
+});
+
+describe("SearchPalette anchors", () => {
+  it("links a result to the record's own id, not just the page", async () => {
+    renderPalette();
+    await openPalette();
+    fireEvent.change(input(), { target: { value: "day pass" } });
+    await waitFor(() => expect(screen.getByRole("listbox")).toBeTruthy());
+
+    const option = screen.getAllByRole("option")[0];
+    expect(option.getAttribute("href")).toBe("/guides/tickets#ticket-belgium-2027-day-pass");
+  });
+
+  it("moves focus to the anchor once the page has arrived", async () => {
+    renderPalette();
+    await openPalette();
+    fireEvent.change(input(), { target: { value: "lockers" } });
+    await waitFor(() => expect(screen.getByRole("listbox")).toBeTruthy());
+
+    fireEvent.keyDown(input(), { key: "Enter" });
+    await waitFor(() => expect(dialog().open).toBe(false));
+
+    const target = document.getElementById("faq-be-are-there-lockers");
+    expect(target).not.toBeNull();
+    // A plain div is given tabindex="-1" so it can take programmatic focus.
+    await waitFor(() => expect(document.activeElement).toBe(target));
+    expect(target?.getAttribute("tabindex")).toBe("-1");
+  });
+
+  it("scrolls the anchor into view with the visitor's motion preference", async () => {
+    const scrollIntoView = vi.fn();
+    Element.prototype.scrollIntoView = scrollIntoView;
+
+    renderPalette();
+    await openPalette();
+    fireEvent.change(input(), { target: { value: "lockers" } });
+    await waitFor(() => expect(screen.getByRole("listbox")).toBeTruthy());
+    fireEvent.keyDown(input(), { key: "Enter" });
+
+    await waitFor(() => expect(scrollIntoView).toHaveBeenCalled());
+    // The palette also scrolls the highlighted row into view ("nearest"); the
+    // call this test is about is the one for the anchor.
+    const anchorCall = scrollIntoView.mock.calls.find(
+      (call) => (call[0] as ScrollIntoViewOptions | undefined)?.block === "start",
+    );
+    expect(anchorCall).toBeDefined();
+    const options = anchorCall?.[0] as ScrollIntoViewOptions;
+    expect(["auto", "smooth"]).toContain(options.behavior);
+  });
+
+  it("still opens a page result with no anchor", async () => {
+    const { navigate } = renderPalette();
+    await openPalette();
+    fireEvent.change(input(), { target: { value: "community" } });
+    await waitFor(() => expect(screen.getByRole("listbox")).toBeTruthy());
+
+    fireEvent.click(screen.getAllByRole("option")[0]);
+    expect(navigate).toHaveBeenCalledWith("/community");
+    await waitFor(() => expect(dialog().open).toBe(false));
+  });
+
+  it("works when the router moves the address but adds no hash target", async () => {
+    // The pages do not expose the record ids yet: the palette must still close
+    // rather than claim the page did not open.
+    const navigate = vi.fn((href: string) => {
+      window.history.pushState(null, "", href.split("#")[0]);
+    });
+    renderPalette({ navigate });
+    await openPalette();
+    fireEvent.change(input(), { target: { value: "lockers" } });
+    await waitFor(() => expect(screen.getByRole("listbox")).toBeTruthy());
+
+    fireEvent.keyDown(input(), { key: "Enter" });
+    await waitFor(() => expect(dialog().open).toBe(false));
+    expect(screen.queryByRole("alert")).toBeNull();
   });
 });

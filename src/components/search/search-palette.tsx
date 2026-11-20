@@ -19,9 +19,14 @@ import {
   readRecentSearches,
 } from "@/lib/search/recent";
 import { queryTokens } from "@/lib/search/text";
-import type { EditionScope, RankedEntry, SearchEntry } from "@/lib/search/types";
+import type { EditionScope, SearchEntry } from "@/lib/search/types";
 import { cx } from "@/components/ui/cx";
+import { Spinner } from "@/components/loading/spinner";
+import { settleNavigation, startNavigation } from "@/components/loading/navigation-store";
 import { Highlight } from "./highlight";
+import { scrollToHash } from "./scroll-to-hash";
+import { NAVIGATION_TIMEOUT_MS, waitForNavigation } from "./wait-for-navigation";
+import "./search-palette.css";
 
 /** Attribute that marks any element able to open the palette. */
 export const SEARCH_TRIGGER_ATTRIBUTE = "data-search-trigger";
@@ -146,6 +151,18 @@ export function SearchPalette({
    * client render exactly.
    */
   const [edition, setEdition] = useState<EditionScope | null>(null);
+  /**
+   * The row the visitor has chosen, waiting for the page to arrive.
+   *
+   * `id` is the result's id — or a `quick:` key for a quick link — so exactly one
+   * row shows the spinner. `href` is kept so a retry can reuse it.
+   */
+  const [pending, setPending] = useState<{ id: string; href: string } | null>(null);
+  /** True when the last attempt gave up: the page did not open. */
+  const [failed, setFailed] = useState(false);
+  /* Bumped on every attempt, so a late resolution from an abandoned navigation
+     cannot close a palette that has since been reopened. */
+  const attemptRef = useRef(0);
 
   /* Mirrors `isOpen` synchronously. A trigger fires `focusin` before `click`,
    * so the two handlers must not both act; a state read is flushed later than
@@ -191,6 +208,10 @@ export function SearchPalette({
       setEdition(resolveEdition ? resolveEdition() : null);
       setQuery(seed);
       setActiveIndex(0);
+      // A fresh opening starts with no navigation in flight and no stale error.
+      attemptRef.current += 1;
+      setPending(null);
+      setFailed(false);
       setIsOpen(true);
     },
     [resolveEdition],
@@ -205,6 +226,13 @@ export function SearchPalette({
   const close = useCallback(() => {
     isOpenRef.current = false;
     setIsOpen(false);
+    /* Any wait still running is abandoned: its late resolution must not touch a
+       palette that has since been closed or reopened. The store is cleared too,
+       so the progress bar does not outlive a dismissed palette. */
+    attemptRef.current += 1;
+    setPending(null);
+    setFailed(false);
+    settleNavigation();
   }, []);
 
   /* Mirror state onto the native dialog, which supplies the top layer, makes
@@ -240,12 +268,21 @@ export function SearchPalette({
    * The trigger listeners are detached around the focus call. The header field
    * carries `data-search-trigger`, so focusing it would otherwise reopen the
    * palette that was just closed — the "Escape then immediately back in" loop
-   * this guard exists to prevent. */
+   * this guard exists to prevent.
+   *
+   * Not after a navigation. The visitor chose a result and is being delivered to
+   * a page; putting focus back on the header field would put them at the top of
+   * a page they did not ask to be at the top of, and it races the anchor landing
+   * that moves focus to the record. `navigatingRef` records that case. */
+  const navigatingRef = useRef(false);
   useEffect(() => {
     if (isOpen) return;
+    const navigating = navigatingRef.current;
+    navigatingRef.current = false;
+
     const target = restoreFocusRef.current;
     restoreFocusRef.current = null;
-    if (!target || !target.isConnected) return;
+    if (navigating || !target || !target.isConnected) return;
 
     const listeners = triggerListenersRef.current;
     listeners?.detach();
@@ -346,20 +383,59 @@ export function SearchPalette({
   /* -------------------------------------------------------- interactions */
 
   const go = useCallback(
-    (entry: RankedEntry) => {
+    (id: string, href: string) => {
+      if (isOpenRef.current === false || pending !== null) return;
       if (trimmedQuery) setRecent(addRecentSearch(trimmedQuery));
-      close();
-      navigate(entry.href);
+
+      setFailed(false);
+      setPending({ id, href });
+
+      const attempt = attemptRef.current + 1;
+      attemptRef.current = attempt;
+      const anchor = href.includes("#") ? href.slice(href.indexOf("#")) : null;
+      const from = { pathname: window.location.pathname, search: window.location.search };
+
+      startNavigation(href);
+      try {
+        navigate(href);
+      } catch {
+        settleNavigation();
+        setPending(null);
+        setFailed(true);
+        return;
+      }
+
+      void waitForNavigation(href, { from }).then((arrived) => {
+        if (attemptRef.current !== attempt) return;
+        settleNavigation();
+        if (!arrived) {
+          setPending(null);
+          setFailed(true);
+          return;
+        }
+        /* Close, but keep the attempt valid: `close()` abandons waits, and this
+           one has already succeeded. Focus is not restored to the trigger: the
+           reader is being delivered to a record, and `scrollToHash` focuses it. */
+        setPending(null);
+        navigatingRef.current = true;
+        isOpenRef.current = false;
+        setIsOpen(false);
+        /*
+          The page has arrived. A result that names a record asks the browser to
+          land on it: the hash is scrolled to and focused, retrying briefly
+          because a streamed page can render the target after its shell.
+        */
+        if (anchor !== null) void scrollToHash(anchor, { timeoutMs: NAVIGATION_TIMEOUT_MS });
+      });
     },
-    [close, navigate, trimmedQuery],
+    [navigate, pending, trimmedQuery],
   );
 
   const goToHref = useCallback(
     (href: string) => {
-      close();
-      navigate(href);
+      go(`quick:${href}`, href);
     },
-    [close, navigate],
+    [go],
   );
 
   /* A click that lands on the dialog element itself hit the backdrop: the panel
@@ -374,6 +450,8 @@ export function SearchPalette({
   const changeQuery = useCallback((value: string) => {
     setQuery(value);
     setActiveIndex(0);
+    // A new query is a fresh start: a previous "did not open" no longer applies.
+    setFailed(false);
   }, []);
 
   const onInputKeyDown = useCallback(
@@ -403,7 +481,7 @@ export function SearchPalette({
           const entry = options[activeIndex];
           if (entry === undefined) return;
           event.preventDefault();
-          go(entry);
+          go(`option:${entry.id}`, entry.href);
           return;
         }
         default:
@@ -488,14 +566,22 @@ export function SearchPalette({
       // The panel inside centres itself in the viewport. `m-auto` centres a
       // dialog that has a size; on a phone the panel is full-bleed, so it takes
       // the whole viewport instead.
-      className="fixed inset-0 z-[100] m-auto w-[calc(100%-2rem)] max-w-[640px] border-0 bg-transparent p-0 text-cream backdrop:bg-ground/80 backdrop:backdrop-blur-sm max-sm:h-full max-sm:max-h-none max-sm:w-full max-sm:max-w-none"
+      //
+      // `tml-search-dialog` removes the global focus outline from this element
+      // only: it is focused programmatically as a scroll container and focus
+      // trap, and a square ring around a rounded panel is not a control anyone
+      // activated. See search-palette.css.
+      className="tml-search-dialog fixed inset-0 z-[100] m-auto w-[calc(100%-2rem)] max-w-[640px] border-0 bg-transparent p-0 text-cream backdrop:bg-ground/80 backdrop:backdrop-blur-sm max-sm:h-full max-sm:max-h-none max-sm:w-full max-sm:max-w-none"
     >
       <div className="flex max-h-[min(86dvh,660px)] flex-col overflow-hidden rounded-panel border border-hair bg-surface shadow-[0_40px_120px_-40px_rgb(0_0_0/0.95)] max-sm:h-full max-sm:max-h-none max-sm:rounded-none max-sm:border-x-0 max-sm:border-t-0">
         <h2 id={labelId} className="sr-only">
           Search TMLGUIDE
         </h2>
 
-        <div className="flex items-center gap-3 border-b border-hair px-4 py-3 transition-colors focus-within:border-accent/60 sm:px-5">
+        {/* The focus indicator for the field: the row turns accent and gains a
+            halo while anything inside it has focus. The field itself draws
+            nothing, so no square appears inside the rounded row. */}
+        <div className="tml-search-head flex items-center gap-3 border-b border-hair px-4 py-3 sm:px-5">
           <svg
             aria-hidden="true"
             viewBox="0 0 20 20"
@@ -523,20 +609,24 @@ export function SearchPalette({
             autoCorrect="off"
             spellCheck={false}
             enterKeyHint="search"
-            placeholder="Search tickets, dates, DreamVille, community…"            value={query}
+            placeholder="Search tickets, dates, DreamVille, community…"
+            value={query}
             onChange={(event) => changeQuery(event.target.value)}
             onKeyDown={onInputKeyDown}
-            className="min-w-0 flex-1 bg-transparent py-2 text-base text-cream placeholder:text-cream-mute"
+            className="tml-search-field min-w-0 flex-1 bg-transparent py-2 text-base text-cream"
           />
 
-          <kbd className="label hidden shrink-0 rounded border border-hair px-1.5 py-0.5 text-cream-mute sm:block">
+          <kbd
+            aria-hidden="true"
+            className="tml-search-escape label hidden shrink-0 rounded border border-hair px-1.5 py-0.5 text-cream-mute sm:block"
+          >
             Esc
           </kbd>
 
           <button
             type="button"
             onClick={close}
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-cream-mute transition-colors hover:text-cream sm:hidden"
+            className="tml-search-close flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-cream-mute transition-colors hover:text-cream sm:hidden"
           >
             <span className="sr-only">Close search</span>
             <svg
@@ -591,13 +681,17 @@ export function SearchPalette({
                   optionCursor += 1;
                   const index = optionCursor;
                   const selected = index === activeIndex;
+                  const pendingRow = pending !== null && pending.id === `option:${entry.id}`;
+                  const busy = pending !== null;
                   return (
                     <a
                       key={entry.id}
                       id={`${baseId}-option-${entry.id}`}
                       data-index={index}
+                      data-pending={pendingRow ? "true" : undefined}
                       role="option"
                       aria-selected={selected}
+                      aria-busy={pendingRow || undefined}
                       href={entry.href}
                       tabIndex={-1}
                       onClick={(event) => {
@@ -614,26 +708,33 @@ export function SearchPalette({
                           return;
                         }
                         event.preventDefault();
-                        go(entry);
+                        go(`option:${entry.id}`, entry.href);
                       }}
                       onMouseMove={() => {
                         if (!selected) setActiveIndex(index);
                       }}
+                      aria-disabled={busy ? true : undefined}
                       className={cx(
-                        "flex min-h-14 items-start gap-3 border-l-2 px-4 py-3 transition-colors max-sm:min-h-16 sm:px-5",
+                        "tml-search-option flex min-h-14 items-start gap-3 border-l-2 px-4 py-3 transition-colors max-sm:min-h-16 sm:px-5",
                         selected
                           ? "border-accent bg-surface-2"
                           : "border-transparent hover:bg-surface-2/60",
+                        busy && !pendingRow && "opacity-60",
                       )}
                     >
                       <span className="min-w-0 flex-1">
-                        <span className="block text-sm leading-snug font-medium text-cream">
+                        <span className="tml-search-option__label block text-sm leading-snug font-medium text-cream">
                           <Highlight text={entry.title} tokens={tokens} />
                         </span>
                         <span className="mt-1 block text-xs leading-relaxed text-cream-mute">
-                          <Highlight text={entry.snippet} tokens={tokens} />
+                          {pendingRow ? (
+                            "Opening…"
+                          ) : (
+                            <Highlight text={entry.snippet} tokens={tokens} />
+                          )}
                         </span>
                       </span>
+                      {pendingRow ? <Spinner size="inline" /> : null}
                     </a>
                   );
                 })}
@@ -705,28 +806,49 @@ export function SearchPalette({
                   Quick links
                 </p>
                 <ul className="mt-2">
-                  {QUICK_LINKS.map((link) => (
-                    <li key={link.href}>
-                      <a
-                        href={link.href}
-                        onClick={(event) => {
-                          event.preventDefault();
-                          goToHref(link.href);
-                        }}
-                        className="flex min-h-11 items-center justify-between gap-4 rounded-lg px-3 text-sm text-cream-mute transition-colors hover:bg-surface-2 hover:text-cream"
-                      >
-                        {link.label}
-                        <span aria-hidden="true" className="text-accent/70">
-                          →
-                        </span>
-                      </a>
-                    </li>
-                  ))}
+                  {QUICK_LINKS.map((link) => {
+                    const quickPending = pending !== null && pending.id === `quick:${link.href}`;
+                    return (
+                      <li key={link.href}>
+                        <a
+                          href={link.href}
+                          aria-busy={quickPending || undefined}
+                          onClick={(event) => {
+                            event.preventDefault();
+                            goToHref(link.href);
+                          }}
+                          className={cx(
+                            "flex min-h-11 items-center justify-between gap-4 rounded-lg px-3 text-sm text-cream-mute transition-colors hover:bg-surface-2 hover:text-cream",
+                            pending !== null && !quickPending && "opacity-60",
+                          )}
+                        >
+                          {quickPending ? "Opening…" : link.label}
+                          {quickPending ? (
+                            <Spinner size="inline" />
+                          ) : (
+                            <span aria-hidden="true" className="text-accent/70">
+                              →
+                            </span>
+                          )}
+                        </a>
+                      </li>
+                    );
+                  })}
                 </ul>
               </section>
             </div>
           )}
         </div>
+
+        {/* The failure message sits between the list and the footer: it is
+         * inside the dialog, above the fold of the panel, and it is a live
+         * region so a screen reader hears it without hunting for it. The list is
+         * re-enabled by clearing `pending`, which `go` does before setting this. */}
+        {failed ? (
+          <p role="alert" className="tml-search-error px-4 py-2.5 text-xs sm:px-5">
+            That page did not open. Try again.
+          </p>
+        ) : null}
 
         <p className="flex min-h-11 items-center justify-between gap-3 border-t border-hair px-4 py-2.5 text-[0.68rem] text-cream-mute sm:px-5">
           {/* Provenance for the highlighted row, replacing the keyboard model

@@ -12,6 +12,14 @@ export interface SourceEntry {
   snippet: string;
   edition: EditionScope;
   href: string;
+  /**
+   * The DOM id the target page exposes for this record, from `../anchors.ts`.
+   *
+   * The builder appends it to {@link href} as a fragment after checking that it
+   * matches the anchor pattern, so a source never writes `#` itself and the two
+   * halves cannot disagree.
+   */
+  anchor?: string;
   /** Repo-relative file the facts came from, so drift is traceable. */
   source: string;
   /** The official page the record cites, when it has one. */

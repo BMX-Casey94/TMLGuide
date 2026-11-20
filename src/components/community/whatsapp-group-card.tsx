@@ -1,6 +1,7 @@
 import { useId } from "react";
 import type { WhatsappGroup } from "@/data/schemas";
 import { cx } from "@/components/ui/cx";
+import { recordAnchor } from "@/lib/search/anchors";
 import { formatCheckDate } from "./card-format";
 import { WhatsappSafetyNote } from "./safety-note";
 import { EDITION_LABELS } from "./whatsapp-filter";
@@ -33,6 +34,7 @@ export function WhatsappGroupCard({ group, headingLevel = 4, className }: Whatsa
 
   return (
     <article
+      id={recordAnchor("whatsapp", group.id)}
       className={cx(
         "flex h-full flex-col rounded-[var(--radius-card)] border border-hair bg-gradient-to-b from-surface-2 to-surface p-5",
         className,

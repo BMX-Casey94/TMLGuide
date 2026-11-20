@@ -1,6 +1,7 @@
 import { cleanup, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { guideChapterSchema, type GuideChapter } from "@/content/schema";
+import { expectDividerCount, expectNoAdjacentRules } from "@/components/guides/divider-guard";
 
 vi.mock("next/navigation", () => ({
   notFound: () => {
@@ -399,5 +400,55 @@ describe("the page", () => {
     const main = screen.getByRole("main");
     expect(main).toHaveAttribute("id", "main");
     expect(screen.getAllByRole("main")).toHaveLength(1);
+  });
+});
+
+/*
+  The chapter page has no GoldDivider at all. Its chrome is a run of bordered cards
+  and hairline-separated lists: the hero ends on a rule, the source list is a table of
+  hairline rows, the pager and the related links are bordered cards, and the closing
+  note is a card. Adding a divider anywhere in that run would put it next to a border,
+  which is the fault the brief forbids. These assertions guard both directions: no
+  divider added, and no new top-level rule stacked on the chrome.
+*/
+describe("divider and page-frame conventions", () => {
+  it("uses no GoldDivider, because every boundary is already a card edge or a hairline", () => {
+    const { container } = renderChapter(DATES, SIBLINGS, [OVERVIEW]);
+    expectDividerCount(container, 0);
+  });
+
+  it("never puts two rules side by side in the page flow", () => {
+    const { container } = renderChapter(DATES, SIBLINGS, [OVERVIEW]);
+    expectNoAdjacentRules(container);
+  });
+
+  it("gives the sources list no rule of its own, so it cannot double the block above it", () => {
+    const { container } = renderChapter(DATES, SIBLINGS, [OVERVIEW]);
+    const sources = container.querySelector(".tml-guide-sources");
+
+    expect(sources).not.toBeNull();
+    // The block above is a paragraph or a callout; a `border-t` on the sources block
+    // would sit a few pixels under that edge.
+    expect(sources?.className).not.toMatch(/border-t\b/);
+  });
+
+  it("gives the prev/next pager no rule of its own, because its links are bordered cards", () => {
+    const { container } = renderChapter(DATES, SIBLINGS, [OVERVIEW]);
+    const pager = container.querySelector(".tml-guide-pager");
+
+    expect(pager).not.toBeNull();
+    expect(pager?.className).not.toMatch(/border-t\b/);
+    // Both neighbours exist here, so the pager is drawn and the cards are its break.
+    expect(pager?.querySelectorAll(".tml-guide-pager__link")).toHaveLength(2);
+  });
+
+  it("keeps the hero's hairline as the only rule at the top of the chapter", () => {
+    const { container } = renderChapter(DATES, SIBLINGS, [OVERVIEW]);
+    const heros = container.querySelectorAll(".tml-guide-hero");
+
+    expect(heros).toHaveLength(1);
+    // The breadcrumb above it carries no border of its own.
+    const crumbs = container.querySelector(".tml-guide-crumbs");
+    expect(crumbs?.className).not.toMatch(/border-b\b/);
   });
 });

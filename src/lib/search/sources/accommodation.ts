@@ -2,6 +2,7 @@ import { accommodation as belgiumAccommodation } from "@/data/belgium";
 import { winterAccommodation } from "@/data/winter";
 import { brasilData } from "@/data/brasil";
 import type { Accommodation } from "@/data/schemas";
+import { recordAnchor } from "../anchors";
 import { formatEuro, formatReal } from "../format";
 import { ticketsRoute } from "../routes";
 import { editionYear, joinSnippet } from "./types";
@@ -55,6 +56,7 @@ const belgiumEntries: SourceEntry[] = pairTiers(belgiumAccommodation).map(
       ]),
       edition: "belgium" as const,
       href: ticketsRoute("belgium"),
+      anchor: recordAnchor("stay", productId),
       source: "src/data/belgium/accommodation.ts",
       sourceUrl: first.record.source.url,
       lastVerified: first.record.lastVerified,
@@ -82,6 +84,7 @@ const brasilEntries: SourceEntry[] = brasilData.dreamvillePackages.map((stay) =>
   ]),
   edition: "brasil" as const,
   href: ticketsRoute("brasil"),
+  anchor: recordAnchor("stay", stay.id),
   source: "src/data/brasil/facts.ts",
   sourceUrl: stay.source.url,
   lastVerified: stay.lastVerified,
@@ -105,6 +108,7 @@ const winterEntries: SourceEntry[] = winterAccommodation.map((record) => ({
   ]),
   edition: "winter" as const,
   href: ticketsRoute("winter"),
+  anchor: recordAnchor("stay", record.id),
   source: "src/data/winter/accommodation.ts",
   sourceUrl: record.source.url,
   lastVerified: record.lastVerified,

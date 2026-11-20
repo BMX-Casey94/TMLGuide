@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { GoldDivider } from "@/components/ui/gold-divider";
 import { CORRECTIONS_EMAIL } from "@/components/home/contact";
 import "./a11y-page.css";
 
@@ -42,16 +43,29 @@ export const metadata: Metadata = {
  * automated check that has actually been run, the manual checks that have not been run, the known
  * limitations, and the fact that there is no published contact address yet rather than inventing
  * one. Nothing here says "conforms" or "compliant".
+ *
+ * Presentation only, never the wording: the page now uses the same reading grammar as /about and
+ * the guides. One 1240px column on the footer's inset, a hero that ends on a hairline, sections
+ * separated by the page rhythm with a single GoldDivider at each boundary that wants an ornament,
+ * a 65-character measure, list markers in the edition accent, the "no conformance claim" sentence
+ * in its own callout so the caveat reads as the page's own rather than as one more paragraph, and
+ * a single dated review line at the close.
+ *
+ * Nothing about the accessibility behaviour changed: the heading order, the six labelled regions,
+ * the callout wording, the `<code>` storage key and the machine-readable review date are all as
+ * they were. The stylesheet is written to survive the toolbar's own preference rules: sizes are in
+ * `rem` and percentages rather than fixed pixels, no rule pins a text colour the high-contrast
+ * palette cannot override, and no measure is capped so tightly that 150 percent text breaks it.
  */
 export default function AccessibilityPage() {
   return (
     <main id="main" className="a11y-page-main">
-      <header className="a11y-page-header">
+      <header className="a11y-page-hero">
         <p className="label text-accent">Accessibility</p>
-        <h1 className="a11y-page-header__title">
+        <h1 className="a11y-page-hero__title">
           What works, what has been checked, and what has not
         </h1>
-        <p className="a11y-page-header__lede">
+        <p className="a11y-page-hero__lede">
           TMLGuide aims to meet {TARGET}. This page sets out what that means in practice, what has
           been tested so far, and where the site still falls short. It does not claim conformance: an
           automated scan is a floor, not a certificate.
@@ -74,8 +88,19 @@ export default function AccessibilityPage() {
             Aiming at a standard is not the same as meeting it. The sections below separate what has
             been measured from what has not.
           </p>
+          <div className="a11y-page-callout a11y-page-callout--caveat">
+            <p className="a11y-page-callout__label label">No conformance claim</p>
+            <p>
+              TMLGuide does not claim conformance with {TARGET}, and this page is not a certificate.
+              A passing automated scan is a floor, not proof that the site works with assistive
+              technology. Where something has not been tested, the section that follows says so
+              rather than leaving the gap to be assumed.
+            </p>
+          </div>
         </div>
       </section>
+
+      <GoldDivider butterfly="right" />
 
       <section className="a11y-page-section" aria-labelledby="tested-heading">
         <h2 id="tested-heading" className="a11y-page-section__title">
@@ -146,6 +171,8 @@ export default function AccessibilityPage() {
         </div>
       </section>
 
+      <GoldDivider butterfly="left" />
+
       <section className="a11y-page-section" aria-labelledby="toolbar-heading">
         <h2 id="toolbar-heading" className="a11y-page-section__title">
           Changing how the site looks
@@ -173,7 +200,7 @@ export default function AccessibilityPage() {
             </li>
           </ol>
           <p>The settings are:</p>
-          <ul className="a11y-page-list">
+          <ul className="a11y-page-list a11y-page-list--settings">
             <li>
               <strong>Text size</strong> at 100, 115, 130 or 150 percent of your browser&apos;s own
               base size.
@@ -201,9 +228,9 @@ export default function AccessibilityPage() {
           </ul>
           <p className="a11y-page-note">
             Your choices are saved in this browser only, under the key{" "}
-            <code>tml-a11y-prefs</code>. Nothing is sent anywhere, no cookie is set, and there is no
-            analytics on this site. Clearing site data clears the settings, and the panel&apos;s
-            Reset button does the same without touching anything else.
+            <code className="a11y-page-code">tml-a11y-prefs</code>. Nothing is sent anywhere, no
+            cookie is set, and there is no analytics on this site. Clearing site data clears the
+            settings, and the panel&apos;s Reset button does the same without touching anything else.
           </p>
         </div>
       </section>
@@ -275,11 +302,14 @@ export default function AccessibilityPage() {
         </div>
       </section>
 
-      <p className="a11y-page-footnote">
-        Last reviewed <time dateTime={LAST_REVIEWED_ISO}>{LAST_REVIEWED}</time>. This statement
-        describes the site as it is today. It will be updated when a manual audit is completed, when
-        the outstanding checks above are done, or when a contact route is published.
-      </p>
+      <div className="a11y-page-reviewed">
+        <p className="a11y-page-reviewed__text">
+          <span className="label a11y-page-reviewed__label">Last reviewed </span>
+          <time dateTime={LAST_REVIEWED_ISO}>{LAST_REVIEWED}</time>. This statement describes the
+          site as it is today. It will be updated when a manual audit is completed, when the
+          outstanding checks above are done, or when a contact route is published.
+        </p>
+      </div>
     </main>
   );
 }

@@ -1,6 +1,7 @@
 import { saleWindows as belgiumSaleWindows } from "@/data/belgium";
 import { winterSaleWindows } from "@/data/winter";
 import { brasilSaleWindows } from "@/data/brasil";
+import { recordAnchor } from "../anchors";
 import { formatInstantLong } from "../format";
 import { joinSnippet } from "./types";
 import type { SourceEntry } from "./types";
@@ -28,6 +29,7 @@ export const saleEntries: SourceEntry[] = [
     ]),
     edition: "belgium" as const,
     href: "/tools/sale-timeline" as const,
+    anchor: recordAnchor("sale", window.id),
     source: "src/data/belgium/sale-windows.ts",
     sourceUrl: window.source.url,
     lastVerified: window.lastVerified,
@@ -42,6 +44,7 @@ export const saleEntries: SourceEntry[] = [
     ]),
     edition: "winter" as const,
     href: "/tools/sale-timeline" as const,
+    anchor: recordAnchor("sale", window.id),
     source: "src/data/winter/sale-windows.ts",
     sourceUrl: window.source.url,
     lastVerified: window.lastVerified,
@@ -56,6 +59,7 @@ export const saleEntries: SourceEntry[] = [
     ]),
     edition: "brasil" as const,
     href: "/tools/sale-timeline" as const,
+    anchor: recordAnchor("sale", window.id),
     source: "src/data/brasil/facts.ts",
     sourceUrl: window.source.url,
     lastVerified: window.lastVerified,

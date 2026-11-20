@@ -137,6 +137,7 @@ export function EditionCards({ editions }: EditionCardsProps) {
         id="editions-heading"
         kicker="Editions"
         title="Choose your edition"
+        hairline="none"
         lede="Belgium is two July weekends in Boom. Winter is one week in the Alps, where a lift pass comes with the ticket. Brasil is a single weekend outside São Paulo, priced in reais."
         action={<SectionAction href="/guides">All guides</SectionAction>}
       />

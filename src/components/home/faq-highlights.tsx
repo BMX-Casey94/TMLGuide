@@ -74,6 +74,7 @@ export function FaqHighlights({ entries, idPrefix = "faq" }: FaqHighlightsProps)
         id="faq-heading"
         kicker="Answers"
         title="Four rules that change your trip"
+        hairline="none"
         lede="Each answer below comes from the official page named underneath it, checked on the date shown."
         action={<SectionAction href="/guides">All guides</SectionAction>}
       />

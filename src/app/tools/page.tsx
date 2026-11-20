@@ -6,7 +6,7 @@ import "@/components/tools/tools.css";
 export const metadata: Metadata = {
   title: "Tools",
   description:
-    "Independent planning tools for Tomorrowland: a festival budget calculator, a Pearl converter and a ticket sale timeline with calendar export. Every figure is sourced and dated.",
+    "Independent planning tools for Tomorrowland: budget and Pearl calculators, sale timeline with calendar export, journey planner, packing list and My Trip sheet. Every figure is sourced and dated.",
   alternates: { canonical: "/tools" },
 };
 
@@ -52,6 +52,33 @@ const TOOLS: readonly ToolEntry[] = [
     description:
       "See every published sale for Belgium, Winter and Brasil, with a live countdown and calendar export.",
     icon: "target",
+    status: "live",
+  },
+  {
+    href: "/tools/journey",
+    kicker: "Travel",
+    title: "Journey planner",
+    description:
+      "Work out how to get to Belgium or Winter from published shuttle, rail and parking facts, with missing 2027 fares flagged plainly.",
+    icon: "map-pin",
+    status: "live",
+  },
+  {
+    href: "/tools/packing",
+    kicker: "Checklist",
+    title: "Packing list",
+    description:
+      "An edition-by-edition checklist separating official rules and products from ordinary travel suggestions, saved in your browser and ready to print.",
+    icon: "bag",
+    status: "live",
+  },
+  {
+    href: "/tools/my-trip",
+    kicker: "Planner",
+    title: "My Trip",
+    description:
+      "Keep your chosen weekend, ticket, accommodation, travel notes and upcoming sale dates in one private sheet stored only in this browser.",
+    icon: "notebook",
     status: "live",
   },
 ];

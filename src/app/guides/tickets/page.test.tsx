@@ -1,5 +1,6 @@
 import { cleanup, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { expectDividerCount } from "@/components/guides/divider-guard";
 
 /* The page mounts a component that writes the edition into the shell's context,
    and that provider belongs to another workstream. The sync itself has its own
@@ -17,6 +18,7 @@ vi.mock("@/components/tickets/edition-sync", () => ({
  */
 const pageModule = await import("@/app/guides/tickets/page");
 const TicketsPage = pageModule.default;
+const EditionContent = pageModule.EditionContent;
 const metadata = pageModule.metadata;
 
 afterEach(cleanup);
@@ -153,5 +155,59 @@ describe("static shell", () => {
 
     // It sits after the catalogue, so it streams with that region.
     expect(within(container).queryByText(/not affiliated with/)).toBeNull();
+  });
+});
+
+/*
+  The owner reported the "Independent fan guide" card touching the last "Global
+  Journey" card above it. The fault was a card with no top margin following a grid
+  of bordered cards. jsdom cannot measure the gap, so what is asserted here is the
+  property that produces it: the disclaimer is an element of its own, and the
+  explorer's category grid is the block before it.
+*/
+describe("the disclaimer's separation from the catalogue", () => {
+  async function renderEdition() {
+    const element = (await EditionContent({
+      searchParams: Promise.resolve({}),
+    })) as React.ReactElement;
+    return render(element);
+  }
+
+  it("renders the disclaimer as its own bordered card", async () => {
+    const { container } = await renderEdition();
+    const notice = container.querySelector(".tml-tix-notice");
+
+    expect(notice).not.toBeNull();
+    expect(notice?.getAttribute("aria-labelledby")).toBe("disclaimer-label");
+  });
+
+  it("puts the category grid before the disclaimer, so a gap has two blocks to sit between", async () => {
+    const { container } = await renderEdition();
+    const grid = container.querySelector(".tml-tix-grid");
+    const notice = container.querySelector(".tml-tix-notice");
+
+    expect(grid).not.toBeNull();
+    expect(notice).not.toBeNull();
+
+    // The disclaimer is outside the grid, not a cell of it: as a grid child it would
+    // take the grid's `gap` and could still sit flush against the last category card.
+    expect(grid?.contains(notice)).toBe(false);
+
+    // And it comes after the grid in document order, which is what makes its own top
+    // margin the gap between the two blocks.
+    const order = grid?.compareDocumentPosition(notice as Node);
+    expect(order !== undefined && (order & Node.DOCUMENT_POSITION_FOLLOWING) !== 0).toBe(true);
+  });
+
+  it("keeps the page's single GoldDivider below the disclaimer", () => {
+    const { container } = render(TicketsPage({ searchParams: Promise.resolve({}) }));
+    expectDividerCount(container, 1);
+
+    const blocks = Array.from(container.querySelector("main")?.children ?? []);
+    const index = blocks.findIndex((block) => block.classList.contains("tml-divider"));
+    expect(index).toBeGreaterThan(0);
+    // The divider introduces the closing footnote, not a section heading, so it is
+    // the one break at that boundary.
+    expect(blocks[index + 1]?.className).toContain("tml-tix-footnote");
   });
 });

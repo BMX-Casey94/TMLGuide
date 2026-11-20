@@ -1,0 +1,341 @@
+/*
+  The About page frame and prose.
+
+  These rules describe a page this agent owns, and they are scoped to `.about-main`
+  so they win on specificity rather than on stylesheet order. That matters because
+  `src/components/home/home.css` still exports an older `.about-*` block: it belongs
+  to the home workstream, which another agent owns this wave, so it is left alone
+  here and the duplicated definitions are overridden from this file instead. Once
+  the home owner deletes that block, nothing here changes.
+
+  Grammar, shared with the other reading pages in this workstream: the hero ends on
+  a hairline, and each top-level section is separated by the page rhythm alone. A
+  `GoldDivider` is the only ornament, and it is the single break at the one
+  boundary it marks, so no section carries a border that would double it.
+
+  Tokens come from globals.css; nothing here redefines a colour.
+*/
+
+.about-main {
+  /* 20px at the narrowest phone, 24px from 390, 28px on a desktop, which is the
+     inset the site footer uses for the same 1240px column. */
+  --about-gutter: 1.25rem;
+  width: 100%;
+}
+
+@media (min-width: 390px) {
+  .about-main {
+    --about-gutter: 1.5rem;
+  }
+}
+
+@media (min-width: 700px) {
+  .about-main {
+    --about-gutter: 1.75rem;
+  }
+}
+
+/* ---------- Hero ---------- */
+
+.about-main .about-header {
+  width: 100%;
+  max-width: 1240px;
+  margin-inline: auto;
+  /* 48px below the header on a phone, 64px from 900px, so the kicker never sits
+     against the sticky bar. */
+  padding: 3rem var(--about-gutter) 2rem;
+  border-bottom: 1px solid var(--hair);
+}
+
+@media (min-width: 900px) {
+  .about-main .about-header {
+    padding-top: 4rem;
+  }
+}
+
+.about-main .about-header__title {
+  margin: 0.9rem 0 0;
+  max-width: 24ch;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(2.35rem, 6vw, 3.75rem);
+  line-height: 1;
+  letter-spacing: -0.03em;
+  text-wrap: balance;
+  /*
+    At 320px with the toolbar at 150 percent, "workings" is wider than the column and
+    there is no break opportunity inside it, so the heading pushed the page sideways.
+    A break inside a long word is ugly; a horizontal scrollbar is worse, and the reader
+    who needs 150 percent text is the least able to recover from one.
+  */
+  overflow-wrap: break-word;
+  font-variation-settings:
+    "SOFT" 100,
+    "WONK" 1;
+}
+
+.about-main .about-header__lede {
+  margin: 1.15rem 0 0;
+  max-width: 65ch;
+  color: var(--cream-mute);
+  font-size: 1.0625rem;
+  line-height: 1.6;
+}
+
+/* ---------- Sections ---------- */
+
+.about-main .about-section {
+  width: 100%;
+  max-width: 1240px;
+  margin-inline: auto;
+  /*
+    The rhythm between sections, symmetric so the space above the one GoldDivider
+    and the space below it are equal by construction once the divider's own margin
+    is zeroed. No bottom rule: the divider is the only break at the boundary it
+    marks. The hero's hairline above the first section stays, because nothing else
+    marks that edge.
+  */
+  padding: 2.75rem var(--about-gutter);
+  border-bottom: 0;
+}
+
+@media (min-width: 900px) {
+  .about-main .about-section {
+    padding-block: 3.25rem;
+  }
+}
+
+/* Equal space either side of the divider: the sections own it, the divider adds
+   none. Two margins here on top of two paddings is what makes one break read as a
+   three-part gap. */
+.about-main > .tml-divider {
+  margin-block: 0;
+}
+
+.about-main .about-section:last-of-type {
+  padding-bottom: 0;
+}
+
+.about-main .about-section__title {
+  margin: 0;
+  max-width: 32ch;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+.about-main .about-prose {
+  max-width: 65ch;
+  margin-top: 1rem;
+}
+
+.about-main .about-prose p {
+  margin: 0 0 0.95rem;
+  color: var(--cream-mute);
+  font-size: 1rem;
+  line-height: 1.65;
+}
+
+.about-main .about-prose p:last-child {
+  margin-bottom: 0;
+}
+
+.about-main .about-prose strong {
+  color: var(--cream);
+  font-weight: 600;
+}
+
+.about-main .about-prose ul {
+  margin: 0 0 0.95rem;
+  padding-left: 1.15rem;
+  color: var(--cream-mute);
+  line-height: 1.65;
+}
+
+.about-main .about-prose li + li {
+  margin-top: 0.5rem;
+}
+
+.about-main .about-prose li::marker {
+  color: var(--ea);
+}
+
+.about-main .about-prose a,
+.about-main .about-inline-link {
+  color: var(--cream);
+  text-decoration: underline;
+  text-decoration-color: var(--hair-strong);
+  text-underline-offset: 0.22em;
+}
+
+@media (hover: hover) {
+  .about-main .about-prose a:hover,
+  .about-main .about-inline-link:hover {
+    color: var(--ea);
+    text-decoration-color: currentColor;
+  }
+}
+
+/* ---------- Callout ---------- */
+
+.about-main .about-callout {
+  margin-top: 1.5rem;
+  max-width: 65ch;
+  padding: 1.25rem 1.25rem 1.35rem;
+  border: 1px solid var(--hair);
+  border-left: 2px solid var(--ea);
+  border-radius: 0 var(--radius-card) var(--radius-card) 0;
+  background-color: rgb(21 17 15 / 0.65);
+}
+
+@media (min-width: 900px) {
+  .about-main .about-callout {
+    padding: 1.5rem 1.5rem 1.6rem;
+  }
+}
+
+.about-main .about-callout p {
+  margin: 0;
+  color: var(--cream);
+  font-size: 0.9375rem;
+  line-height: 1.6;
+}
+
+/* ---------- Contact ---------- */
+
+.about-main .about-contact {
+  margin-top: 1rem;
+  color: var(--cream);
+  font-size: 1rem;
+}
+
+.about-main .about-contact__address {
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  letter-spacing: 0.04em;
+}
+
+/* ---------- Data sources table ---------- */
+
+.about-main .about-table-wrap {
+  margin-top: 1.5rem;
+  overflow-x: auto;
+}
+
+.about-main .about-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9375rem;
+}
+
+/*
+  On a phone the host column is the widest thing on the page, and a 38-character
+  hostname does not fit beside its description. Rather than push the table into a
+  horizontal scroller, the hostname is allowed to break: the table stays inside
+  the viewport, keeps its header associations, and every row reads top to bottom.
+  From 700px there is room for the two-column layout.
+*/
+.about-main .about-table th[scope="row"] {
+  color: var(--cream);
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+@media (min-width: 700px) {
+  .about-main .about-table {
+    min-width: 34rem;
+  }
+
+  .about-main .about-table th[scope="row"] {
+    white-space: nowrap;
+  }
+}
+
+.about-main .about-table caption {
+  padding-bottom: 0.75rem;
+  color: var(--cream-mute);
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  text-align: left;
+}
+
+.about-main .about-table th,
+.about-main .about-table td {
+  padding: 0.7rem 0.9rem 0.7rem 0;
+  border-bottom: 1px solid var(--hair);
+  text-align: left;
+  vertical-align: top;
+}
+
+.about-main .about-table thead th {
+  color: var(--cream-mute);
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.about-main .about-table td {
+  color: var(--cream-mute);
+}
+
+.about-main .about-table td:first-child {
+  color: var(--cream);
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  white-space: nowrap;
+}
+
+.about-main .about-table tr:last-child th,
+.about-main .about-table tr:last-child td {
+  border-bottom: 0;
+}
+
+/* ---------- Notes and the closing line ---------- */
+
+.about-main .about-note {
+  margin: 1rem 0 0;
+  max-width: 65ch;
+  color: var(--cream-mute);
+  font-size: 0.8125rem;
+  line-height: 1.6;
+}
+
+/*
+  The closing line sits outside the last section. It was left-aligned with the
+  page edge because both the column and the reading measure were on the same
+  element: the 65ch cap shrank the box and `margin-inline: auto` was absent, so the
+  text started at x=0 while every other block started at the gutter. The split is
+  now explicit; the column carries the inset and the paragraph carries the measure.
+*/
+.about-main .about-footnote {
+  width: 100%;
+  max-width: 1240px;
+  margin-inline: auto;
+  padding: 2.25rem var(--about-gutter) 4rem;
+}
+
+.about-main .about-footnote__text {
+  margin: 0;
+  max-width: 65ch;
+  color: var(--cream-mute);
+  font-size: 0.8125rem;
+  line-height: 1.6;
+}
+
+@media (min-width: 900px) {
+  .about-main .about-footnote {
+    padding-top: 2.5rem;
+    padding-bottom: 5rem;
+  }
+}

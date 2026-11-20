@@ -9,6 +9,12 @@
 export type SearchKind =
   | "page"
   | "guide"
+  /**
+   * One `h2` inside a guide chapter. A chapter is long enough that "Transport"
+   * is a poor landing point for "arriving by train"; a section result opens the
+   * chapter at the heading itself.
+   */
+  | "guide-section"
   | "faq"
   | "ticket"
   | "accommodation"
@@ -46,8 +52,19 @@ export interface SearchEntry {
   /** Human label rendered beside the result, e.g. "FAQ". */
   kindLabel: string;
   edition: EditionScope;
-  /** Internal route, always starting with "/". Known routes only. */
+  /**
+   * Internal route plus the id to land on, e.g. `/community#partner-rent-a-tent`.
+   * Always starts with "/"; see `routes.ts` for the exact contract.
+   */
   href: string;
+  /**
+   * The DOM id on the target page that this entry is about, when it has one.
+   *
+   * Always equal to the fragment of {@link href}; carried separately so a
+   * consumer can compare or re-derive the link without parsing it back out.
+   * Built only by `anchors.ts`, validated by the index builder.
+   */
+  anchor?: string;
   /** Repo-relative file the entry came from, for provenance and drift checks. */
   source: string;
   /**

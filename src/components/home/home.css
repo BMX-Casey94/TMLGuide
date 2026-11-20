@@ -9,9 +9,47 @@
 
 /* ---------- Page frame ---------- */
 
+/*
+  One gutter value for the whole page, stepped to the spacing convention: 20px
+  at 320px, 24px from 390px, and 24px thereafter so the hero's first line and
+  the header's logo share a left edge at every width. The header is inset 24px
+  from 390px up, so a matching page inset keeps the two columns aligned instead
+  of leaving the copy 4px to the right of the logo.
+*/
 .home-main {
   --home-gutter: 1.25rem;
+  --home-rhythm: 3.25rem;
   width: 100%;
+}
+
+@media (min-width: 390px) {
+  .home-main {
+    --home-gutter: 1.5rem;
+  }
+}
+
+/*
+  The home page clips horizontal overflow here, at the outermost element, and
+  nowhere else. The butterfly trails are positioned to bleed past their section
+  edge by design, so clipping them at the section was cutting the artwork in
+  half while leaving the page able to report a scrollWidth wider than the
+  viewport. A section must never carry `overflow` for this: `clip` on an
+  ancestor that is not the page wrapper both crops the art and, because the
+  section is positioned, changes what its own abschildren resolve against.
+*/
+.home-main--clipped {
+  overflow-x: clip;
+}
+
+/*
+  A divider between two sections carries no margin of its own on this page: the
+  space either side is the page rhythm, which the two neighbouring sections
+  already supply in equal measure (their `padding-block` is symmetric). Margin
+  here as well is what produced the 9rem gaps and made a single break look like
+  three.
+*/
+.home-main--rhythm > .tml-divider {
+  margin-block: 0;
 }
 
 .home-section {
@@ -20,32 +58,41 @@
   max-width: 1240px;
   margin-inline: auto;
   padding-inline: var(--home-gutter);
-  padding-block: 3.25rem;
-}
-
-/* Sections that hold a ButterflyTrail must clip the trail's sideways drift,
-   which the component itself cannot do for its parent. */
-.home-section--clip {
-  overflow-x: clip;
+  padding-block: var(--home-rhythm);
 }
 
 @media (min-width: 700px) {
   .home-main {
-    --home-gutter: 1.75rem;
-  }
-
-  .home-section {
-    padding-block: 4.25rem;
+    --home-rhythm: 4.25rem;
   }
 }
 
 /* ---------- Hero ---------- */
 
+/*
+  No `border-bottom` here. The hero is followed by the gold divider, and a
+  hairline sitting a few pixels above the divider's own rule is the redundant
+  second break the divider convention forbids. The hero's left/right clipping
+  is gone too: the page wrapper clips instead (see `.home-main--clipped`), so the
+  butterfly is no longer cut off along the hero's edge.
+*/
 .home-hero {
   position: relative;
-  overflow-x: clip;
-  border-bottom: 1px solid var(--hair);
 }
+
+/*
+  The trail keeps the kit's own offset, so the artwork deliberately runs off the
+  page edge: at 1280px the butterfly sits partly outside the page and partly in
+  the margin beside the panel, which is the effect the direction document asks
+  for.
+
+  What was wrong was *where* the cut happened, not the offset. The section used
+  to carry `overflow-x: clip`, so the artwork was sliced at the section's inner
+  edge, inside the page, and the wing ended on a hard vertical line. The clip now
+  lives only on the page wrapper, so the cut falls at the viewport edge, where
+  art running off-screen reads as intended, and the document can still never be
+  wider than the viewport.
+*/
 
 .home-hero__inner {
   position: relative;
@@ -54,12 +101,18 @@
   max-width: 1240px;
   margin-inline: auto;
   padding-inline: var(--home-gutter);
-  padding-block: 3rem 2.5rem;
+  /*
+    The bottom figure is the page rhythm, not an independent value: the divider
+    that follows the hero is spaced by the two sections either side of it, and
+    equal space above and below only holds when this matches a section's own
+    `padding-block`.
+  */
+  padding-block: 3rem var(--home-rhythm);
 }
 
 @media (min-width: 900px) {
   .home-hero__inner {
-    padding-block: 4.5rem 3rem;
+    padding-block: 4.5rem var(--home-rhythm);
   }
 }
 
@@ -394,13 +447,22 @@
   flex-direction: column;
   gap: 1rem;
   min-height: 20rem;
-  padding: 1.5rem 1.4rem 1.35rem;
+  padding: 1.5rem 1.25rem 1.4rem;
   border: 1px solid var(--hair);
   border-radius: var(--radius-card);
   background-image: linear-gradient(172deg, var(--surface-2), var(--surface) 58%);
   box-shadow: inset 0 1px 0 rgb(244 236 224 / 0.06);
   color: var(--cream);
   text-decoration: none;
+  /*
+    The bloom below is painted outside the card's box (it is offset right and
+    down) and, with no clip, it widened `documentElement.scrollWidth` past the
+    viewport: the glow reached into the next grid column and past the page edge.
+    The kit card already clips its own bloom, so this matches it. The card's own
+    focus outline is unaffected: an element's outline is not clipped by its own
+    overflow.
+  */
+  overflow: hidden;
   transition:
     transform 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.2),
     border-color 0.3s ease,
@@ -476,6 +538,13 @@
   flex: 1;
   flex-direction: column;
   gap: 0.7rem;
+}
+
+/* 20px inside the card on a phone, 24px from 700px, per the spacing convention. */
+@media (min-width: 700px) {
+  .home-edition {
+    padding: 1.5rem 1.5rem 1.4rem;
+  }
 }
 
 .home-edition__swatch {
@@ -652,9 +721,14 @@
 
 /* ---------- Trust strip ---------- */
 
+/*
+  A full-width band that acts as the break on both sides: it has its own
+  hairline top and bottom plus a different background, so no `GoldDivider` is
+  needed either side of it (the convention names a banded section as a break).
+  It does not clip: the page wrapper does that job once, for everything.
+*/
 .home-trust {
   position: relative;
-  overflow-x: clip;
   border-block: 1px solid var(--hair);
   background-color: rgb(21 17 15 / 0.5);
 }
@@ -885,9 +959,15 @@
 
 /* ---------- Community CTA ---------- */
 
+/*
+  The section carries no `overflow` of its own. That is the whole fix for the
+  clipped butterfly: the trail is positioned against this section and allowed to
+  reach outside it, and only the page wrapper clips horizontally. The old rule
+  clipped here, which cut the artwork at the section edge instead of the viewport
+  edge, and left the trail reporting a width past the viewport.
+*/
 .home-cta {
   position: relative;
-  overflow-x: clip;
 }
 
 .home-cta__panel {

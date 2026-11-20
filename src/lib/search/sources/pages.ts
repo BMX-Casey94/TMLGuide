@@ -77,6 +77,33 @@ export const pageEntries: SourceEntry[] = [
     source: "src/app/tools/sale-timeline/page.tsx",
   },
   {
+    slug: "journey",
+    title: "Journey planner",
+    snippet:
+      "Plan how to reach Tomorrowland Belgium or Winter from published shuttle, rail and parking facts, with unpublished 2027 fares flagged plainly.",
+    edition: "all",
+    href: "/tools/journey",
+    source: "src/app/tools/journey/page.tsx",
+  },
+  {
+    slug: "packing",
+    title: "Packing list",
+    snippet:
+      "An edition-by-edition checklist separating official Tomorrowland rules from ordinary travel suggestions, saved in this browser and ready to print.",
+    edition: "all",
+    href: "/tools/packing",
+    source: "src/app/tools/packing/page.tsx",
+  },
+  {
+    slug: "my-trip",
+    title: "My Trip",
+    snippet:
+      "Keep your weekend, ticket, accommodation, travel notes and upcoming sale dates in one private sheet stored only in this browser.",
+    edition: "all",
+    href: "/tools/my-trip",
+    source: "src/app/tools/my-trip/page.tsx",
+  },
+  {
     slug: "community",
     title: "Community",
     snippet:
@@ -102,5 +129,14 @@ export const pageEntries: SourceEntry[] = [
     edition: "all",
     href: "/about",
     source: "src/app/about/page.tsx",
+  },
+  {
+    slug: "accessibility",
+    title: "Accessibility statement",
+    snippet:
+      "How TMLGuide approaches WCAG 2.2 AA, what has been tested automatically, what has not yet been tested by hand, and how to use the display toolbar.",
+    edition: "all",
+    href: "/accessibility",
+    source: "src/app/accessibility/page.tsx",
   },
 ];

@@ -1,63 +1,90 @@
 /*
   The accessibility statement's own styles.
 
-  Next merges CSS globally, so every selector here carries the `a11y-page-` prefix and targets only
-  its own classes. Tokens come from globals.css; nothing redefines a colour, and nothing here
-  competes with the preference rules in src/components/a11y/a11y.css, which sit on element types
-  under a `html[data-a11y-*]` attribute and therefore outrank these class selectors.
+  Next merges CSS globally, so every selector here carries an `a11y-page-` prefix and targets only
+  its own classes. Tokens come from globals.css; nothing redefines a colour.
+
+  Interaction with src/components/a11y/a11y.css: that file sets the visitor's preferences on
+  `html[data-a11y-*]` as unlayered rules with a `body` step, so it outranks anything here by design.
+  Everything in this file therefore avoids the two things that would fight it: no `!important` on a
+  colour, and no absolute font size. Sizes are in `rem` or percentages, so the 100/115/130/150
+  percent text setting scales the page, and the measure is a `ch` cap that grows with the text
+  rather than a pixel width that would strand the lines short at 150 percent.
+
+  Reading grammar, shared with /about and the guides: one 1240px column on the footer's inset, a
+  hero that ends on a hairline, sections separated by the page rhythm with a GoldDivider as the only
+  ornament at a boundary, a single dated review line at the close.
 */
 
 .a11y-page-main {
   --a11y-page-gutter: 1.25rem;
+  --a11y-page-gap: 2.75rem;
   width: 100%;
+  max-width: 1240px;
+  margin-inline: auto;
+  padding-bottom: 4rem;
 }
 
-@media (min-width: 700px) {
+@media (min-width: 390px) {
+  .a11y-page-main {
+    --a11y-page-gutter: 1.5rem;
+  }
+}
+
+@media (min-width: 640px) {
   .a11y-page-main {
     --a11y-page-gutter: 1.75rem;
   }
 }
 
-.a11y-page-header {
-  width: 100%;
-  max-width: 1240px;
-  margin-inline: auto;
+@media (min-width: 900px) {
+  .a11y-page-main {
+    --a11y-page-gap: 3.5rem;
+    padding-bottom: 5rem;
+  }
+}
+
+/* ---------- Hero ---------- */
+
+.a11y-page-hero {
   padding: 3rem var(--a11y-page-gutter) 2rem;
   border-bottom: 1px solid var(--hair);
 }
 
-.a11y-page-header__title {
+@media (min-width: 900px) {
+  .a11y-page-hero {
+    padding-top: 4rem;
+  }
+}
+
+.a11y-page-hero__title {
   margin: 0.9rem 0 0;
   max-width: 26ch;
   font-family: var(--font-display);
   font-weight: 400;
   font-size: clamp(2.25rem, 5.6vw, 3.5rem);
-  line-height: 1;
+  line-height: 1.05;
   letter-spacing: -0.03em;
+  color: var(--cream);
   text-wrap: balance;
   font-variation-settings:
     "SOFT" 100,
     "WONK" 1;
 }
 
-.a11y-page-header__lede {
+.a11y-page-hero__lede {
   margin: 1.15rem 0 0;
-  max-width: 62ch;
+  max-width: 65ch;
   color: var(--cream-mute);
   font-size: 1.0625rem;
   line-height: 1.6;
+  text-wrap: pretty;
 }
+
+/* ---------- Sections ---------- */
 
 .a11y-page-section {
-  width: 100%;
-  max-width: 1240px;
-  margin-inline: auto;
-  padding: 2.5rem var(--a11y-page-gutter);
-  border-bottom: 1px solid var(--hair);
-}
-
-.a11y-page-section:last-of-type {
-  border-bottom: 0;
+  padding: var(--a11y-page-gap) var(--a11y-page-gutter);
 }
 
 .a11y-page-section__title {
@@ -68,22 +95,27 @@
   font-size: clamp(1.45rem, 2.8vw, 1.9rem);
   line-height: 1.15;
   letter-spacing: -0.02em;
+  color: var(--cream);
+  text-wrap: balance;
+}
+
+/* Equal space above and below a divider: the sections own the rhythm, the divider
+   adds none. */
+.a11y-page-main > .tml-divider {
+  margin-block: 0;
 }
 
 .a11y-page-prose {
-  max-width: 68ch;
+  max-width: 65ch;
   margin-top: 1rem;
 }
 
 .a11y-page-prose p {
-  margin: 0 0 0.95rem;
+  margin: 0 0 1rem;
   color: var(--cream-mute);
   font-size: 1rem;
   line-height: 1.65;
-}
-
-.a11y-page-prose p:last-child {
-  margin-bottom: 0;
+  text-wrap: pretty;
 }
 
 .a11y-page-prose strong {
@@ -105,31 +137,76 @@
   }
 }
 
-/* Two lists carry the honest split: what has been tested, and what has not. Each is a plain list
-   under its own heading, so neither depends on a reader noticing a tick or a cross glyph. */
-.a11y-page-list {
-  margin: 0 0 0.95rem;
-  padding-left: 1.15rem;
+/* ---------- Lists ---------- */
+
+/*
+  Two lists carry the honest split: what has been tested, and what has not. Each is
+  a plain list under its own heading, so neither depends on a reader noticing a
+  tick or a cross glyph. The marker is the edition accent, which is decoration
+  only: the list reads correctly with markers suppressed.
+*/
+.a11y-page-list,
+.a11y-page-steps {
+  margin: 0 0 1rem;
+  padding-left: 1.25rem;
   color: var(--cream-mute);
+  font-size: 1rem;
   line-height: 1.65;
 }
 
-.a11y-page-list li + li {
-  margin-top: 0.5rem;
+.a11y-page-list li,
+.a11y-page-steps li {
+  padding-left: 0.25rem;
 }
 
-.a11y-page-list strong {
+.a11y-page-list li + li {
+  margin-top: 0.6rem;
+}
+
+.a11y-page-steps li + li {
+  margin-top: 0.55rem;
+}
+
+.a11y-page-list li::marker,
+.a11y-page-steps li::marker {
+  color: var(--ea);
+}
+
+.a11y-page-list strong,
+.a11y-page-steps strong {
   color: var(--cream);
   font-weight: 600;
 }
 
+.a11y-page-list {
+  list-style: disc;
+}
+
+.a11y-page-steps {
+  list-style: decimal;
+  padding-left: 1.4rem;
+}
+
+/* ---------- Callout ---------- */
+
+/*
+  A card rather than a rule. The accent edge is 2px on the start side, which is the
+  same treatment /about and the guide chapters use for a note, and it is the only
+  accent-coloured edge on the page, so the two callouts read as one kind of thing.
+*/
 .a11y-page-callout {
-  margin-top: 1.35rem;
-  padding: 1.1rem 1.1rem 1.2rem;
+  margin-top: 1.5rem;
+  padding: 1.25rem 1.25rem 1.35rem;
   border: 1px solid var(--hair);
   border-left: 2px solid var(--ea);
   border-radius: 0 var(--radius-card) var(--radius-card) 0;
   background-color: rgb(21 17 15 / 0.65);
+}
+
+@media (min-width: 900px) {
+  .a11y-page-callout {
+    padding: 1.5rem 1.5rem 1.6rem;
+  }
 }
 
 .a11y-page-callout p {
@@ -140,39 +217,74 @@
 }
 
 .a11y-page-callout p + p {
-  margin-top: 0.7rem;
+  margin-top: 0.75rem;
 }
+
+.a11y-page-callout__label {
+  margin: 0 0 0.5rem;
+  color: var(--cream-mute);
+}
+
+/* The "no conformance claim" statement is the page's central caveat, so it gets a
+   filled surface rather than an outline: it should not read as another aside. */
+.a11y-page-callout--caveat {
+  border-color: var(--hair-strong);
+  border-left-color: var(--ea);
+  background-color: rgb(29 23 20 / 0.85);
+}
+
+/* ---------- Notes, code and steps ---------- */
 
 .a11y-page-note {
-  margin: 0.9rem 0 0;
-  max-width: 68ch;
+  margin: 1.25rem 0 0;
+  padding-top: 1rem;
+  border-top: 1px solid var(--hair);
+  max-width: 65ch;
   color: var(--cream-mute);
   font-size: 0.8125rem;
-  line-height: 1.6;
-}
-
-.a11y-page-steps {
-  margin: 0.5rem 0 0.95rem;
-  padding-left: 1.35rem;
-  color: var(--cream-mute);
   line-height: 1.65;
 }
 
-.a11y-page-steps li + li {
-  margin-top: 0.45rem;
+.a11y-page-prose .a11y-page-note:last-child {
+  margin-bottom: 0;
 }
 
-.a11y-page-footnote {
-  max-width: 68ch;
+.a11y-page-code {
+  padding: 0.1em 0.35em;
+  border: 1px solid var(--hair);
+  border-radius: 4px;
+  color: var(--cream);
+  font-family: var(--font-mono);
+  font-size: 0.875em;
+  overflow-wrap: anywhere;
+}
+
+/* ---------- Review line ---------- */
+
+/*
+  The closing note. It sits inside the page column, on the same gutter as every
+  section, and the text is capped at the reading measure: the previous version put
+  both the gutter and the measure on one element with no centring, so the block
+  collapsed to the measure and its text started at the page's left edge.
+*/
+.a11y-page-reviewed {
+  padding: 0 var(--a11y-page-gutter);
+}
+
+.a11y-page-reviewed__text {
+  max-width: 65ch;
   margin: 0;
-  padding: 1.5rem var(--a11y-page-gutter) 3rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--hair);
   color: var(--cream-mute);
   font-size: 0.8125rem;
-  line-height: 1.6;
+  line-height: 1.65;
 }
 
-@media (min-width: 700px) {
-  .a11y-page-footnote {
-    padding-bottom: 4rem;
-  }
+.a11y-page-reviewed__label {
+  color: var(--cream);
+}
+
+.a11y-page-reviewed time {
+  color: var(--cream);
 }

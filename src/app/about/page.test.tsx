@@ -5,6 +5,11 @@ import AboutPage, { metadata } from "@/app/about/page";
 import { CORRECTIONS_EMAIL } from "@/components/home/contact";
 import { OFFICIAL_HOST_ROLES } from "@/components/home/source-hosts";
 import { expectResolvableLinks, expectSoundHeadingOrder } from "@/components/home/page-assertions";
+import {
+  expectDividerCount,
+  expectNoAdjacentRules,
+  topLevelBlocks,
+} from "@/components/guides/divider-guard";
 
 /**
  * Page-level tests for the About page.
@@ -242,5 +247,55 @@ describe("AboutPage metadata", () => {
     expect(parsed.isPartOf.name).toBe("TMLGuide");
     expect(json).not.toContain("Organization");
     expect(json).not.toContain("SearchAction");
+  });
+});
+
+/*
+  The owner reported two dividers below the paragraph that ends the independence
+  callout, and a "Last checked" line sitting at the page's left edge. The first is
+  duplicated markup; the second was a box that carried the reading measure and the
+  page inset on the same element with no centring.
+*/
+describe("divider and page-frame conventions", () => {
+  it("uses one GoldDivider and no section rule alongside it", () => {
+    const { container } = render(<AboutPage />);
+    expectDividerCount(container, 1);
+  });
+
+  it("never puts two rules side by side in the page flow", () => {
+    const { container } = render(<AboutPage />);
+    expectNoAdjacentRules(container);
+  });
+
+  it("puts the divider between the opening section and the method section", () => {
+    const { container } = render(<AboutPage />);
+    const blocks = topLevelBlocks(container);
+    const index = blocks.findIndex((block) => block.classList.contains("tml-divider"));
+
+    expect(index).toBeGreaterThan(0);
+    expect(blocks[index - 1]?.querySelector("h2")?.textContent).toBe("Who runs this");
+    expect(blocks[index + 1]?.querySelector("h2")?.textContent).toBe("How facts are checked");
+  });
+
+  it("hands sections no bottom rule, so the hero's hairline is the only one", () => {
+    const { container } = render(<AboutPage />);
+    // Every top-level section is on the page's own class, which the stylesheet
+    // renders without a border.
+    const sections = Array.from(container.querySelectorAll("main > section"));
+    expect(sections.length).toBeGreaterThan(0);
+    for (const section of sections) expect(section.className).toContain("about-section");
+  });
+
+  it("wraps the closing line in the page column rather than leaving it at the edge", () => {
+    const { container } = render(<AboutPage />);
+    const footnote = container.querySelector(".about-footnote");
+    const text = container.querySelector(".about-footnote__text");
+
+    expect(footnote).not.toBeNull();
+    // The column and the measure are separate elements: the column carries the
+    // inset, the paragraph carries the 65-character cap.
+    expect(footnote?.tagName).toBe("DIV");
+    expect(text?.tagName).toBe("P");
+    expect(text?.textContent).toMatch(/Last checked 18 November 2026/);
   });
 });

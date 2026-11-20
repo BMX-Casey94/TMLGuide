@@ -1,0 +1,172 @@
+/* ================================================================================================
+   Loading indicators
+   ================================================================================================
+
+   The sparkle is the same four-point star `GoldDivider` draws, so a loading state reads as part of
+   the site rather than as a browser default. Gold, not the edition accent: gold is the site's own
+   ornament colour and does not change meaning when the visitor switches edition.
+
+   Nothing here reserves space or changes on appearance: the spinner is a fixed square and the bar
+   is fixed-position, so neither can move the page.
+   ============================================================================================= */
+
+/* ---------- Spinner ---------- */
+
+.tml-spinner {
+  --spinner-size: 1rem;
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: var(--spinner-size);
+  height: var(--spinner-size);
+  /* The glow is static, so the indicator is still legible when the rotation is
+     switched off for reduced motion. */
+  color: var(--gold);
+}
+
+.tml-spinner--inline {
+  --spinner-size: 1rem;
+}
+
+.tml-spinner--page {
+  --spinner-size: 2.5rem;
+}
+
+.tml-spinner__art {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  fill: currentColor;
+  filter: drop-shadow(0 0 4px rgb(233 196 106 / 0.4));
+  /* One full turn every 1.4s: slow enough to read as a shimmer rather than a
+     throbber, which is what a four-point star turning looks like. */
+  animation: tml-spinner-turn 1.4s linear infinite;
+  transform-origin: 50% 50%;
+}
+
+@keyframes tml-spinner-turn {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+/*
+  The state wrapper. `display: inline-flex` and `align-items: center` keep the
+  word ("Opening…") and the sparkle on one baseline, with the gap coming from
+  here rather than from a margin the caller has to guess.
+*/
+.tml-spinner-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* ---------- Progress bar ---------- */
+
+.tml-progress {
+  position: fixed;
+  inset-inline: 0;
+  top: 0;
+  z-index: 90;
+  height: 2px;
+  overflow: hidden;
+  pointer-events: none;
+  /* No background: an empty track at the top of every page would be a permanent
+     hairline that the design does not have. Only the moving segment shows. */
+}
+
+.tml-progress__bar {
+  display: block;
+  height: 100%;
+  width: 40%;
+  background-image: linear-gradient(
+    90deg,
+    transparent,
+    var(--ea) 30%,
+    var(--ea) 70%,
+    transparent
+  );
+  /* Indeterminate: the bar slides rather than filling, because the router cannot
+     tell us how far along a route render is. A filling bar that guesses is worse
+     than one that admits it does not know. */
+  animation: tml-progress-slide 1.15s ease-in-out infinite;
+  will-change: transform;
+}
+
+@keyframes tml-progress-slide {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(350%);
+  }
+}
+
+/* ---------- Reduced motion ----------
+   Both indicators fall back to a static state that still means "working": the
+   sparkle keeps its glow and a fixed rotation, and the bar becomes a solid
+   accent rule at full width. Neither animates, so nothing pulses or moves. */
+
+@media (prefers-reduced-motion: reduce) {
+  .tml-spinner__art {
+    animation: none;
+    transform: rotate(45deg);
+  }
+
+  .tml-progress__bar {
+    width: 100%;
+    animation: none;
+    background-image: linear-gradient(
+      90deg,
+      transparent,
+      var(--ea) 20%,
+      var(--ea) 80%,
+      transparent
+    );
+  }
+}
+
+html[data-a11y-motion="reduce"] .tml-spinner__art {
+  animation: none !important;
+  transform: rotate(45deg);
+}
+
+html[data-a11y-motion="reduce"] .tml-progress__bar {
+  width: 100%;
+  animation: none !important;
+  background-image: linear-gradient(
+    90deg,
+    transparent,
+    var(--ea) 20%,
+    var(--ea) 80%,
+    transparent
+  );
+}
+
+/* ---------- Route fallback ---------- */
+
+/*
+  Centre the sparkle in the space the page will occupy. `min-height` rather than
+  a fixed height: the header is 60px on a phone and 68px on a desktop, and the
+  fallback should fill what is left of the first screen without pushing the
+  footer. `100dvh` rather than `100vh` so a phone's collapsing browser chrome
+  does not leave a gap at the bottom.
+*/
+.tml-page-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.9rem;
+  min-height: min(70dvh, 34rem);
+  padding: 3rem 1.25rem;
+}
+
+.tml-page-loading__text {
+  margin: 0;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.6875rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--cream-mute);
+}

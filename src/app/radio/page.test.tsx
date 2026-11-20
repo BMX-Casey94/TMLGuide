@@ -3,6 +3,11 @@ import { cleanup, render, screen, within } from "@testing-library/react";
 import { RadioProvider } from "@/components/radio/radio-context";
 import { RADIO_CREDIT, RADIO_STREAM_URL } from "@/components/radio/stream";
 import { radioBroadcasts, radioStation } from "@/data/shared";
+import {
+  expectDividerCount,
+  expectNoAdjacentRules,
+  topLevelBlocks,
+} from "@/components/guides/divider-guard";
 import RadioPage from "./page";
 
 /*
@@ -162,5 +167,57 @@ describe("radio page", () => {
 
     // The page must not add a second live region: every status change is announced once.
     expect(screen.getAllByRole("status")).toHaveLength(1);
+  });
+});
+
+/*
+  The owner reported two dividers above three headings: "How to listen / Every
+  published way in", "Where to listen", and "History". Each boundary carries one
+  break now, and these are the assertions that keep it that way.
+*/
+describe("divider convention", () => {
+  it("uses exactly three GoldDividers, one per section boundary", () => {
+    installMediaSession();
+    const { container } = renderPage();
+    expectDividerCount(container, 3);
+  });
+
+  it("never puts two rules side by side in the page flow", () => {
+    installMediaSession();
+    const { container } = renderPage();
+    expectNoAdjacentRules(container);
+  });
+
+  it("marks each divider boundary with one section heading, not two", () => {
+    installMediaSession();
+    const { container } = renderPage();
+    const blocks = topLevelBlocks(container);
+
+    // Every divider is followed by a section, and no section follows another section
+    // without a divider or a heading between them.
+    for (let index = 0; index < blocks.length; index += 1) {
+      const block = blocks[index];
+      if (!block?.classList.contains("tml-divider")) continue;
+      const next = blocks[index + 1];
+      expect(next?.tagName).toBe("SECTION");
+      expect(next?.querySelector(".tml-section-head")).not.toBeNull();
+    }
+  });
+
+  it("switches off the section heading's own hairline, so the divider is the only rule", () => {
+    installMediaSession();
+    const { container } = renderPage();
+
+    // Every heading that follows a divider or a banded block is bare. The kit renders
+    // `.tml-section-head--bare` for `hairline="none"`, which removes the border
+    // entirely rather than making it transparent, so there is genuinely one rule.
+    const heads = Array.from(container.querySelectorAll(".tml-section-head"));
+    expect(heads.length).toBeGreaterThan(0);
+    for (const head of heads) {
+      const section = head.closest("section");
+      const precededByDivider =
+        section?.previousElementSibling?.classList.contains("tml-divider") ?? false;
+      if (precededByDivider) expect(head.classList.contains("tml-section-head--bare")).toBe(true);
+    }
   });
 });

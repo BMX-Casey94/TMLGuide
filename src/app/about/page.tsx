@@ -9,6 +9,7 @@ import { serialiseJsonLd, webPageJsonLd } from "@/components/home/json-ld";
 import { OFFICIAL_HOST_ROLES, citedSourceUrls } from "@/components/home/source-hosts";
 import { oldestVerifiedOn } from "@/components/home/verified-on";
 import "@/components/home/home.css";
+import "./about.css";
 
 const TITLE = "About this guide";
 const DESCRIPTION =
@@ -324,11 +325,13 @@ export default function AboutPage() {
         </div>
       </section>
 
-      <p className="about-footnote">
-        Last checked {checkedOnLabel}. Dates, prices and rules can change without notice; confirm
-        against the official Tomorrowland pages before you book. {SOURCE_URLS.length} sourced records
-        back the pages of this site.
-      </p>
+      <div className="about-footnote">
+        <p className="about-footnote__text">
+          Last checked {checkedOnLabel}. Dates, prices and rules can change without notice; confirm
+          against the official Tomorrowland pages before you book. {SOURCE_URLS.length} sourced
+          records back the pages of this site.
+        </p>
+      </div>
     </main>
   );
 }

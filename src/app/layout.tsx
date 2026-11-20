@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { A11Y_BOOT_SCRIPT } from "@/components/a11y/boot-script";
 import { DEFAULT_A11Y_PREFS } from "@/components/a11y/a11y-prefs";
 import { RadioPlayer, RadioProvider } from "@/components/radio";
+import { NavigationProgress } from "@/components/loading";
 import { SearchDialog } from "@/components/search";
 import { SiteShell } from "@/components/shell";
 import "./globals.css";
@@ -85,6 +86,12 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         </a>
         <div className="ambient-glow" aria-hidden="true" />
         <RadioProvider>
+          {/* The top-of-page progress bar. Inside the provider tree and inside Suspense because
+              it reads the search params, which are request-time data. `fallback={null}` matches
+              the search dialog below: nothing is reserved for it, so nothing shifts. */}
+          <Suspense fallback={null}>
+            <NavigationProgress />
+          </Suspense>
           <SiteShell>{children}</SiteShell>
           <RadioPlayer />
           <Suspense fallback={null}>

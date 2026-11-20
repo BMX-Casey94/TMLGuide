@@ -14,6 +14,7 @@ import {
   DEFAULT_COMMUNITY_TAB,
   hashForTab,
   nextTabForKey,
+  panelForAnchor,
   tabFromHash,
   type CommunityTabId,
 } from "./community-tabs";
@@ -57,7 +58,8 @@ export function CommunityHub({ whatsappPanel, resourcesPanel, partnersPanel }: C
   const prefix = useId();
   const hash = useSyncExternalStore(subscribeToUrl, getHashSnapshot, getServerHashSnapshot);
   const search = useSyncExternalStore(subscribeToUrl, getSearchSnapshot, () => "");
-  const active: CommunityTabId = tabFromHash(hash) ?? DEFAULT_COMMUNITY_TAB;
+  const active: CommunityTabId =
+    tabFromHash(hash) ?? panelForAnchor(hash) ?? DEFAULT_COMMUNITY_TAB;
   const tabRefs = useRef<Partial<Record<CommunityTabId, HTMLButtonElement | null>>>({});
 
   const panels: Record<CommunityTabId, ReactNode> = {
@@ -85,12 +87,18 @@ export function CommunityHub({ whatsappPanel, resourcesPanel, partnersPanel }: C
   };
 
   return (
-    <div className="mt-8">
+    <div className="mt-6">
+      {/*
+        No rule under the tab row. Each panel opens with a `SectionHeading`, whose
+        own hairline is the single break at that boundary; a `border-b` here put a
+        second rule a few pixels above it, which is the doubled break the divider
+        convention forbids.
+      */}
       <div
         role="tablist"
         aria-label="Community sections"
         aria-orientation="horizontal"
-        className="flex flex-wrap gap-2 border-b border-hair pb-3"
+        className="flex flex-wrap gap-2"
       >
         {COMMUNITY_TABS.map((tab) => {
           const selected = tab.id === active;

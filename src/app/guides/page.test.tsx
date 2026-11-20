@@ -1,6 +1,7 @@
 import { cleanup, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import { guideChapterSchema, type GuideChapter, type GuideEdition } from "@/content/schema";
+import { expectDividerCount, expectNoAdjacentRules } from "@/components/guides/divider-guard";
 
 /** The pages read the registry, which reads the real content directories. */
 const hubModule = await import("@/app/guides/page");
@@ -150,10 +151,18 @@ describe("the hub with chapters", () => {
   it("lists general chapters as well as the three editions", () => {
     render(<GuidesHub chapters={FILLED} />);
 
-    expect(screen.getByRole("link", { name: /Pearls/ })).toHaveAttribute(
-      "href",
-      "/guides/general/pearls",
-    );
+    /*
+      Scoped to the general section: the FAQ directory further down the page
+      links each answer's official source, and one of those titles contains
+      "Pearls", so an unscoped link query matches more than the chapter card.
+    */
+    const generalSection = screen
+      .getByRole("heading", { name: "Good to know" })
+      .closest("section");
+    expect(generalSection).not.toBeNull();
+    expect(
+      within(generalSection as HTMLElement).getByRole("link", { name: /Pearls/ }),
+    ).toHaveAttribute("href", "/guides/general/pearls");
   });
 
   it("links the tickets explorer", () => {
@@ -234,5 +243,40 @@ describe("the page as the router renders it", () => {
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("The guide, in chapters");
     // The edition headings exist regardless of whether content has landed.
     expect(screen.getByRole("heading", { name: "Tomorrowland Belgium" })).toBeInTheDocument();
+  });
+});
+
+/*
+  The hub is the one page in this group with no GoldDivider at all: every section
+  opens on its own serif heading, and a rule between them would be a second break.
+  These assertions also catch the inverse fault, a divider added later on top of a
+  section heading that already rules.
+*/
+describe("divider and page-frame conventions", () => {
+  it("uses no GoldDivider, because the sections already break on their headings", () => {
+    const { container } = render(<GuidesPage />);
+    expectDividerCount(container, 0);
+  });
+
+  it("never puts two rules side by side in the page flow", () => {
+    const { container } = render(<GuidesPage />);
+    expectNoAdjacentRules(container);
+  });
+
+  it("keeps the hub's sections on the page rhythm, with no rule of their own", () => {
+    const { container } = render(<GuidesPage />);
+    const sections = Array.from(container.querySelectorAll("main > section"));
+
+    expect(sections.length).toBeGreaterThan(0);
+    for (const section of sections) expect(section.className).toContain("tml-guide-section");
+  });
+
+  it("ends the hero on the only hairline at that boundary", () => {
+    const { container } = render(<GuidesPage />);
+    // The hero is the first block in the page and the first section follows it, so
+    // one hairline there is the break, not a doubled one.
+    const hero = container.querySelector(".tml-guide-hero");
+    expect(hero).not.toBeNull();
+    expect(container.querySelectorAll(".tml-guide-hero")).toHaveLength(1);
   });
 });

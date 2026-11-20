@@ -12,6 +12,7 @@ import {
   type TimelineEdition,
   type TimelineSale,
 } from "./timeline-logic";
+import { recordAnchor } from "@/lib/search/anchors";
 import { SaleCountdown } from "./sale-countdown";
 
 const STATUS_LABEL: Readonly<Record<TimelineSale["status"], string>> = {
@@ -152,7 +153,11 @@ export function SaleTimeline({ records, edition, editionLabel }: SaleTimelinePro
               const times = describeSaleTime(sale.opensAtIso, zone);
               const isTarget = target?.id === sale.id;
               return (
-                <li key={sale.id} className={`timeline__row${isTarget ? " timeline__row--next" : ""}`}>
+                <li
+                  key={sale.id}
+                  id={recordAnchor("sale", sale.id)}
+                  className={`timeline__row${isTarget ? " timeline__row--next" : ""}`}
+                >
                   <div className="timeline__main">
                     <div className="timeline__headline">
                       <h3 className="timeline__title">{sale.name}</h3>

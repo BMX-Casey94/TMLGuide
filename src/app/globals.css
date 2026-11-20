@@ -7,6 +7,7 @@
 */
 
 :root {
+  --header-h: 76px; /* sticky header (60px mobile, 68px desktop) plus breathing room */
   --tabbar-h: 64px; /* mobile bottom tab bar height; the radio dock sits above it */
   --ground: #0c0a09;
   --surface: #15110f;
@@ -58,8 +59,33 @@ body[data-ed="brasil"] {
 
 html {
   scroll-behavior: smooth;
-  scroll-padding-top: 84px; /* sticky header row (68px) plus breathing room */
+  scroll-padding-top: var(--header-h);
   color-scheme: dark;
+}
+
+/* Every anchor target, reached from a search result or fragment link, clears the sticky header. */
+:target {
+  scroll-margin-top: calc(var(--header-h) + 16px);
+  animation: tml-target-arrive 1.8s ease-out 1;
+}
+
+@keyframes tml-target-arrive {
+  from {
+    background-color: color-mix(in srgb, var(--ea) 16%, transparent);
+  }
+  to {
+    background-color: transparent;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :target {
+    animation: none;
+  }
+}
+
+html[data-a11y-motion="reduce"] :target {
+  animation: none !important;
 }
 body {
   background: var(--ground);

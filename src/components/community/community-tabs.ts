@@ -35,6 +35,15 @@ export function tabFromHash(hash: string): CommunityTabId | null {
   return match?.id ?? null;
 }
 
+/** Maps a record anchor (`#wa-*`, `#resource-*`, `#partner-*`) to the tab that holds it. */
+export function panelForAnchor(hash: string): CommunityTabId | null {
+  const value = hash.replace(/^#/, "").trim().toLowerCase();
+  if (value.startsWith("wa-")) return "whatsapp";
+  if (value.startsWith("resource-")) return "resources";
+  if (value.startsWith("partner-")) return "partners";
+  return null;
+}
+
 /** The hash for a tab, including "#". */
 export function hashForTab(id: CommunityTabId): string {
   const tab = COMMUNITY_TABS.find((candidate) => candidate.id === id);

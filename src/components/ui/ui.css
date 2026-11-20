@@ -320,7 +320,7 @@
 
 .tml-carousel__track {
   display: flex;
-  gap: 0.875rem;
+  gap: 1rem;
   padding: 0.25rem 0 1.5rem;
   overflow-x: auto;
   overscroll-behavior-x: contain;
@@ -356,7 +356,7 @@
   .tml-carousel__track {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 1.125rem;
+    gap: 1.5rem;
     padding: 0;
     overflow-x: visible;
     scroll-snap-type: none;
@@ -377,6 +377,19 @@
   align-items: end;
   padding-top: 1.375rem;
   border-top: 1px solid var(--hair);
+}
+
+/*
+  A heading that follows a divider or a banded section draws no rule of its own:
+  the break above it has already been made, and a second hairline there would be
+  a duplicate. The border is removed rather than made transparent so the element
+  genuinely has no top rule, which is what the divider-convention test asserts;
+  the padding keeps the same total height, so the page rhythm does not shift by
+  the pixel the border used to occupy.
+*/
+.tml-section-head--bare {
+  padding-top: calc(1.375rem + 1px);
+  border-top: 0;
 }
 
 .tml-section-head__headline {
@@ -669,8 +682,12 @@
 /*
   The wrapper is absolutely positioned and inert: `pointer-events: none`, a
   z-index below content, and a width capped at the viewport so the component can
-  never widen the page on its own. The parent section still has to clip overflow,
-  because the drift translates the artwork sideways as it scrolls.
+  never widen the page on its own.
+
+  The sideways drift below does move the artwork past its section's edges, so the
+  page wrapper clips horizontal overflow once (see `.home-main--clipped`) rather
+  than every section clipping itself: clipping at the section cut the butterfly
+  in half at a hard vertical line.
 */
 .tml-trail {
   position: absolute;

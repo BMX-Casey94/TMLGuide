@@ -2,6 +2,7 @@ import { tickets as belgiumTickets } from "@/data/belgium";
 import { winterTickets } from "@/data/winter";
 import { brasilData } from "@/data/brasil";
 import type { TicketPackage } from "@/data/schemas";
+import { recordAnchor } from "../anchors";
 import { formatEuro, formatReal } from "../format";
 import { ticketsRoute } from "../routes";
 import { editionYear, joinSnippet } from "./types";
@@ -57,6 +58,7 @@ function euroTicketEntries(
       ]),
       edition,
       href: ticketsRoute(edition),
+      anchor: recordAnchor("ticket", productId),
       source: `src/data/${edition}/tickets.ts`,
       sourceUrl: first.record.source.url,
       lastVerified: first.record.lastVerified,
@@ -78,6 +80,7 @@ const brasilTicketEntries: SourceEntry[] = brasilData.tickets.map((ticket) => ({
   ]),
   edition: "brasil",
   href: ticketsRoute("brasil"),
+  anchor: recordAnchor("ticket", ticket.id),
   source: "src/data/brasil/facts.ts",
   sourceUrl: ticket.source.url,
   lastVerified: ticket.lastVerified,

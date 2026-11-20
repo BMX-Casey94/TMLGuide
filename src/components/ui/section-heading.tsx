@@ -15,6 +15,16 @@ export interface SectionHeadingProps {
   action?: ReactNode;
   /** Anchor target for `aria-labelledby` on the surrounding section. */
   id?: string;
+  /**
+   * Whether the heading draws the hairline above itself. Defaults to `"top"`,
+   * which is what every page outside the home page expects.
+   *
+   * Set `"none"` when something directly above the heading already breaks the
+   * page: a `GoldDivider`, or a full-width band with its own edge. Two rules a
+   * few pixels apart read as a mistake, and the divider convention allows only
+   * one break between two sections.
+   */
+  hairline?: "top" | "none";
   className?: string;
 }
 
@@ -28,10 +38,13 @@ export function SectionHeading({
   lede,
   action,
   id,
+  hairline = "top",
   className,
 }: SectionHeadingProps) {
   return (
-    <div className={cx("tml-section-head", className)}>
+    <div
+      className={cx("tml-section-head", hairline === "none" && "tml-section-head--bare", className)}
+    >
       <div className="tml-section-head__headline">
         <p className="label text-accent">{kicker}</p>
         <h2 id={id} className="tml-section-head__title">

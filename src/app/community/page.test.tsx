@@ -2,6 +2,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 import { partners, resources, whatsappGroups } from "@/data/community";
 import { resourceProvenance } from "@/components/community/resource-groups";
+import {
+  expectDividerCount,
+  expectNoAdjacentRules,
+  topLevelBlocks,
+} from "@/components/guides/divider-guard";
 import CommunityPage from "./page";
 
 vi.mock("next/image", () => ({
@@ -159,5 +164,46 @@ describe("community page", () => {
       if (link.getAttribute("target") !== "_blank") continue;
       expect(link.getAttribute("rel")).toContain("noopener");
     }
+  });
+});
+
+/*
+  Layout conventions from docs/briefs/wave6-common.md. These are the half of the
+  fix a DOM test can fail reliably: the owner's fault was two rules above one
+  heading, which is duplicated markup rather than a spacing value.
+*/
+describe("divider convention", () => {
+  it("uses one GoldDivider and no section rule alongside it", () => {
+    const { container } = renderPage();
+    expectDividerCount(container, 1);
+  });
+
+  it("never puts two rules side by side in the page flow", () => {
+    const { container } = renderPage();
+    expectNoAdjacentRules(container);
+  });
+
+  it("puts the GoldDivider between the tabbed hub and the closing section", () => {
+    const { container } = renderPage();
+    const blocks = topLevelBlocks(container);
+    const index = blocks.findIndex((block) => block.classList.contains("tml-divider"));
+
+    expect(index).toBeGreaterThan(0);
+    expect(blocks[index + 1]?.textContent).toMatch(/Where the official answers are/);
+  });
+
+  it("draws no rule under the tab row", () => {
+    const { container } = renderPage();
+    const tablist = container.querySelector("[role='tablist']");
+
+    expect(tablist).not.toBeNull();
+    // The tab row's own border was the second rule the owner reported.
+    expect(tablist?.className).not.toMatch(/border-b\b/);
+  });
+
+  it("gives each panel's heading the only rule at that boundary", () => {
+    const { container } = renderPage();
+    // One SectionHeading per panel, each carrying the kit's hairline and nothing else.
+    expect(container.querySelectorAll(".tml-section-head")).toHaveLength(3);
   });
 });

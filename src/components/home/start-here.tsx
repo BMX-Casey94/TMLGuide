@@ -77,6 +77,7 @@ export function StartHere() {
         id="start-here-heading"
         kicker="Start here"
         title="Six ways into the guide"
+        hairline="none"
         lede="Four of these do the planning: what a ticket costs, when it goes on sale, what the trip adds up to, and what you will need on site."
         action={<SectionAction href="/guides">All guides</SectionAction>}
       />

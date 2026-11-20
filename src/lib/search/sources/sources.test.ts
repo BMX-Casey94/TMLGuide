@@ -65,9 +65,13 @@ describe("pageEntries", () => {
       "/tools/budget",
       "/tools/pearls",
       "/tools/sale-timeline",
+      "/tools/journey",
+      "/tools/packing",
+      "/tools/my-trip",
       "/community",
       "/radio",
       "/about",
+      "/accessibility",
     ]);
   });
 

@@ -54,7 +54,7 @@ export default function HomePage() {
   const checkedOnLabel = formatLongDate(checkedOn);
 
   return (
-    <main id="main" className="home-main">
+    <main id="main" className="home-main home-main--clipped home-main--rhythm">
       <script
         type="application/ld+json"
         // Serialised from an object literal in this file, with `<` escaped, so

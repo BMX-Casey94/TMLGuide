@@ -1,6 +1,7 @@
 import { useId } from "react";
 import type { Partner } from "@/data/schemas";
 import { cx } from "@/components/ui/cx";
+import { recordAnchor } from "@/lib/search/anchors";
 import { formatCheckDate, sourceHost } from "./card-format";
 import { PARTNER_CHECK_TERMS_LINE } from "./partner-disclosure";
 import { EDITION_LABELS } from "./whatsapp-filter";
@@ -36,6 +37,7 @@ export function PartnerCard({ partner, headingLevel = 3, className }: PartnerCar
 
   return (
     <article
+      id={recordAnchor("partner", partner.id)}
       aria-labelledby={titleId}
       className={cx(
         "flex h-full flex-col rounded-[var(--radius-card)] border border-hair bg-gradient-to-b from-surface-2 to-surface p-5 sm:p-6",

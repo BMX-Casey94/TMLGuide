@@ -1,0 +1,807 @@
+/*
+  TMLGuide packing list styles.
+
+  Dusk Programme, as in docs/design/direction.md: warm-black ground, hairline
+  rules, tracked mono labels, serif display type, and only tokens from
+  globals.css so the edition accent (--ea) follows the reader.
+
+  Every selector is prefixed `packing-` because Next merges CSS globally. The
+  tool shares the panels, buttons and fields from `tools.css` and adds only the
+  checklist itself, so nothing here can leak into another workstream's page.
+
+  Print: the checklist is the part people carry, so the block at the end flattens
+  the page to a clean white sheet with square checkbox outlines and hides every
+  control that cannot be used on paper.
+*/
+
+/* ---------- Controls ---------- */
+
+.packing-controls {
+  margin-top: 2rem;
+}
+
+/* Radio cards: a real input inside a label, so the whole card is the target. */
+.packing-stays {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.packing-stays > legend {
+  padding: 0;
+  margin-bottom: 0.45rem;
+}
+
+.packing-stays__options {
+  display: grid;
+  gap: 0.6rem;
+}
+
+@media (min-width: 620px) {
+  .packing-stays__options {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.packing-stay {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.7rem;
+  min-height: 44px;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid var(--hair-strong);
+  border-radius: 14px;
+  background-color: rgb(12 10 9 / 0.4);
+  cursor: pointer;
+  transition: border-color 0.18s ease, background-color 0.18s ease;
+}
+
+@media (hover: hover) {
+  .packing-stay:hover {
+    border-color: var(--cream-mute);
+  }
+}
+
+/* Selection is a border, a fill and a bolder label, never colour alone. */
+.packing-stay[data-selected="true"] {
+  border-color: var(--ea);
+  background-color: rgb(244 236 224 / 0.06);
+}
+
+.packing-stay input {
+  flex: none;
+  width: 1.15rem;
+  height: 1.15rem;
+  margin-top: 0.15rem;
+  accent-color: var(--ea);
+  cursor: pointer;
+}
+
+.packing-stay__text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.packing-stay__label {
+  color: var(--cream);
+  font-size: 0.9375rem;
+  line-height: 1.35;
+}
+
+.packing-stay[data-selected="true"] .packing-stay__label {
+  font-weight: 700;
+}
+
+.packing-stay__hint {
+  color: var(--cream-mute);
+  font-size: 0.8125rem;
+  line-height: 1.45;
+}
+
+/* ---------- Progress summary ---------- */
+
+.packing-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  margin-top: 1.75rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--hair);
+}
+
+@media (min-width: 760px) {
+  .packing-summary {
+    flex-direction: row;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 2rem;
+  }
+}
+
+.packing-progress {
+  min-width: 0;
+  flex: 1;
+}
+
+.packing-progress__label {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--cream-mute);
+}
+
+.packing-progress__value {
+  margin: 0.35rem 0 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(1.5rem, 4.5vw, 2rem);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  color: var(--cream);
+}
+
+.packing-progress__track {
+  position: relative;
+  height: 4px;
+  margin-top: 0.75rem;
+  border-radius: 999px;
+  background-color: rgb(244 236 224 / 0.12);
+  overflow: hidden;
+}
+
+.packing-progress__fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background-image: linear-gradient(90deg, var(--ea), var(--gold));
+  transition: width 0.25s ease;
+}
+
+.packing-progress__aside {
+  margin: 0.55rem 0 0;
+  color: var(--cream-mute);
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.packing-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+@media (min-width: 520px) {
+  .packing-actions {
+    flex-direction: row;
+    align-items: center;
+    gap: 1.25rem;
+  }
+}
+
+.packing-filter {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  gap: 0.55rem;
+  padding-inline: 0.9rem;
+  border: 1px solid var(--hair-strong);
+  border-radius: 999px;
+  color: var(--cream-mute);
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.packing-filter input {
+  width: 1.05rem;
+  height: 1.05rem;
+  accent-color: var(--ea);
+  cursor: pointer;
+}
+
+@media (hover: hover) {
+  .packing-filter:hover {
+    border-color: var(--ea);
+    color: var(--cream);
+  }
+}
+
+/* The filter's own check is the state, so a ticked filter also gains weight. */
+.packing-filter:has(input:checked) {
+  border-color: var(--ea);
+  color: var(--cream);
+}
+
+.packing-actions__buttons {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.packing-status {
+  margin: 0.75rem 0 0;
+  min-height: 1.25rem;
+  color: var(--teal);
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+/* ---------- Checklist sheet ---------- */
+
+.packing-sheet {
+  padding-top: 0.5rem;
+}
+
+.packing-print-head {
+  display: none;
+}
+
+.packing-sheet__head {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1.75rem;
+}
+
+.packing-sheet__title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(1.6rem, 4.5vw, 2.1rem);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: var(--cream);
+  font-variation-settings:
+    "SOFT" 100,
+    "WONK" 1;
+}
+
+.packing-sheet__intro {
+  margin: 0;
+  max-width: 68ch;
+  color: var(--cream-mute);
+  font-size: 1rem;
+  line-height: 1.55;
+}
+
+.packing-empty {
+  margin: 0;
+  padding: 1.1rem 1.15rem;
+  border: 1px dashed var(--hair-strong);
+  border-radius: 16px;
+  color: var(--cream-mute);
+  font-size: 0.9375rem;
+  line-height: 1.55;
+}
+
+/* ---------- Groups ---------- */
+
+.packing-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.packing-group {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.packing-group__title {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0 0 0.7rem;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 1.3rem;
+  letter-spacing: -0.015em;
+  color: var(--cream);
+}
+
+.packing-group__index {
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.16em;
+  color: var(--ea);
+}
+
+.packing-group__empty {
+  margin: 0;
+  padding: 0.9rem 0;
+  color: var(--cream-mute);
+  font-size: 0.875rem;
+  line-height: 1.55;
+}
+
+.packing-items {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--hair);
+}
+
+/* ---------- Items ---------- */
+
+.packing-item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 0 0.85rem;
+  padding: 0.85rem 0;
+  border-bottom: 1px solid var(--hair);
+}
+
+/*
+  `display: grid` above beats the user agent's `[hidden] { display: none }`, so
+  the attribute the filter uses would otherwise leave a hidden row on screen.
+  This rule restores it, which is why the filter can hide with `hidden` alone and
+  keep the row in the DOM for the focus hand-off.
+*/
+.packing-item[hidden] {
+  display: none;
+}
+
+/* The box is a real checkbox, sized past 44px as a target via its label row. */
+.packing-item__box {
+  width: 1.35rem;
+  height: 1.35rem;
+  margin: 0.55rem 0 0;
+  accent-color: var(--ea);
+  cursor: pointer;
+}
+
+.packing-item__label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-height: 44px;
+  padding: 0.45rem 0;
+  cursor: pointer;
+  min-width: 0;
+}
+
+.packing-item__text {
+  color: var(--cream);
+  font-size: 1rem;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+/* A packed row is struck through as well as dimmed, so the state is not colour alone. */
+.packing-item[data-packed="true"] .packing-item__text {
+  color: var(--cream-mute);
+  text-decoration: line-through;
+  text-decoration-color: var(--cream-mute);
+  text-decoration-thickness: 1px;
+}
+
+.packing-item__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.6rem;
+}
+
+.packing-item__rule {
+  color: var(--cream-mute);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  max-width: 74ch;
+}
+
+.packing-item__caveat {
+  padding-left: 0.7rem;
+  border-left: 2px solid var(--hair-strong);
+  color: var(--cream-mute);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  max-width: 74ch;
+}
+
+/* Tags are words first: the border and tint only reinforce the text. */
+.packing-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem 0.5rem;
+  border: 1px solid var(--hair-strong);
+  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-size: 0.5625rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.packing-tag--official {
+  border-color: rgb(43 196 180 / 0.5);
+  background-color: rgb(43 196 180 / 0.1);
+  color: #9be9e1;
+}
+
+.packing-tag--suggestion {
+  color: var(--cream-mute);
+}
+
+/* The remove control on a reader's own item. */
+.packing-item__remove {
+  align-self: center;
+  min-height: 44px;
+  padding: 0 0.75rem;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: none;
+  color: var(--cream-mute);
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: color 0.18s ease, border-color 0.18s ease;
+}
+
+@media (hover: hover) {
+  .packing-item__remove:hover {
+    border-color: var(--ember);
+    color: #ffd0c2;
+  }
+}
+
+.packing-item--custom .packing-item__text {
+  color: var(--cream);
+}
+
+/* ---------- Add form ---------- */
+
+.packing-add {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin-top: 1rem;
+}
+
+.packing-add__label {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--cream-mute);
+}
+
+.packing-add__row {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.packing-add__input {
+  flex: 1;
+  min-width: 0;
+}
+
+/* ---------- Source citation ---------- */
+
+.packing-source {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.75rem;
+  line-height: 1.45;
+}
+
+.packing-source:not(.packing-source--compact) {
+  display: flex;
+  margin-top: 0.15rem;
+}
+
+.packing-source a {
+  color: var(--cream-mute);
+  text-decoration: underline;
+  text-decoration-color: var(--hair-strong);
+  text-underline-offset: 3px;
+  overflow-wrap: anywhere;
+}
+
+@media (hover: hover) {
+  .packing-source a:hover {
+    color: var(--cream);
+    text-decoration-color: var(--ea);
+  }
+}
+
+.packing-source__date {
+  color: var(--cream-mute);
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.85;
+}
+
+/* ---------- Guidance ---------- */
+
+.packing-guidance {
+  padding-top: 0.5rem;
+}
+
+.packing-guidance__block {
+  margin-top: 1.75rem;
+}
+
+.packing-guidance__block:first-of-type {
+  margin-top: 0;
+}
+
+.packing-guidance__title {
+  margin: 0 0 0.75rem;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--cream-mute);
+}
+
+.packing-guidance__text {
+  margin: 0 0 0.75rem;
+  max-width: 70ch;
+  color: var(--cream-mute);
+  font-size: 0.9375rem;
+  line-height: 1.55;
+}
+
+.packing-notes {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--hair);
+}
+
+.packing-note {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.85rem 0;
+  border-bottom: 1px solid var(--hair);
+}
+
+.packing-note__flag {
+  align-self: flex-start;
+  font-family: var(--font-mono);
+  font-size: 0.5625rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--cream-mute);
+}
+
+.packing-note--stop {
+  border-left: 2px solid var(--ember);
+  padding-left: 0.85rem;
+}
+
+.packing-note--stop .packing-note__flag {
+  color: #ffb9a3;
+}
+
+.packing-note__text {
+  color: var(--cream);
+  font-size: 0.9375rem;
+  line-height: 1.55;
+  max-width: 74ch;
+}
+
+.packing-note--gap .packing-note__text {
+  color: var(--cream-mute);
+}
+
+/* ---------- Reduced motion ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .packing-stay,
+  .packing-filter,
+  .packing-item__remove,
+  .packing-progress__fill {
+    transition: none;
+  }
+}
+
+/* ---------- Print ----------
+   The sheet is the point of printing: a clean checklist with square boxes, no
+   chrome, no controls and no dark fills. The guidance sections print after the
+   list because they carry the rules the list refers to.
+*/
+
+@media print {
+  /*
+    Site chrome repeats on every page when it is fixed or sticky, so it is
+    removed here rather than left to the browser.
+  */
+  header[class*="sticky"],
+  nav[aria-label="Mobile"],
+  nav[aria-label="Primary"],
+  nav[aria-label="Footer"],
+  footer,
+  .ambient-glow,
+  .skip-link,
+  .tool-noscript,
+  .tool-crumbs,
+  .tool-foot,
+  .packing-controls,
+  .packing-status,
+  .packing-add,
+  .packing-item__remove,
+  .packing-source,
+  .packing-progress__track,
+  .tml-divider {
+    display: none !important;
+  }
+
+  :root {
+    color-scheme: light;
+  }
+
+  /*
+    The dark ground is a screen surface. Printing it would put #111 text on a
+    near-black page, so the page and body are forced to white here; the token
+    values themselves are untouched.
+  */
+  html,
+  body {
+    background: #fff !important;
+    color: #111 !important;
+  }
+
+  .tool-page,
+  .tool-page__inner {
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    overflow: visible;
+    color: #111;
+  }
+
+  .packing-print-head {
+    display: block;
+    padding-bottom: 0.5rem;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid #999;
+    color: #111;
+  }
+
+  .packing-print-head p {
+    margin: 0;
+  }
+
+  .packing-print-head .label {
+    color: #444 !important;
+    font-size: 8pt;
+  }
+
+  .packing-sheet__head {
+    margin-bottom: 1rem;
+  }
+
+  .packing-sheet__title,
+  .packing-group__title,
+  .packing-item__text,
+  .packing-note__text,
+  .packing-guidance__title,
+  .packing-guidance__text,
+  .packing-sheet__intro {
+    color: #111 !important;
+  }
+
+  .packing-sheet__title {
+    font-size: 20pt;
+  }
+
+  .packing-sheet__intro,
+  .packing-guidance__text {
+    font-size: 9.5pt;
+  }
+
+  .label,
+  .packing-progress__aside {
+    color: #444 !important;
+  }
+
+  .packing-list {
+    gap: 1.1rem;
+  }
+
+  .packing-group {
+    break-inside: avoid;
+  }
+
+  .packing-items,
+  .packing-note {
+    border-color: #bbb;
+  }
+
+  /*
+    The checkbox prints as a square outline with a tick when it is packed, so the
+    sheet can be used with a pen. Screen colour is irrelevant on paper.
+  */
+  .packing-item {
+    grid-template-columns: auto minmax(0, 1fr);
+    padding: 0.35rem 0;
+    break-inside: avoid;
+  }
+
+  .packing-item__box {
+    appearance: none;
+    -webkit-appearance: none;
+    margin-top: 0.15rem;
+    width: 11pt;
+    height: 11pt;
+    border: 1px solid #333;
+    border-radius: 1px;
+    background: #fff;
+    accent-color: #000;
+  }
+
+  .packing-item__box:checked {
+    background-color: #fff;
+  }
+
+  .packing-item__box:checked::after {
+    content: "✓";
+    display: block;
+    margin-top: -3pt;
+    font-size: 10pt;
+    line-height: 1;
+    text-align: center;
+    color: #000;
+  }
+
+  .packing-item__label {
+    min-height: 0;
+    padding: 0;
+  }
+
+  .packing-item__text {
+    font-size: 10.5pt;
+  }
+
+  .packing-item[data-packed="true"] .packing-item__text {
+    color: #555 !important;
+  }
+
+  /* The rule under an official item is what makes the item official, so it stays. */
+  .packing-item__rule,
+  .packing-item__caveat {
+    color: #333 !important;
+    font-size: 8.5pt;
+  }
+
+  .packing-tag {
+    border-color: #777;
+    color: #222 !important;
+    font-size: 7pt;
+  }
+
+  .packing-guidance {
+    break-before: page;
+  }
+
+  .packing-note--stop {
+    border-left-color: #333;
+  }
+}

@@ -11,6 +11,7 @@ import type { SearchKind } from "./types";
 export const KIND_ORDER: readonly SearchKind[] = [
   "page",
   "guide",
+  "guide-section",
   "sale",
   "ticket",
   "accommodation",
@@ -24,6 +25,8 @@ export const KIND_ORDER: readonly SearchKind[] = [
 export const KIND_LABELS: Readonly<Record<SearchKind, string>> = {
   page: "Page",
   guide: "Guide",
+  /** Deliberately not "Section": a reader needs to know it is inside the guide. */
+  "guide-section": "In this chapter",
   sale: "Sale",
   ticket: "Ticket",
   accommodation: "Accommodation",
@@ -36,5 +39,14 @@ export const KIND_LABELS: Readonly<Record<SearchKind, string>> = {
 
 /** The id prefix per kind, so two source lists cannot produce the same id. */
 export function kindPrefix(kind: SearchKind): string {
-  return kind === "accommodation" ? "stay" : kind;
+  switch (kind) {
+    case "accommodation":
+      return "stay";
+    case "guide-section":
+      // A chapter id already starts with the kind prefix `guide:`; sections need
+      // their own so the two id spaces cannot collide.
+      return "section";
+    default:
+      return kind;
+  }
 }

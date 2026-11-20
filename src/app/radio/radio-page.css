@@ -1,0 +1,423 @@
+/*
+  Page frame for /radio.
+
+  Grammar, shared with the other reading pages in this workstream:
+
+  - one 1240px column with the footer's own inset (20px at 320, 24px from 390,
+    28px from 640), so the hero, the sections and the footer start on one line;
+  - the page owns the rhythm between sections. A section carries symmetric
+    `padding-block` and the divider between two sections carries no margin, so the
+    space above a `GoldDivider` and below it are equal by construction;
+  - a `GoldDivider` is the only break between sections. `SectionHeading` draws its
+    own hairline, which would be a second rule a few pixels under the gold one, so
+    it is switched off inside `.tml-radio-section`. Nothing under `src/components/ui`
+    is edited: this is a page-scoped override of a component it already uses.
+
+  Tokens come from globals.css; nothing here redefines a colour.
+*/
+
+.tml-radio-page {
+  --radio-gutter: 1.25rem;
+  --radio-gap: 2.75rem;
+  width: 100%;
+  max-width: 1240px;
+  margin-inline: auto;
+  padding: 3rem var(--radio-gutter) 6rem;
+}
+
+@media (min-width: 390px) {
+  .tml-radio-page {
+    --radio-gutter: 1.5rem;
+  }
+}
+
+@media (min-width: 640px) {
+  .tml-radio-page {
+    --radio-gutter: 1.75rem;
+  }
+}
+
+@media (min-width: 900px) {
+  .tml-radio-page {
+    --radio-gap: 3.5rem;
+    /* 64px below the sticky header at desktop, which is the brief's minimum. */
+    padding-top: 4rem;
+  }
+}
+
+/* ---------- Hero ---------- */
+
+.tml-radio-hero {
+  padding-bottom: 2rem;
+}
+
+.tml-radio-hero__title {
+  margin: 0.6rem 0 0;
+  max-width: 24ch;
+  font-family: var(--font-display);
+  font-size: clamp(2.25rem, 6vw, 3.75rem);
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  color: var(--cream);
+  text-wrap: balance;
+  font-variation-settings:
+    "SOFT" 100,
+    "WONK" 1;
+}
+
+.tml-radio-hero__lede {
+  margin: 1.1rem 0 0;
+  max-width: 65ch;
+  color: var(--cream-mute);
+  font-size: 1.0625rem;
+  line-height: 1.6;
+  text-wrap: pretty;
+}
+
+/* ---------- Sections and the divider rhythm ---------- */
+
+.tml-radio-section {
+  padding-block: var(--radio-gap);
+}
+
+/* Equal space above and below every divider: the sections either side own it, and
+   the divider itself contributes nothing. The heading's own hairline is switched off
+   by `hairline="none"` on the SectionHeading, not by a rule here. */
+.tml-radio-page > .tml-divider {
+  margin-block: 0;
+}
+
+/*
+  The kit's heading grid gives its side-by-side columns `minmax(0, …)` from 900px, but
+  on a single column the children still default to `min-width: auto`, so a long
+  unbreakable token at 150 percent text can push the column wider than the viewport.
+  These two rules let the grid and its children shrink instead of overflowing; nothing
+  about the visual rhythm changes, because the column is already full width.
+
+  `overflow-wrap` is here because the display type is large and the panel is narrow: at
+  320px with the toolbar at 150 percent, "Tomorrowland's own station" is a single word
+  wider than the column, and without a break opportunity it pushes the page sideways.
+  A break inside a long word is ugly; a horizontal scrollbar is worse, and the reader
+  who needs 150 percent text is the least able to recover from one.
+*/
+.tml-radio-section .tml-section-head,
+.tml-radio-section .tml-section-head__headline,
+.tml-radio-section .tml-section-head__aside {
+  min-width: 0;
+}
+
+.tml-radio-section .tml-section-head__title,
+.tml-radio-hero__title,
+.tml-radio-channel__name {
+  overflow-wrap: break-word;
+}
+
+/* ---------- "What it is" facts ---------- */
+
+.tml-radio-facts {
+  display: grid;
+  gap: 1rem;
+  margin-top: 2rem;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+@media (min-width: 700px) {
+  .tml-radio-facts {
+    gap: 1.5rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.tml-radio-fact {
+  padding: 1.25rem;
+  border: 1px solid var(--hair);
+  border-radius: var(--radius-card);
+  background-color: rgb(21 17 15 / 0.5);
+}
+
+@media (min-width: 640px) {
+  .tml-radio-fact {
+    padding: 1.5rem;
+  }
+}
+
+.tml-radio-fact__value {
+  margin: 0.5rem 0 0;
+  color: var(--cream);
+  font-size: 0.9375rem;
+  line-height: 1.6;
+}
+
+/* ---------- Ways to listen ---------- */
+
+.tml-radio-channels {
+  display: grid;
+  gap: 1rem;
+  margin: 2rem 0 0;
+  padding: 0;
+  list-style: none;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+@media (min-width: 700px) {
+  .tml-radio-channels {
+    gap: 1.5rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.tml-radio-channel {
+  display: flex;
+  height: 100%;
+  flex-direction: column;
+  padding: 1.25rem;
+  border: 1px solid var(--hair);
+  border-radius: var(--radius-card);
+  background-image: linear-gradient(170deg, var(--surface-2), var(--surface));
+}
+
+@media (min-width: 640px) {
+  .tml-radio-channel {
+    padding: 1.5rem;
+  }
+}
+
+.tml-radio-channel__kind {
+  align-self: flex-start;
+  padding: 0.2rem 0.65rem;
+  border: 1px solid var(--hair);
+  border-radius: 999px;
+  color: var(--cream-mute);
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.tml-radio-channel__name {
+  margin: 0.75rem 0 0;
+  font-family: var(--font-display);
+  font-size: 1.125rem;
+  font-weight: 400;
+  line-height: 1.3;
+  color: var(--cream);
+}
+
+.tml-radio-channel__text {
+  margin: 0.5rem 0 0;
+  max-width: 62ch;
+  color: var(--cream-mute);
+  font-size: 0.9375rem;
+  line-height: 1.6;
+}
+
+.tml-radio-channel__link {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  gap: 0.5rem;
+  min-height: 44px;
+  margin-top: auto;
+  padding-top: 0.75rem;
+  color: var(--ea);
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  text-decoration: none;
+}
+
+@media (hover: hover) {
+  .tml-radio-channel__link:hover {
+    text-decoration: underline;
+    text-underline-offset: 4px;
+  }
+}
+
+/* ---------- Country table ---------- */
+
+.tml-radio-table-wrap {
+  margin-top: 2rem;
+  overflow-x: auto;
+  border: 1px solid var(--hair);
+  border-radius: var(--radius-card);
+  -webkit-overflow-scrolling: touch;
+}
+
+.tml-radio-table {
+  width: 100%;
+  min-width: 34rem;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  text-align: left;
+}
+
+.tml-radio-table thead tr {
+  background-color: var(--surface-2);
+}
+
+.tml-radio-table th,
+.tml-radio-table td {
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid var(--hair);
+  vertical-align: top;
+}
+
+.tml-radio-table thead th {
+  color: var(--cream-mute);
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.tml-radio-table tbody th {
+  color: var(--cream);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.tml-radio-table tbody td {
+  color: var(--cream);
+}
+
+.tml-radio-table tbody td.tml-radio-table__detail {
+  color: var(--cream-mute);
+}
+
+.tml-radio-table tbody tr:last-child th,
+.tml-radio-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.tml-radio-note {
+  margin: 1rem 0 0;
+  max-width: 65ch;
+  color: var(--cream-mute);
+  font-size: 0.8125rem;
+  line-height: 1.6;
+}
+
+/* ---------- History ---------- */
+
+.tml-radio-history {
+  display: grid;
+  gap: 1rem;
+  margin: 2rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tml-radio-milestone {
+  padding: 1.25rem;
+  border: 1px solid var(--hair);
+  border-radius: var(--radius-card);
+  background-color: rgb(21 17 15 / 0.5);
+}
+
+@media (min-width: 640px) {
+  .tml-radio-milestone {
+    padding: 1.5rem;
+  }
+}
+
+.tml-radio-milestone__text {
+  margin: 0.5rem 0 0;
+  max-width: 65ch;
+  color: var(--cream);
+  font-size: 0.9375rem;
+  line-height: 1.6;
+}
+
+/* ---------- Sources ---------- */
+
+.tml-radio-sources {
+  margin-top: var(--radio-gap);
+  padding: 1.25rem;
+  border: 1px solid var(--hair-strong);
+  border-radius: var(--radius-card);
+  background-color: rgb(21 17 15 / 0.6);
+}
+
+@media (min-width: 640px) {
+  .tml-radio-sources {
+    padding: 1.75rem;
+  }
+}
+
+.tml-radio-sources__title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+}
+
+.tml-radio-attribution {
+  margin-top: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--hair);
+  border-radius: 14px;
+  background-color: rgb(12 10 9 / 0.4);
+}
+
+.tml-radio-attribution__text {
+  margin: 0.35rem 0 0;
+  max-width: 65ch;
+  color: var(--cream);
+  font-size: 0.9375rem;
+  line-height: 1.6;
+}
+
+.tml-radio-sources__text {
+  margin: 1rem 0 0;
+  max-width: 65ch;
+  color: var(--cream-mute);
+  font-size: 0.9375rem;
+  line-height: 1.6;
+}
+
+.tml-radio-sources__links {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin: 1rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tml-radio-sources__links a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  color: var(--ea);
+  font-size: 0.9375rem;
+  text-decoration: none;
+}
+
+@media (hover: hover) {
+  .tml-radio-sources__links a:hover {
+    text-decoration: underline;
+    text-underline-offset: 4px;
+  }
+}
+
+.tml-radio-checked {
+  margin: 0.5rem 0 0;
+  color: var(--cream-mute);
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tml-radio-channel,
+  .tml-radio-milestone {
+    transition: none;
+  }
+}

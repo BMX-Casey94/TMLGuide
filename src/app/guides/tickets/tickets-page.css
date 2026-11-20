@@ -12,15 +12,23 @@
 */
 
 .tml-tix-page {
+  --tix-gutter: 1.25rem;
   width: 100%;
   max-width: 1240px;
   margin-inline: auto;
-  padding: 2.5rem 1.25rem 6rem;
+  /* 48px below the sticky header on a phone, 56px from 900px. */
+  padding: 3rem var(--tix-gutter) 6rem;
+}
+
+@media (min-width: 390px) {
+  .tml-tix-page {
+    --tix-gutter: 1.5rem;
+  }
 }
 
 @media (min-width: 640px) {
   .tml-tix-page {
-    padding-inline: 1.75rem;
+    --tix-gutter: 1.75rem;
   }
 }
 

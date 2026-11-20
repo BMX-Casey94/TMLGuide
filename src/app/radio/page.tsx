@@ -13,6 +13,7 @@ import {
   orderRadioChannels,
   orderRadioMilestones,
 } from "./radio-facts";
+import "./radio-page.css";
 
 export const metadata: Metadata = {
   title: "One World Radio",
@@ -29,61 +30,60 @@ export default function RadioPage() {
   const milestones = orderRadioMilestones(radioMilestones);
 
   return (
-    <main id="main" className="mx-auto w-full max-w-6xl px-5 pb-24 sm:px-7">
-      <header className="pt-14 pb-10">
+    <main id="main" className="tml-radio-page">
+      <header className="tml-radio-hero">
         <p className="label text-accent">24/7 · Independent guide</p>
-        <h1 className="mt-3 font-display text-4xl leading-none tracking-tight sm:text-5xl">
-          {radioStation.name}
-        </h1>
-        <p className="mt-4 max-w-[62ch] text-cream-mute">{radioStation.tagline}</p>
+        <h1 className="tml-radio-hero__title">{radioStation.name}</h1>
+        <p className="tml-radio-hero__lede">{radioStation.tagline}</p>
       </header>
 
       <RadioPanel />
 
-      <section aria-labelledby="radio-about" className="mt-16">
+      <section aria-labelledby="radio-about" className="tml-radio-section">
         <SectionHeading
           id="radio-about"
           kicker="What it is"
           title="Tomorrowland's own station"
           lede={radioStation.description}
         />
-        <div className="mt-8 grid gap-4 sm:grid-cols-2">
-          <div className="rounded-[var(--radius-card)] border border-hair bg-surface/50 p-5">
+        <div className="tml-radio-facts">
+          <div className="tml-radio-fact">
             <p className="label text-cream-mute">Audience</p>
-            <p className="mt-2 text-sm leading-relaxed text-cream">{radioStation.audience}</p>
+            <p className="tml-radio-fact__value">{radioStation.audience}</p>
           </div>
-          <div className="rounded-[var(--radius-card)] border border-hair bg-surface/50 p-5">
+          <div className="tml-radio-fact">
             <p className="label text-cream-mute">Coverage</p>
-            <p className="mt-2 text-sm leading-relaxed text-cream">{coverageSummary(broadcasts)}</p>
+            <p className="tml-radio-fact__value">{coverageSummary(broadcasts)}</p>
           </div>
         </div>
       </section>
 
       <GoldDivider butterfly="right" />
 
-      <section aria-labelledby="radio-channels">
+      <section aria-labelledby="radio-channels" className="tml-radio-section">
         <SectionHeading
           id="radio-channels"
           kicker="How to listen"
           title="Every published way in"
           lede="The panel above plays the public international MP3 stream. The routes below are the ones Tomorrowland documents, including the services that carry the station themselves."
+          hairline="none"
         />
 
-        <ul className="mt-8 grid gap-4 md:grid-cols-2">
+        <ul className="tml-radio-channels">
           {channels.map((channel) => (
             <li key={channel.id}>
-              <article className="flex h-full flex-col rounded-[var(--radius-card)] border border-hair bg-gradient-to-b from-surface-2 to-surface p-5">
-                <span className="self-start rounded-full border border-hair px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-[0.14em] text-cream-mute">
+              <article className="tml-radio-channel">
+                <span className="tml-radio-channel__kind">
                   {RADIO_CHANNEL_KIND_LABELS[channel.kind]}
                 </span>
-                <h3 className="mt-3 font-display text-lg leading-snug">{channel.name}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-cream-mute">{channel.description}</p>
+                <h3 className="tml-radio-channel__name">{channel.name}</h3>
+                <p className="tml-radio-channel__text">{channel.description}</p>
                 {channel.url === undefined ? null : (
                   <a
                     href={channel.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="mt-auto inline-flex min-h-11 items-center gap-2 pt-4 font-mono text-[11px] uppercase tracking-[0.16em] text-accent underline-offset-4 hover:underline"
+                    className="tml-radio-channel__link"
                   >
                     Open
                     <span aria-hidden="true">↗</span>
@@ -99,52 +99,45 @@ export default function RadioPage() {
 
       <GoldDivider butterfly="left" />
 
-      <section aria-labelledby="radio-countries">
+      <section aria-labelledby="radio-countries" className="tml-radio-section">
         <SectionHeading
           id="radio-countries"
           kicker="Where to listen"
           title="DAB+, FM and syndication"
           lede="A country appears only where an official page states the carriage. Coverage changes: this list was checked on the date below."
+          hairline="none"
         />
 
         <div
-          className="mt-8 overflow-x-auto rounded-[var(--radius-card)] border border-hair"
+          className="tml-radio-table-wrap"
           role="region"
           aria-label="Countries with published One World Radio carriage"
           tabIndex={0}
         >
-          <table className="w-full min-w-[36rem] border-collapse text-left text-sm">
+          <table className="tml-radio-table">
             <caption className="sr-only">
               Countries with published One World Radio carriage, and how the station reaches each
             </caption>
             <thead>
-              <tr className="border-b border-hair bg-surface-2">
-                <th scope="col" className="label px-4 py-3 text-cream-mute">
-                  Country
-                </th>
-                <th scope="col" className="label px-4 py-3 text-cream-mute">
-                  Method
-                </th>
-                <th scope="col" className="label px-4 py-3 text-cream-mute">
-                  Detail
-                </th>
+              <tr>
+                <th scope="col">Country</th>
+                <th scope="col">Method</th>
+                <th scope="col">Detail</th>
               </tr>
             </thead>
             <tbody>
               {broadcasts.map((broadcast) => (
-                <tr key={broadcast.id} className="border-b border-hair last:border-b-0">
-                  <th scope="row" className="px-4 py-3 font-medium text-cream">
-                    {broadcast.country}
-                  </th>
-                  <td className="px-4 py-3 text-cream">{broadcast.method}</td>
-                  <td className="px-4 py-3 text-cream-mute">{broadcast.detail}</td>
+                <tr key={broadcast.id}>
+                  <th scope="row">{broadcast.country}</th>
+                  <td>{broadcast.method}</td>
+                  <td className="tml-radio-table__detail">{broadcast.detail}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
 
-        <p className="mt-4 text-xs leading-relaxed text-cream-mute">
+        <p className="tml-radio-note">
           Not in the list? Listen online through the stream or the official app; the station reports
           listeners in more than 130 countries.
         </p>
@@ -152,67 +145,56 @@ export default function RadioPage() {
 
       <GoldDivider />
 
-      <section aria-labelledby="radio-history">
+      <section aria-labelledby="radio-history" className="tml-radio-section">
         <SectionHeading
           id="radio-history"
           kicker="History"
           title="From anniversary project to a permanent station"
           lede="Three dated moments from Tomorrowland's own announcements."
+          hairline="none"
         />
 
-        <ol className="mt-8 flex flex-col gap-4">
+        <ol className="tml-radio-history">
           {milestones.map((milestone) => {
             const when = formatCheckDate(milestone.happenedOn);
             return (
-              <li
-                key={milestone.id}
-                className="rounded-[var(--radius-card)] border border-hair bg-surface/50 p-5"
-              >
+              <li key={milestone.id} className="tml-radio-milestone">
                 <p className="label text-accent">
-                  {when === null ? "Date not recorded" : <time dateTime={milestone.happenedOn}>{when}</time>}
+                  {when === null ? (
+                    "Date not recorded"
+                  ) : (
+                    <time dateTime={milestone.happenedOn}>{when}</time>
+                  )}
                 </p>
-                <p className="mt-2 text-sm leading-relaxed text-cream">{milestone.statement}</p>
+                <p className="tml-radio-milestone__text">{milestone.statement}</p>
               </li>
             );
           })}
         </ol>
       </section>
 
-      <section
-        aria-labelledby="radio-sources"
-        className="mt-16 rounded-[var(--radius-card)] border border-hair-strong bg-surface/60 p-5 sm:p-6"
-      >
-        <h2 id="radio-sources" className="font-display text-2xl">
+      <section aria-labelledby="radio-sources" className="tml-radio-sources">
+        <h2 id="radio-sources" className="tml-radio-sources__title">
           Sources and attribution
         </h2>
-        <div className="mt-3 rounded-xl border border-hair bg-ground/40 p-4">
+        <div className="tml-radio-attribution">
           <p className="label text-cream-mute">Attribution</p>
-          <p className="mt-1.5 text-sm leading-relaxed text-cream">{RADIO_CREDIT}</p>
+          <p className="tml-radio-attribution__text">{RADIO_CREDIT}</p>
         </div>
-        <p className="mt-3 text-sm leading-relaxed text-cream-mute">
+        <p className="tml-radio-sources__text">
           The station is operated by Tomorrowland. This page is an independent guide, not affiliated
           with Tomorrowland or WeAreOne.World B.V., and the stream is linked unchanged.
         </p>
-        <ul className="mt-4 flex flex-col gap-2 text-sm">
+        <ul className="tml-radio-sources__links">
           <li>
-            <a
-              href={RADIO_OFFICIAL_SITE}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex min-h-11 items-center gap-2 text-accent underline-offset-4 hover:underline"
-            >
+            <a href={RADIO_OFFICIAL_SITE} target="_blank" rel="noopener noreferrer">
               Official One World Radio site
               <span aria-hidden="true">↗</span>
               <span className="sr-only"> (opens in a new tab)</span>
             </a>
           </li>
           <li>
-            <a
-              href={radioStation.source.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex min-h-11 items-center gap-2 text-accent underline-offset-4 hover:underline"
-            >
+            <a href={radioStation.source.url} target="_blank" rel="noopener noreferrer">
               {radioStation.source.title}
               <span aria-hidden="true">↗</span>
               <span className="sr-only"> (opens in a new tab)</span>
@@ -220,7 +202,7 @@ export default function RadioPage() {
           </li>
         </ul>
         {checked === null ? null : (
-          <p className="mt-2 font-mono text-[10px] uppercase tracking-[0.14em] text-cream-mute">
+          <p className="tml-radio-checked">
             Station facts checked <time dateTime={radioStation.lastVerified}>{checked}</time>
           </p>
         )}

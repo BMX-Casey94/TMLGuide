@@ -5,6 +5,7 @@ import {
   DEFAULT_COMMUNITY_TAB,
   hashForTab,
   nextTabForKey,
+  panelForAnchor,
   tabFromHash,
 } from "./community-tabs";
 
@@ -83,5 +84,39 @@ describe("nextTabForKey", () => {
     for (const key of ["Tab", "Enter", " ", "Escape", "ArrowUp", "a"]) {
       expect(nextTabForKey("whatsapp", key)).toBeNull();
     }
+  });
+});
+
+describe("panelForAnchor", () => {
+  it("sends a WhatsApp group anchor to the WhatsApp panel", () => {
+    expect(panelForAnchor("#wa-1")).toBe("whatsapp");
+    expect(panelForAnchor("#wa-solo-group")).toBe("whatsapp");
+  });
+
+  it("sends a resource anchor to the resources panel", () => {
+    expect(panelForAnchor("#resource-discord")).toBe("resources");
+  });
+
+  it("sends a partner anchor to the partners panel", () => {
+    expect(panelForAnchor("#partner-dca-travel")).toBe("partners");
+    // The data ids already carry their prefix, and the anchor keeps one copy.
+    expect(panelForAnchor("#partner-partner-rent-a-tent")).toBe("partners");
+  });
+
+  it("reads a hash with or without the leading #, case insensitively and trimmed", () => {
+    expect(panelForAnchor("wa-1")).toBe("whatsapp");
+    expect(panelForAnchor("#  WA-1 ")).toBe("whatsapp");
+    expect(panelForAnchor("#Partner-DCA-Travel")).toBe("partners");
+  });
+
+  it("returns null for an unknown prefix", () => {
+    expect(panelForAnchor("#faq-be-lockers")).toBeNull();
+    expect(panelForAnchor("#sale-belgium")).toBeNull();
+    expect(panelForAnchor("#whatsapp-groups")).toBeNull();
+  });
+
+  it("returns null for an empty hash or a bare #", () => {
+    expect(panelForAnchor("")).toBeNull();
+    expect(panelForAnchor("#")).toBeNull();
   });
 });

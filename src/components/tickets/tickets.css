@@ -115,8 +115,11 @@
   grid-template-columns: minmax(0, 1fr);
 }
 
+/* 24px between cards from 700px, where they sit side by side. A 16px gap on a
+   desktop reads as a deliberate join rather than as separation. */
 @media (min-width: 700px) {
   .tml-tix-grid {
+    gap: 1.5rem;
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
@@ -693,10 +696,23 @@
 /* ---------- Notice and disclaimer ---------- */
 
 .tml-tix-notice {
-  padding: 1.15rem 1.25rem;
+  /*
+    This card follows the explorer, whose last element is a grid of bordered
+    category cards. With no margin it sat flush against the last one, so the two
+    card edges met and read as one broken block. The gap is the page's own section
+    rhythm, not an arbitrary value.
+  */
+  margin-top: 2.75rem;
+  padding: 1.25rem;
   border: 1px solid rgb(255 106 61 / 0.36);
   border-radius: var(--radius-card);
   background-color: rgb(255 106 61 / 0.08);
+}
+
+@media (min-width: 640px) {
+  .tml-tix-notice {
+    padding: 1.5rem;
+  }
 }
 
 .tml-tix-notice__label {

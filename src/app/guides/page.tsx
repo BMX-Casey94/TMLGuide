@@ -1,9 +1,15 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { EDITION_META, GUIDE_EDITIONS, editionChapters, type GuideChapter, type GuideEdition } from "@/content";
+import { faqs as belgiumFaqs } from "@/data/belgium";
+import { winterFaqs } from "@/data/winter";
+import { sharedData } from "@/data/shared";
+import type { Faq } from "@/data/schemas";
 import { ChapterCard, EditionCard } from "@/components/guides/chapter-cards";
 import { TICKETS_EXPLORER_HREF } from "@/components/guides/data-block";
 import { breadcrumbListJsonLd, serialiseJsonLd } from "@/components/guides/json-ld";
+import { faqAnchor, type FaqCollection } from "@/lib/search/anchors";
+import { plainMarkdown } from "@/lib/search/sources/faqs";
 import "@/components/guides/guides.css";
 
 const TITLE = "Guides";
@@ -143,6 +149,60 @@ export function GuidesHub({ chapters }: GuidesHubProps) {
             Open the tickets and packages explorer
           </Link>
         </p>
+      </section>
+
+      <section className="tml-guide-section" aria-labelledby="faq-directory-heading">
+        <h2 className="tml-guide-section__title" id="faq-directory-heading">
+          Every answer, in one place
+        </h2>
+        <p className="tml-guide-section__lede">
+          Frequently asked questions across Belgium, Winter and shared rules. Each answer cites the
+          official page it was checked against.
+        </p>
+
+        {(
+          [
+            { key: "belgium", label: "Belgium", items: belgiumFaqs },
+            { key: "winter", label: "Winter", items: winterFaqs },
+            { key: "shared", label: "Shared across editions", items: sharedData.faqs },
+          ] as const satisfies readonly {
+            readonly key: FaqCollection;
+            readonly label: string;
+            readonly items: readonly Faq[];
+          }[]
+        ).map((group) => (
+          <div key={group.key} className="mt-8">
+            <h3 className="label text-cream-mute">{group.label}</h3>
+            <div className="mt-3 space-y-2">
+              {group.items.map((faq) => (
+                <details
+                  key={`${group.key}-${faq.id}`}
+                  id={faqAnchor(group.key, faq.id)}
+                  className="rounded-xl border border-hair bg-surface/60 px-5 py-3.5"
+                >
+                  <summary className="cursor-pointer font-medium text-cream">
+                    {faq.question}
+                  </summary>
+                  <p className="mt-3 text-sm leading-relaxed text-cream-mute">
+                    {plainMarkdown(faq.answer)}
+                  </p>
+                  <p className="mt-2 font-mono text-[11px] uppercase tracking-[0.14em] text-cream-mute">
+                    <a
+                      href={faq.source.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="tml-guide-link"
+                    >
+                      {faq.source.title}{" "}
+                      <span className="sr-only">{`for ${faq.question} (opens in a new tab)`}</span>
+                    </a>
+                    {" · "}Checked <time dateTime={faq.lastVerified}>{faq.lastVerified}</time>
+                  </p>
+                </details>
+              ))}
+            </div>
+          </div>
+        ))}
       </section>
 
       <p className="tml-guide-note">

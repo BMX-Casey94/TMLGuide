@@ -1,0 +1,468 @@
+/*
+  TMLGUIDE Journey planner styles.
+
+  Scoped to the journey tool: every selector starts `journey-`, so nothing here
+  can leak into another workstream's page. Only design tokens from globals.css
+  are used, which is why the edition accent (--ea) follows the reader's choice
+  without a per-tool colour.
+
+  The form controls inside the panel inherit the kit's `tool-` classes from
+  `tools.css`, which this file never edits. What it adds is the single-choice
+  group, the ordered steps, and the two trailing sections.
+*/
+
+/* ---------- Form group ---------- */
+
+.journey-fieldset {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.journey-fieldset > legend {
+  padding: 0;
+}
+
+.journey-choices {
+  display: grid;
+  gap: 0.6rem;
+  margin-top: 0.15rem;
+}
+
+@media (min-width: 620px) {
+  .journey-choices {
+    grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  }
+}
+
+.journey-choice {
+  position: relative;
+  display: flex;
+  min-height: 56px;
+  align-items: flex-start;
+  gap: 0.7rem;
+  padding: 0.8rem 0.9rem;
+  border: 1px solid var(--hair-strong);
+  border-radius: 14px;
+  background-color: rgb(12 10 9 / 0.55);
+  cursor: pointer;
+  transition: border-color 0.18s ease, background-color 0.18s ease;
+}
+
+/*
+  A visible radio rather than a hidden one. It keeps the native control's semantics
+  and its own hit area, so a click anywhere on the card works and the input is never
+  covered by the label text. The label carries the 44px target; the input is 20px
+  inside it, which is the convention for a radio in a card.
+*/
+.journey-choice input {
+  flex: none;
+  width: 1.15rem;
+  height: 1.15rem;
+  margin: 0.15rem 0 0;
+  accent-color: var(--ea);
+  cursor: pointer;
+}
+
+/* The ring belongs to the whole card, so the target a keyboard user sees is the card. */
+.journey-choice:has(input:focus-visible) {
+  outline: 2px solid var(--ea);
+  outline-offset: 3px;
+}
+
+@media (hover: hover) {
+  .journey-choice:hover {
+    border-color: var(--cream-mute);
+  }
+}
+
+/*
+  Selection is carried by the border, a filled tick and the label weight, never by
+  colour alone: the tick is a second channel for anyone who cannot see the accent.
+*/
+.journey-choice:has(input:checked) {
+  border-color: var(--ea);
+  background-color: rgb(255 200 61 / 0.1);
+}
+
+.journey-choice__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.journey-choice__label {
+  display: flex;
+  align-items: baseline;
+  gap: 0.45rem;
+  color: var(--cream);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  line-height: 1.35;
+}
+
+.journey-choice:has(input:checked) .journey-choice__label {
+  font-weight: 700;
+}
+
+.journey-choice__tick {
+  flex: none;
+  color: var(--ea);
+  font-size: 0.8em;
+  opacity: 0;
+}
+
+.journey-choice:has(input:checked) .journey-choice__tick {
+  opacity: 1;
+}.journey-choice__note {
+  color: var(--cream-mute);
+  font-size: 0.8125rem;
+  line-height: 1.45;
+}
+
+/* ---------- Result ---------- */
+
+.journey-result {
+  margin-top: 2rem;
+}
+
+.journey-result__summary {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid var(--hair);
+}
+
+.journey-result__title {
+  margin: 0;
+  font-size: 0.6875rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.journey-result__headline {
+  margin: 0;
+  color: var(--cream);
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(1.4rem, 4.5vw, 1.9rem);
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+
+/* ---------- Steps ---------- */
+
+.journey-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: journey-step;
+}
+
+.journey-step {
+  padding: 1.25rem 0;
+  border-bottom: 1px solid var(--hair);
+}
+
+.journey-step:last-child {
+  border-bottom: 0;
+  padding-bottom: 0.25rem;
+}
+
+.journey-step__title {
+  display: flex;
+  align-items: baseline;
+  gap: 0.65rem;
+  margin: 0 0 0.5rem;
+  color: var(--cream);
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 1.1875rem;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+}
+
+.journey-step__number {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: 1.7rem;
+  height: 1.7rem;
+  border: 1px solid var(--hair-strong);
+  border-radius: 50%;
+  color: var(--ea);
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.journey-step__fact {
+  max-width: 68ch;
+  margin: 0;
+  color: var(--cream);
+  font-size: 0.9375rem;
+  line-height: 1.6;
+}
+
+.journey-step__key {
+  color: var(--cream-mute);
+}
+
+.journey-step__pattern,
+.journey-step__times,
+.journey-step__price {
+  max-width: 68ch;
+  margin: 0.6rem 0 0;
+  color: var(--cream);
+  font-size: 0.875rem;
+  line-height: 1.55;
+}
+
+.journey-step__pattern,
+.journey-step__times {
+  padding-left: 0.75rem;
+  border-left: 2px solid var(--hair-strong);
+}
+
+.journey-step__price strong {
+  color: var(--cream);
+  font-family: var(--font-mono);
+  font-size: 0.9375rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.journey-step__price-note {
+  display: block;
+  margin-top: 0.3rem;
+  color: var(--cream-mute);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}
+
+/*
+  The missing-data notice. It carries its own worded label, so a reader who cannot
+  see the colour still reads that the figure is absent rather than zero.
+*/
+.journey-step__gap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  max-width: 68ch;
+  margin: 0.75rem 0 0;
+  padding: 0.6rem 0.8rem;
+  border-left: 2px solid var(--ember);
+  border-radius: 0 10px 10px 0;
+  background-color: rgb(255 106 61 / 0.08);
+  color: #ffd0c2;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}
+
+.journey-step__gap-label {
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #ffb9a3;
+}
+
+/* ---------- Sources under the steps ---------- */
+
+.journey-sources {
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--hair);
+}
+
+.journey-sources__title {
+  margin: 0 0 0.6rem;
+  color: var(--cream-mute);
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.journey-sources__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.journey-sources__list a {
+  display: inline-flex;
+  min-height: 32px;
+  align-items: center;
+  color: var(--cream);
+  text-decoration: underline;
+  text-decoration-color: var(--hair-strong);
+  text-underline-offset: 3px;
+  overflow-wrap: anywhere;
+}
+
+@media (hover: hover) {
+  .journey-sources__list a:hover {
+    text-decoration-color: var(--ea);
+  }
+}
+
+.journey-sources__date {
+  color: var(--cream-mute);
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+/* ---------- Trailing sections ---------- */
+
+.journey-section__title {
+  margin: 0;
+  color: var(--cream);
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 1.5rem;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+
+.journey-section__lede {
+  max-width: 66ch;
+  margin: 0.6rem 0 0;
+  color: var(--cream-mute);
+  font-size: 0.9375rem;
+  line-height: 1.6;
+}
+
+.journey-decisions,
+.journey-limits {
+  margin-top: 2.5rem;
+}
+
+.journey-decisions__list,
+.journey-limits__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  max-width: 72ch;
+  margin: 1.1rem 0 0;
+  padding-left: 1.35rem;
+  color: var(--cream);
+  font-size: 0.9375rem;
+  line-height: 1.6;
+}
+
+.journey-limits__list {
+  padding-left: 1.1rem;
+}
+
+.journey-decisions__list li::marker {
+  color: var(--ea);
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+}
+
+.journey-decisions__source {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.9rem;
+  margin-top: 0.4rem;
+}
+
+.journey-decisions__source a {
+  display: inline-flex;
+  min-height: 32px;
+  align-items: center;
+  color: var(--cream-mute);
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.08em;
+  text-decoration: underline;
+  text-decoration-color: var(--hair-strong);
+  text-underline-offset: 3px;
+}
+
+@media (hover: hover) {
+  .journey-decisions__source a:hover {
+    color: var(--cream);
+    text-decoration-color: var(--ea);
+  }
+}
+
+.journey-limits__list a {
+  color: var(--cream);
+  text-decoration: underline;
+  text-decoration-color: var(--hair-strong);
+  text-underline-offset: 3px;
+}
+
+@media (hover: hover) {
+  .journey-limits__list a:hover {
+    text-decoration-color: var(--ea);
+  }
+}
+
+/* ---------- Reduced motion ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .journey-choice {
+    transition: none;
+  }
+}
+
+/* Keeps the card's own text from overlapping the radio on very narrow screens. */
+.journey-choice__body {
+  flex: 1 1 auto;
+}
+
+/* ---------- Print ---------- */
+
+@media print {
+  .journey-choices,
+  .journey-decisions__source {
+    display: none !important;
+  }
+
+  .journey-step,
+  .journey-sources,
+  .journey-result__summary {
+    border-color: #ccc;
+  }
+
+  .journey-step__fact,
+  .journey-step__pattern,
+  .journey-step__times,
+  .journey-step__price,
+  .journey-step__title,
+  .journey-result__headline,
+  .journey-section__title,
+  .journey-decisions__list,
+  .journey-limits__list {
+    color: #111 !important;
+  }
+
+  .journey-step__gap {
+    border-left-color: #999;
+    background: #f4f4f4;
+    color: #222;
+  }
+
+  .journey-step__gap-label,
+  .journey-step__number,
+  .journey-sources__title {
+    color: #444 !important;
+  }
+}

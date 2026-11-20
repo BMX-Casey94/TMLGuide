@@ -244,6 +244,18 @@ describe("SaleTimeline", () => {
 });
 
 describe("SaleTimelineTabs", () => {
+  /*
+    The tab reads `location.hash` on mount and on every `hashchange`, so the
+    address has to start clean for each case or a case that deep-links would
+    carry into the next one.
+  */
+  beforeEach(() => {
+    window.history.replaceState(null, "", "/tools/sale-timeline");
+  });
+  afterEach(() => {
+    window.history.replaceState(null, "", "/tools/sale-timeline");
+  });
+
   const editions = [
     { edition: "belgium" as const, label: "Belgium", records },
     { edition: "winter" as const, label: "Winter", records: [] },
@@ -344,5 +356,56 @@ describe("SaleTimelineTabs", () => {
     const tab = screen.getByRole("tab", { name: /Belgium/ });
     expect(panel.getAttribute("aria-labelledby")).toBe(tab.id);
     expect(tab.getAttribute("aria-controls")).toBe(panel.id);
+  });
+
+  it("opens the edition that holds the sale named in the address", async () => {
+    // A search result for the Brasil sale links to #sale-brasil-sale.
+    window.history.replaceState(null, "", "/tools/sale-timeline#sale-brasil-sale");
+
+    render(<SaleTimelineTabs editions={editions} initialEdition="belgium" />);
+    await act(async () => {
+      vi.advanceTimersByTime(0);
+    });
+
+    expect(screen.getByRole("tab", { name: /Brasil/ })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("tab", { name: /Belgium/ })).toHaveAttribute("aria-selected", "false");
+  });
+
+  it("switches editions when the address hash changes while the page is open", async () => {
+    render(<SaleTimelineTabs editions={editions} initialEdition="belgium" />);
+    await act(async () => {
+      vi.advanceTimersByTime(0);
+    });
+
+    expect(screen.getByRole("tab", { name: /Belgium/ })).toHaveAttribute("aria-selected", "true");
+
+    await act(async () => {
+      window.history.replaceState(null, "", "/tools/sale-timeline#sale-brasil-sale");
+      window.dispatchEvent(new HashChangeEvent("hashchange"));
+      vi.advanceTimersByTime(0);
+    });
+
+    expect(screen.getByRole("tab", { name: /Brasil/ })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByText("Brasil WorldWide Sale")).toBeInTheDocument();
+  });
+
+  it("leaves the chosen edition alone for a hash that names no sale", async () => {
+    render(<SaleTimelineTabs editions={editions} initialEdition="winter" />);
+    await act(async () => {
+      vi.advanceTimersByTime(0);
+    });
+
+    for (const hash of ["#sale-not-a-sale", "#timeline-list-belgium", "#"]) {
+      await act(async () => {
+        window.history.replaceState(null, "", `/tools/sale-timeline${hash}`);
+        window.dispatchEvent(new HashChangeEvent("hashchange"));
+        vi.advanceTimersByTime(0);
+      });
+
+      expect(screen.getByRole("tab", { name: /Winter/ }), hash).toHaveAttribute(
+        "aria-selected",
+        "true",
+      );
+    }
   });
 });
