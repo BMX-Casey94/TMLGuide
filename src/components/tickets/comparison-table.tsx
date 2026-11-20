@@ -4,9 +4,9 @@
  * The side-by-side comparison table.
  *
  * Table markup rather than a grid of divs, so a screen reader announces the row
- * and column headers for every cell and can navigate by cell. The first column is
- * sticky and the wrapper scrolls horizontally, which is what makes a three-column
- * comparison usable on a 390 px screen without crushing the text.
+ * and column headers for every cell and can navigate by cell. The wrapper
+ * scrolls horizontally. The first column stays put from 900px up; on a phone it
+ * scrolls with the prices, because pinning it covered the figures.
  *
  * Price rows are keyed by sale moment rather than by position: if one package has
  * a pre-sale price and another does not, the missing one shows an explicit dash

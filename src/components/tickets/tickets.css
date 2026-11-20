@@ -481,8 +481,9 @@
   font-size: 0.8125rem;
 }
 
-/* Horizontal scroll on narrow screens, with the first column pinned so the row
-   label stays visible while the package columns are swiped. */
+/* The table scrolls as one piece on a phone. A pinned Package column left the
+   prices sliding underneath it, and the row label was wide enough to cover
+   most of a 390px screen. From 900px there is room to keep the label in view. */
 .tml-tix-table-scroll {
   max-width: 100%;
   margin-top: 1rem;
@@ -530,16 +531,33 @@
   font-weight: 500;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  white-space: nowrap;
+  white-space: normal;
 }
 
 .tml-tix-table__sticky {
-  position: sticky;
-  left: 0;
-  z-index: 1;
-  min-width: 8.5rem;
-  background-color: var(--ground);
-  box-shadow: 1px 0 0 var(--hair);
+  min-width: 0;
+}
+
+@media (max-width: 899px) {
+  .tml-tix-table thead th:not(.tml-tix-table__sticky),
+  .tml-tix-table td {
+    min-width: 10.5rem;
+  }
+}
+
+@media (min-width: 900px) {
+  .tml-tix-table tbody th {
+    white-space: nowrap;
+  }
+
+  .tml-tix-table__sticky {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    min-width: 8.5rem;
+    background-color: var(--ground);
+    box-shadow: 1px 0 0 var(--hair);
+  }
 }
 
 .tml-tix-table__amount {
