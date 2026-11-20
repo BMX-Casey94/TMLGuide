@@ -976,9 +976,16 @@
   position: relative;
 }
 
-/* This trail only. The shared left position sits too far into the panel. */
+/* This trail only. The shared left position sits too far into the panel.
+   Phones keep the 40px shift; from 900px the trail sits a further 40px left. */
 .home-cta .tml-trail--left {
   left: calc(max(-6%, -4rem) - 40px);
+}
+
+@media (min-width: 900px) {
+  .home-cta .tml-trail--left {
+    left: calc(max(-6%, -4rem) - 80px);
+  }
 }
 
 .home-cta__panel {
