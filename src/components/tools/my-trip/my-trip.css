@@ -492,6 +492,13 @@
   }
 }
 
+/* The Still open / Filled in note sits directly above the grid, so it needs
+   the same breathing room the cards give each other. Scoped to that pair so
+   the notes elsewhere in the sheet keep their own spacing. */
+.trip-note + .trip-steps {
+  margin-top: 1rem;
+}
+
 .trip-step {
   margin: 0;
 }

@@ -621,6 +621,33 @@ describe("next steps", () => {
     }
   });
 
+  it("keeps the still-open note as the direct neighbour of the step grid", () => {
+    // .trip-note + .trip-steps carries the gap between the note and the cards,
+    // so anything inserted between them would take that spacing away.
+    renderSheet();
+    const grid = document.querySelector(".trip-steps");
+    expect(grid).not.toBeNull();
+    const before = grid?.previousElementSibling;
+    expect(before).not.toBeNull();
+    expect(before?.classList.contains("trip-note")).toBe(true);
+    expect(before?.textContent).toContain("Still open");
+  });
+
+  it("keeps that neighbour when the sheet is complete", async () => {
+    storeBeforeMount({
+      slotId: "belgium-2027",
+      ticketId: "belgium-2027-full-madness-presale",
+      accommodationNote: "Camping in DreamVille",
+      travelNote: "Train",
+    });
+    renderSheet();
+    await waitFor(() => expect(screen.queryByText("Filled in")).toBeInTheDocument());
+    const grid = document.querySelector(".trip-steps");
+    const before = grid?.previousElementSibling;
+    expect(before?.classList.contains("trip-note--ok")).toBe(true);
+    expect(before?.textContent).toContain("Filled in");
+  });
+
   it("says what is still missing rather than scoring the sheet", () => {
     renderSheet();
     expect(screen.getByText("Still open")).toBeInTheDocument();
