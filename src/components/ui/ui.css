@@ -307,28 +307,13 @@
   position: relative;
 }
 
-/* edge fades, fixed to the wrapper so they do not scroll with the track */
-.tml-carousel::before,
-.tml-carousel::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  bottom: 1.5rem;
-  width: 1.75rem;
-  z-index: 2;
-  pointer-events: none;
-  display: none;
-}
-
-.tml-carousel::before {
-  left: 0;
-  background-image: linear-gradient(90deg, var(--ground) 15%, transparent);
-}
-
-.tml-carousel::after {
-  right: 0;
-  background-image: linear-gradient(270deg, var(--ground) 15%, transparent);
-}
+/*
+  The phone fade is a mask on the track, not a black slab painted over it.
+  A slab was a rectangle from the top of the scroller to the padding, so it
+  covered the rounded corners and flickered while the cards moved underneath.
+  The mask only fades pixels the cards actually paint, and it stays put as
+  the track scrolls.
+*/
 
 .tml-carousel__track {
   display: flex;
@@ -358,9 +343,24 @@
 }
 
 @media (max-width: 699px) {
-  .tml-carousel::before,
-  .tml-carousel::after {
-    display: block;
+  .tml-carousel__track {
+    --carousel-fade: 1.25rem;
+    -webkit-mask-image: linear-gradient(
+      90deg,
+      transparent,
+      #000 var(--carousel-fade),
+      #000 calc(100% - var(--carousel-fade)),
+      transparent
+    );
+    mask-image: linear-gradient(
+      90deg,
+      transparent,
+      #000 var(--carousel-fade),
+      #000 calc(100% - var(--carousel-fade)),
+      transparent
+    );
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
   }
 }
 

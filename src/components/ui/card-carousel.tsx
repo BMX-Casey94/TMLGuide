@@ -15,8 +15,9 @@ export interface CardCarouselProps {
  * two or three column grid from 700px and 1100px up.
  *
  * The scrollable element is the region itself and is focusable, so keyboard
- * users can move it with the arrow keys. The edge fades sit on the outer wrapper
- * so they stay put while the track scrolls under them.
+ * users can move it with the arrow keys. On a phone the track masks its own
+ * edges, so a card fades out as it leaves the row without a slab over the
+ * rounded corners.
  */
 export function CardCarousel({ label, children, className }: CardCarouselProps) {
   return (

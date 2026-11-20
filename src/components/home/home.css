@@ -976,10 +976,13 @@
   position: relative;
 }
 
-/* This trail only. The shared left position sits too far into the panel.
-   Phones keep the 40px shift; from 900px the trail sits a further 40px left. */
-.home-cta .tml-trail--left {
-  left: calc(max(-6%, -4rem) - 40px);
+/* This trail only. Phones keep the shared horizontal position and sit 40px
+   higher. From 900px the trail stays at the shared height and sits 80px
+   further left. */
+@media (max-width: 899px) {
+  .home-cta .tml-trail--left {
+    top: calc(12% - 40px);
+  }
 }
 
 @media (min-width: 900px) {
@@ -996,11 +999,23 @@
   padding: 2rem 1.4rem;
   border: 1px solid var(--hair);
   border-radius: var(--radius-panel);
+  box-shadow: inset 0 1px 0 rgb(244 236 224 / 0.07);
+}
+
+/* The fill sits behind the copy at 85% so the trail can show through.
+   The border and the text stay fully opaque. */
+.home-cta__panel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  opacity: 0.85;
   background-image:
     radial-gradient(120% 90% at 12% 0%, rgb(255 106 61 / 0.16), transparent 62%),
     radial-gradient(120% 90% at 88% 100%, rgb(43 196 180 / 0.14), transparent 62%),
     linear-gradient(168deg, var(--surface-2), var(--surface) 70%);
-  box-shadow: inset 0 1px 0 rgb(244 236 224 / 0.07);
+  pointer-events: none;
 }
 
 @media (min-width: 840px) {
