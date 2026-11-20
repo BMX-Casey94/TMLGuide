@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { A11yTrigger } from "@/components/a11y/a11y-toolbar";
 import { MOBILE_TABS, activeHref, threeDIconSrc } from "./nav";
 import { TABBAR_HEIGHT_PX } from "./layout-metrics";
 
@@ -36,8 +37,14 @@ export function MobileTabBar({ pathname }: MobileTabBarProps) {
       className="fixed inset-x-0 bottom-0 z-50 border-t border-hair bg-ground/92 backdrop-blur-xl min-[900px]:hidden"
       style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
     >
+      {/*
+        Six cells: the five destinations plus the accessibility trigger, which belongs here because
+        the desktop header hides its own trigger below 900px and a reader on a phone needs the same
+        control. Six cells at 320px are 53px wide, so the tracking starts at its tightest and relaxes
+        as the viewport gives each cell room.
+      */}
       <ul
-        className="mx-auto grid max-w-[560px] grid-cols-5"
+        className="mx-auto grid max-w-[560px] grid-cols-6"
         style={{ height: `${TABBAR_HEIGHT_PX}px` }}
       >
         {MOBILE_TABS.map((item) => {
@@ -50,10 +57,9 @@ export function MobileTabBar({ pathname }: MobileTabBarProps) {
                 href={item.href}
                 aria-current={isActive ? "page" : undefined}
                 className={[
-                  // Five cells at a 320px viewport are 64px wide and "Community" is nine
-                  // monospace characters, so the tracking tightens on the narrowest screens and
-                  // relaxes once a cell has room for it.
-                  "relative flex min-h-11 w-full flex-col items-center justify-center gap-0.5 rounded-xl font-mono text-[10px] uppercase tracking-[0.04em] transition-colors min-[380px]:tracking-[0.1em]",
+                  // "Community" is nine monospace characters; at a 320px viewport a cell is 53px,
+                  // so the label starts at 9px and tightens its tracking, then grows from 380px.
+                  "relative flex min-h-11 w-full flex-col items-center justify-center gap-0.5 rounded-xl font-mono text-[9px] uppercase tracking-[0.02em] transition-colors min-[380px]:text-[10px] min-[380px]:tracking-[0.04em] min-[520px]:tracking-[0.1em]",
                   isActive ? "text-accent" : "text-cream-mute",
                 ].join(" ")}
               >
@@ -82,6 +88,13 @@ export function MobileTabBar({ pathname }: MobileTabBarProps) {
             </li>
           );
         })}
+        <li className="flex">
+          {/* Matches the tab cells so the row reads as six peers rather than five and an oddity. */}
+          <A11yTrigger
+            variant="dock"
+            className="text-[9px] tracking-[0.02em] min-[380px]:text-[10px] min-[380px]:tracking-[0.04em] min-[520px]:tracking-[0.1em]"
+          />
+        </li>
       </ul>
     </nav>
   );

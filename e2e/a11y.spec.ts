@@ -12,6 +12,7 @@ import { allChapters, chapterPath } from "../src/content";
 const STATIC_ROUTES = [
   "/",
   "/about",
+  "/accessibility",
   "/community",
   "/radio",
   "/tools",

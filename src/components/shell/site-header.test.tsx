@@ -103,4 +103,25 @@ describe("SiteHeader", () => {
     expect(link.style.transform).toBe("");
     expect(link.className).not.toContain("absolute");
   });
+
+  it("carries the accessibility trigger after the pill, and keeps the search field where it was", () => {
+    renderHeader();
+
+    const trigger = screen.getByRole("button", { name: "Accessibility settings" });
+    const search = screen.getByRole("searchbox", { name: "Search the guide" });
+    const pill = search.closest("div") as HTMLElement;
+
+    // After the pill in document order, so it moves neither the field nor the edition switcher.
+    expect(pill.compareDocumentPosition(trigger) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(pill.contains(trigger)).toBe(false);
+    expect(trigger).toHaveAttribute("aria-expanded", "false");
+  });
+
+  it("keeps the trigger out of the way below 900px, where the tab bar carries it instead", () => {
+    renderHeader();
+
+    const trigger = screen.getByRole("button", { name: "Accessibility settings" });
+    expect(trigger.className).toContain("hidden");
+    expect(trigger.className).toContain("min-[900px]:grid");
+  });
 });

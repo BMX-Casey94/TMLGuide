@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Suspense } from "react";
+import { A11yTrigger } from "@/components/a11y/a11y-toolbar";
 import { EditionSwitcher } from "./edition-switcher";
 import { HeaderTabs, HeaderTabsLive } from "./header-tabs";
 
@@ -56,8 +57,13 @@ export function SiteHeader() {
           {/*
             One pill: the search field on the left, the edition switcher inside its right-hand
             end. They are siblings, because a button cannot contain a radio group.
+
+            The widths below pay for the accessibility trigger that follows. At 900px the row is
+            logo, five tab labels, pill and button; the pill keeps its original 280px because the
+            tabs have just enough slack to give it (they need 310px of the 332px left over), and it
+            grows at 1100px and again from 1200px, where the 1280px column has room to spare.
           */}
-          <div className="group ml-auto flex h-11 min-w-0 max-w-[208px] flex-1 items-center rounded-full border border-hair-strong bg-surface/60 pr-1 transition-[border-color,box-shadow] duration-200 hover:border-accent/60 has-[input:focus]:border-accent has-[input:focus]:shadow-[0_0_0_3px_rgb(255_200_61/0.14)] min-[900px]:w-[280px] min-[900px]:max-w-none min-[900px]:flex-none min-[1100px]:w-[420px]">
+          <div className="group ml-auto flex h-11 min-w-0 max-w-[208px] flex-1 items-center rounded-full border border-hair-strong bg-surface/60 pr-1 transition-[border-color,box-shadow] duration-200 hover:border-accent/60 has-[input:focus]:border-accent has-[input:focus]:shadow-[0_0_0_3px_rgb(255_200_61/0.14)] min-[900px]:w-[280px] min-[900px]:max-w-none min-[900px]:flex-none min-[1100px]:w-[340px] min-[1200px]:w-[420px]">
             {/*
               A real text field. The results overlay and index come with the search workstream,
               which attaches to the data-search-trigger attribute; until then the field accepts
@@ -96,6 +102,14 @@ export function SiteHeader() {
               <EditionSwitcher variant="inline" />
             </div>
           </div>
+
+          {/*
+            The accessibility trigger is the last stop on the row, after the pill, so it moves
+            neither the search field nor the edition switcher and the tabs stay centred between the
+            logo and this end. It is hidden below 900px, where the header is tight and the mobile
+            tab bar carries the same trigger as its sixth cell; the pill keeps its width there.
+          */}
+          <A11yTrigger variant="header" className="hidden min-[900px]:grid" />
         </div>
       </div>
     </header>

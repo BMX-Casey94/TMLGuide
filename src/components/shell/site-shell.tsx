@@ -1,4 +1,5 @@
 import { Suspense, type ReactNode } from "react";
+import { A11yPanel } from "@/components/a11y/a11y-toolbar";
 import { EditionProvider } from "./edition-context";
 import { MobileTabBar, MobileTabBarLive } from "./mobile-tabbar";
 import { SiteFooter } from "./site-footer";
@@ -29,6 +30,13 @@ export function SiteShell({ children }: SiteShellProps) {
         <div className="flex flex-1 flex-col">{children}</div>
         <SiteFooter />
       </div>
+      {/*
+        One panel for the whole shell. The triggers live in two places (the header button and the
+        mobile tab bar) and two dialogs sharing one id would break `aria-controls` and expose every
+        control twice, so the panel is mounted here once. A shut <dialog> is out of the
+        accessibility tree until the visitor opens it.
+      */}
+      <A11yPanel />
       {/*
         The bar reads the pathname, so it sits in a Suspense boundary: routes whose dynamic params
         are unknown at build time can then still prerender the shell. The fallback draws the same

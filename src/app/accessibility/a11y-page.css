@@ -1,0 +1,178 @@
+/*
+  The accessibility statement's own styles.
+
+  Next merges CSS globally, so every selector here carries the `a11y-page-` prefix and targets only
+  its own classes. Tokens come from globals.css; nothing redefines a colour, and nothing here
+  competes with the preference rules in src/components/a11y/a11y.css, which sit on element types
+  under a `html[data-a11y-*]` attribute and therefore outrank these class selectors.
+*/
+
+.a11y-page-main {
+  --a11y-page-gutter: 1.25rem;
+  width: 100%;
+}
+
+@media (min-width: 700px) {
+  .a11y-page-main {
+    --a11y-page-gutter: 1.75rem;
+  }
+}
+
+.a11y-page-header {
+  width: 100%;
+  max-width: 1240px;
+  margin-inline: auto;
+  padding: 3rem var(--a11y-page-gutter) 2rem;
+  border-bottom: 1px solid var(--hair);
+}
+
+.a11y-page-header__title {
+  margin: 0.9rem 0 0;
+  max-width: 26ch;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(2.25rem, 5.6vw, 3.5rem);
+  line-height: 1;
+  letter-spacing: -0.03em;
+  text-wrap: balance;
+  font-variation-settings:
+    "SOFT" 100,
+    "WONK" 1;
+}
+
+.a11y-page-header__lede {
+  margin: 1.15rem 0 0;
+  max-width: 62ch;
+  color: var(--cream-mute);
+  font-size: 1.0625rem;
+  line-height: 1.6;
+}
+
+.a11y-page-section {
+  width: 100%;
+  max-width: 1240px;
+  margin-inline: auto;
+  padding: 2.5rem var(--a11y-page-gutter);
+  border-bottom: 1px solid var(--hair);
+}
+
+.a11y-page-section:last-of-type {
+  border-bottom: 0;
+}
+
+.a11y-page-section__title {
+  margin: 0;
+  max-width: 34ch;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(1.45rem, 2.8vw, 1.9rem);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+
+.a11y-page-prose {
+  max-width: 68ch;
+  margin-top: 1rem;
+}
+
+.a11y-page-prose p {
+  margin: 0 0 0.95rem;
+  color: var(--cream-mute);
+  font-size: 1rem;
+  line-height: 1.65;
+}
+
+.a11y-page-prose p:last-child {
+  margin-bottom: 0;
+}
+
+.a11y-page-prose strong {
+  color: var(--cream);
+  font-weight: 600;
+}
+
+.a11y-page-prose a {
+  color: var(--cream);
+  text-decoration: underline;
+  text-decoration-color: var(--hair-strong);
+  text-underline-offset: 0.22em;
+}
+
+@media (hover: hover) {
+  .a11y-page-prose a:hover {
+    color: var(--ea);
+    text-decoration-color: currentColor;
+  }
+}
+
+/* Two lists carry the honest split: what has been tested, and what has not. Each is a plain list
+   under its own heading, so neither depends on a reader noticing a tick or a cross glyph. */
+.a11y-page-list {
+  margin: 0 0 0.95rem;
+  padding-left: 1.15rem;
+  color: var(--cream-mute);
+  line-height: 1.65;
+}
+
+.a11y-page-list li + li {
+  margin-top: 0.5rem;
+}
+
+.a11y-page-list strong {
+  color: var(--cream);
+  font-weight: 600;
+}
+
+.a11y-page-callout {
+  margin-top: 1.35rem;
+  padding: 1.1rem 1.1rem 1.2rem;
+  border: 1px solid var(--hair);
+  border-left: 2px solid var(--ea);
+  border-radius: 0 var(--radius-card) var(--radius-card) 0;
+  background-color: rgb(21 17 15 / 0.65);
+}
+
+.a11y-page-callout p {
+  margin: 0;
+  color: var(--cream);
+  font-size: 0.9375rem;
+  line-height: 1.6;
+}
+
+.a11y-page-callout p + p {
+  margin-top: 0.7rem;
+}
+
+.a11y-page-note {
+  margin: 0.9rem 0 0;
+  max-width: 68ch;
+  color: var(--cream-mute);
+  font-size: 0.8125rem;
+  line-height: 1.6;
+}
+
+.a11y-page-steps {
+  margin: 0.5rem 0 0.95rem;
+  padding-left: 1.35rem;
+  color: var(--cream-mute);
+  line-height: 1.65;
+}
+
+.a11y-page-steps li + li {
+  margin-top: 0.45rem;
+}
+
+.a11y-page-footnote {
+  max-width: 68ch;
+  margin: 0;
+  padding: 1.5rem var(--a11y-page-gutter) 3rem;
+  color: var(--cream-mute);
+  font-size: 0.8125rem;
+  line-height: 1.6;
+}
+
+@media (min-width: 700px) {
+  .a11y-page-footnote {
+    padding-bottom: 4rem;
+  }
+}

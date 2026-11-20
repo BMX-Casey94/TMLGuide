@@ -1,0 +1,233 @@
+import { afterEach, describe, expect, it } from "vitest";
+import { cleanup, render, screen, within } from "@testing-library/react";
+
+import AccessibilityPage, { metadata } from "@/app/accessibility/page";
+import { CORRECTIONS_EMAIL } from "@/components/home/contact";
+import { expectResolvableLinks, expectSoundHeadingOrder } from "@/components/home/page-assertions";
+
+/**
+ * Page-level tests for the accessibility statement.
+ *
+ * The claims this suite guards are the honest ones: the page names a target without claiming
+ * conformance, states what was tested automatically and what was not, does not invent a contact
+ * address, and carries a review date. A statement that overclaims is worse than none, so each of
+ * those is asserted rather than left to review.
+ */
+
+function visibleText(container: HTMLElement): string {
+  const copy = container.cloneNode(true) as HTMLElement;
+  for (const script of Array.from(copy.querySelectorAll("script"))) script.remove();
+  return copy.textContent ?? "";
+}
+
+afterEach(cleanup);
+
+describe("structure", () => {
+  it("renders a main landmark the skip link can target, one h1, and no skipped level", () => {
+    const { container } = render(<AccessibilityPage />);
+
+    expect(container.querySelector("main")).toHaveAttribute("id", "main");
+    expectSoundHeadingOrder(container);
+  });
+
+  it("names the page in its h1", () => {
+    render(<AccessibilityPage />);
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
+      /What works, what has been checked, and what has not/i,
+    );
+  });
+
+  it("links only to known routes and outbound links safely", () => {
+    const { container } = render(<AccessibilityPage />);
+    expectResolvableLinks(container);
+  });
+
+  it("has a labelled section for each claim the brief asks for", () => {
+    render(<AccessibilityPage />);
+
+    for (const name of [
+      /^The target$/,
+      /^What has been tested automatically$/,
+      /^What has not yet been tested by hand$/,
+      /^Changing how the site looks$/,
+      /^Known limitations$/,
+      /^Reporting a problem$/,
+    ]) {
+      expect(screen.getByRole("region", { name })).toBeInTheDocument();
+    }
+  });
+});
+
+describe("the target", () => {
+  it("names WCAG 2.2 AA as the target", () => {
+    const { container } = render(<AccessibilityPage />);
+    expect(visibleText(container)).toContain("WCAG 2.2 Level AA");
+  });
+
+  it("never claims conformance or compliance", () => {
+    const { container } = render(<AccessibilityPage />);
+    const text = visibleText(container).toLowerCase();
+
+    expect(text).not.toMatch(/\b(fully|wcag[\w\s.]*)\s*compliant\b/);
+    expect(text).not.toMatch(/\bconforms\b/);
+    expect(text).not.toMatch(/\bconformant\b/);
+    expect(text).not.toMatch(/\bfully accessible\b/);
+    expect(text).not.toMatch(/\b100% accessible\b/);
+  });
+
+  it("says an automated pass is a floor rather than a certificate", () => {
+    const { container } = render(<AccessibilityPage />);
+    expect(visibleText(container)).toMatch(/floor, not a certificate/i);
+  });
+});
+
+describe("what was tested", () => {
+  it("describes the axe-core scan of every route at desktop and phone viewports", () => {
+    const { container } = render(<AccessibilityPage />);
+    const text = visibleText(container);
+
+    expect(text).toContain("axe-core");
+    expect(text).toMatch(/every route/i);
+    expect(text).toMatch(/desktop viewport/i);
+    expect(text).toMatch(/phone\s+viewport/i);
+    expect(text).toMatch(/no violations/i);
+  });
+
+  it("lists only what axe can actually catch", () => {
+    const { container } = render(<AccessibilityPage />);
+    const text = visibleText(container);
+
+    expect(text).toMatch(/alternative text/i);
+    expect(text).toMatch(/form fields with no\s+label/i);
+    expect(text).toMatch(/heading levels that skip/i);
+    expect(text).toMatch(/contrast/i);
+  });
+});
+
+describe("what has not been tested", () => {
+  it("names screen readers, the keyboard audit, 200 percent zoom, contrast over imagery and touch targets", () => {
+    const { container } = render(<AccessibilityPage />);
+    const text = visibleText(container);
+
+    expect(text).toMatch(/NVDA/);
+    expect(text).toMatch(/JAWS/);
+    expect(text).toMatch(/VoiceOver/);
+    expect(text).toMatch(/keyboard/i);
+    expect(text).toMatch(/200 percent zoom/i);
+    expect(text).toMatch(/Contrast over imagery/i);
+    expect(text).toMatch(/Touch target sizes/i);
+  });
+
+  it("does not present the outstanding checks as done", () => {
+    const { container } = render(<AccessibilityPage />);
+    // The list sits under a heading that says these are outstanding, and each item says so.
+    const section = screen.getByRole("region", { name: /not yet been tested by hand/i });
+    expect(within(section).getByText(/outstanding/i)).toBeInTheDocument();
+    expect(visibleText(container)).toMatch(/has not been|have not|not been tested/i);
+  });
+});
+
+describe("using the toolbar", () => {
+  it("explains how to open the panel and what each setting does", () => {
+    const { container } = render(<AccessibilityPage />);
+    const text = visibleText(container);
+
+    expect(text).toContain("Accessibility settings");
+    expect(text).toMatch(/Text size/i);
+    expect(text).toMatch(/Line and letter spacing/i);
+    expect(text).toMatch(/Contrast/i);
+    expect(text).toMatch(/Motion/i);
+    expect(text).toMatch(/Underline links/i);
+    expect(text).toMatch(/Readable font/i);
+    expect(text).toMatch(/Reset to defaults/i);
+  });
+
+  it("says Escape closes the panel and focus returns to the trigger", () => {
+    const { container } = render(<AccessibilityPage />);
+    const text = visibleText(container);
+
+    expect(text).toMatch(/Escape/i);
+    expect(text).toMatch(/Focus returns to the button/i);
+  });
+
+  it("names the storage key and says nothing leaves the browser", () => {
+    const { container } = render(<AccessibilityPage />);
+    const text = visibleText(container);
+
+    expect(text).toContain("tml-a11y-prefs");
+    expect(text).toMatch(/no cookie is set/i);
+    expect(text).toMatch(/no\s+analytics/i);
+  });
+
+  it("puts the storage key in a code element, so it is not read as prose", () => {
+    const { container } = render(<AccessibilityPage />);
+    const code = container.querySelector("code");
+    expect(code?.textContent).toBe("tml-a11y-prefs");
+  });
+});
+
+describe("known limitations", () => {
+  it("admits the site is dark only and lists further gaps", () => {
+    const { container } = render(<AccessibilityPage />);
+    const text = visibleText(container);
+
+    expect(text).toMatch(/dark only/i);
+    expect(text).toMatch(/no light theme/i);
+    expect(text).toMatch(/third-party/i);
+  });
+});
+
+describe("reporting a problem", () => {
+  it("says plainly that there is no published contact address, rather than inventing one", () => {
+    const { container } = render(<AccessibilityPage />);
+
+    expect(CORRECTIONS_EMAIL).toBeNull();
+    expect(visibleText(container)).toMatch(/no published contact address yet/i);
+    expect(container.querySelectorAll('a[href^="mailto:"]')).toHaveLength(0);
+    expect(container.textContent).not.toMatch(/[\w.+-]+@[\w-]+\.[\w.]+/);
+  });
+
+  it("points at the community groups and the About page as the route that exists", () => {
+    render(<AccessibilityPage />);
+
+    expect(screen.getByRole("link", { name: "community groups" })).toHaveAttribute(
+      "href",
+      "/community",
+    );
+    expect(screen.getByRole("link", { name: "About page" })).toHaveAttribute("href", "/about");
+  });
+
+  it("tells the reader what a useful report contains", () => {
+    const { container } = render(<AccessibilityPage />);
+    expect(visibleText(container)).toMatch(/which page you were on/i);
+  });
+});
+
+describe("the review date", () => {
+  it("states 19 November 2026, in a machine-readable time element", () => {
+    const { container } = render(<AccessibilityPage />);
+
+    const time = container.querySelector("time");
+    expect(time).toHaveAttribute("datetime", "2026-11-19");
+    expect(time).toHaveTextContent("19 November 2026");
+    expect(visibleText(container)).toMatch(/Last reviewed\s+19 November 2026/);
+  });
+});
+
+describe("metadata", () => {
+  it("declares a canonical URL for the page", () => {
+    expect(metadata.alternates?.canonical).toBe("/accessibility");
+  });
+
+  it("has a title, a description and Open Graph text, with no image", () => {
+    expect(metadata.title).toBe("Accessibility");
+    expect(metadata.description).toBeTruthy();
+    expect(metadata.openGraph?.title).toBeTruthy();
+    const openGraph = metadata.openGraph as { images?: unknown } | undefined;
+    expect(openGraph?.images).toBeUndefined();
+  });
+
+  it("describes the page without claiming conformance in the description", () => {
+    expect(String(metadata.description).toLowerCase()).not.toMatch(/compliant|conforms/);
+  });
+});

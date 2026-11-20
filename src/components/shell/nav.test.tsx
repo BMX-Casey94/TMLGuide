@@ -117,6 +117,19 @@ describe("MobileTabBar", () => {
     for (const link of links) expect(link).toHaveAccessibleName();
   });
 
+  it("adds the accessibility trigger as a sixth cell, after the five destinations", () => {
+    render(<MobileTabBar pathname="/" />);
+
+    const nav = screen.getByRole("navigation", { name: "Mobile" });
+    const trigger = within(nav).getByRole("button", { name: "Accessibility settings" });
+
+    expect(nav.querySelectorAll("li")).toHaveLength(6);
+    expect(trigger).toHaveAttribute("aria-expanded", "false");
+    expect(trigger).toHaveAttribute("aria-controls", "a11y-settings-panel");
+    // The visible word is part of the accessible name, which is what WCAG 2.5.3 requires.
+    expect(trigger.textContent).toContain("Settings");
+  });
+
   it("marks the Home tab current at the root", () => {
     render(<MobileTabBar pathname="/" />);
 
