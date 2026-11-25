@@ -1,0 +1,223 @@
+/*
+  Report-a-broken-link form (Dusk Programme).
+
+  Plain namespaced CSS with a `tml-report` prefix. Tokens come from
+  `globals.css`; nothing here redefines a colour.
+*/
+
+.tml-report {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+  margin-top: 2rem;
+  padding: clamp(1.25rem, 3.5vw, 1.85rem);
+  border: 1px solid var(--hair);
+  border-radius: var(--radius-card);
+  background-color: rgb(21 17 15 / 0.55);
+}
+
+.tml-report--done {
+  border-color: rgb(43 196 180 / 0.45);
+  background-image: linear-gradient(170deg, rgb(43 196 180 / 0.1), rgb(21 17 15 / 0.55) 60%);
+}
+
+.tml-report__title {
+  margin: 0;
+  max-width: 32ch;
+  font-family: var(--font-display);
+  font-size: clamp(1.2rem, 2.6vw, 1.5rem);
+  font-weight: 400;
+  line-height: 1.2;
+  color: var(--cream);
+}
+
+.tml-report__note {
+  margin: 0;
+  max-width: 62ch;
+  color: var(--cream-mute);
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+/* ---------- Fields ---------- */
+
+.tml-report__field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.tml-report__fieldset {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.tml-report__label {
+  color: var(--cream);
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  /* A legend is a block by default; this keeps the same spacing as a label. */
+  padding: 0;
+}
+
+.tml-report__optional {
+  color: var(--cream-mute);
+  letter-spacing: 0.06em;
+  text-transform: none;
+}
+
+.tml-report__input {
+  width: 100%;
+  min-height: 44px;
+  padding: 0.65rem 0.9rem;
+  border: 1px solid var(--hair-strong);
+  border-radius: 12px;
+  background-color: rgb(12 10 9 / 0.7);
+  color: var(--cream);
+  font-family: inherit;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+}
+
+.tml-report__input::placeholder {
+  color: rgb(244 236 224 / 0.4);
+}
+
+.tml-report__textarea {
+  min-height: 6rem;
+  resize: vertical;
+}
+
+.tml-report__hint {
+  margin: 0;
+  color: var(--cream-mute);
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+
+/* ---------- Radio group ---------- */
+
+.tml-report__options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.35rem;
+}
+
+.tml-report__option {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  min-height: 44px;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--hair);
+  border-radius: 12px;
+  color: var(--cream-mute);
+  font-size: 0.9rem;
+  line-height: 1.45;
+  cursor: pointer;
+  transition:
+    border-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.tml-report__option:has(input:checked) {
+  border-color: var(--ea);
+  color: var(--cream);
+}
+
+.tml-report__option input {
+  flex: none;
+  /* 20px keeps a comfortable hit area inside the 44px row without a second ring. */
+  width: 1.125rem;
+  height: 1.125rem;
+  margin: 0.15rem 0 0;
+  accent-color: var(--ea);
+}
+
+@media (hover: hover) {
+  .tml-report__option:hover {
+    border-color: var(--hair-strong);
+    color: var(--cream);
+  }
+}
+
+/* ---------- Honeypot ---------- */
+
+/*
+  Off-screen rather than `display: none`: a bot that checks computed visibility is
+  rarer than one that fills any text input it finds, and a field a person cannot
+  see or focus is all this needs to be. `clip-path` rather than `left: -9999px`,
+  so it cannot widen the page.
+*/
+.tml-report__trap {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ---------- Actions and status ---------- */
+
+.tml-report__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.tml-report__submit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0.6rem 1.35rem;
+  border: 1px solid var(--ea);
+  border-radius: 999px;
+  background-color: var(--ea);
+  color: var(--on-accent);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+@media (hover: hover) {
+  .tml-report__submit:hover:not(:disabled) {
+    opacity: 0.9;
+  }
+}
+
+.tml-report__submit:disabled {
+  cursor: progress;
+  opacity: 0.7;
+}
+
+.tml-report__status {
+  margin: 0;
+  max-width: 62ch;
+  color: var(--cream);
+  font-size: 0.8125rem;
+  line-height: 1.55;
+}
+
+.tml-report__status:empty {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tml-report__option,
+  .tml-report__submit {
+    transition: none;
+  }
+}

@@ -1,0 +1,158 @@
+/*
+  Community news page frame (Dusk Programme).
+
+  Only the page skeleton lives here: the hero and the two sections. The feed's own
+  styles travel with `components/community/news-feed.css`, so a second page that
+  renders the feed is styled without importing this file.
+
+  Grammar: the hero ends on a hairline and the sections are separated by the page
+  rhythm alone. One `GoldDivider` is the single break before the report form, so
+  no section carries a border that would double it.
+*/
+
+.tml-news-page {
+  /* 20px at the narrowest phone, 24px from 390px, 28px from 700px: the inset the
+     site footer uses for the same 1240px column. */
+  --tml-news-gutter: 1.25rem;
+  width: 100%;
+  max-width: 1240px;
+  margin-inline: auto;
+}
+
+@media (min-width: 390px) {
+  .tml-news-page {
+    --tml-news-gutter: 1.5rem;
+  }
+}
+
+@media (min-width: 700px) {
+  .tml-news-page {
+    --tml-news-gutter: 1.75rem;
+  }
+}
+
+/* ---------- Hero ---------- */
+
+.tml-news-hero {
+  /* 48px below the header on a phone, 64px from 900px, so the kicker never sits
+     against the sticky bar. */
+  padding: 3rem var(--tml-news-gutter) 2rem;
+  border-bottom: 1px solid var(--hair);
+}
+
+@media (min-width: 900px) {
+  .tml-news-hero {
+    padding-top: 4rem;
+  }
+}
+
+.tml-news-hero__title {
+  margin: 0.9rem 0 0;
+  max-width: 22ch;
+  font-family: var(--font-display);
+  font-size: clamp(2.25rem, 6vw, 3.5rem);
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  color: var(--cream);
+  text-wrap: balance;
+  overflow-wrap: break-word;
+  font-variation-settings:
+    "SOFT" 100,
+    "WONK" 1;
+}
+
+.tml-news-hero__lede {
+  margin: 1.1rem 0 0;
+  max-width: 64ch;
+  color: var(--cream-mute);
+  font-size: 1.0625rem;
+  line-height: 1.6;
+}
+
+.tml-news-hero__meta {
+  margin: 1.25rem 0 0;
+  color: var(--cream-mute);
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.tml-news-hero__link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--cream);
+  text-decoration: underline;
+  text-decoration-color: var(--hair-strong);
+  text-underline-offset: 0.22em;
+}
+
+@media (hover: hover) {
+  .tml-news-hero__link:hover {
+    color: var(--ea);
+    text-decoration-color: currentColor;
+  }
+}
+
+/* ---------- Sections ---------- */
+
+.tml-news-section {
+  padding: 2.5rem var(--tml-news-gutter);
+}
+
+@media (min-width: 900px) {
+  .tml-news-section {
+    padding-block: 3rem;
+  }
+}
+
+.tml-news-section:last-of-type {
+  padding-bottom: 0;
+}
+
+/* The divider owns no margin of its own here: the sections' symmetric padding is
+   the space either side of it, so one break reads as one break. */
+.tml-news-page > .tml-divider {
+  margin-block: 0;
+}
+
+.tml-news-section__title {
+  margin: 0;
+  max-width: 32ch;
+  font-family: var(--font-display);
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  font-weight: 400;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: var(--cream);
+}
+
+.tml-news-section__lede {
+  margin: 0.75rem 0 0;
+  max-width: 64ch;
+  color: var(--cream-mute);
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+/* ---------- Closing note ---------- */
+
+.tml-news-footnote {
+  padding: 2.25rem var(--tml-news-gutter) 4rem;
+}
+
+.tml-news-footnote__text {
+  margin: 0;
+  max-width: 64ch;
+  color: var(--cream-mute);
+  font-size: 0.8125rem;
+  line-height: 1.6;
+}
+
+@media (min-width: 900px) {
+  .tml-news-footnote {
+    padding-bottom: 5rem;
+  }
+}

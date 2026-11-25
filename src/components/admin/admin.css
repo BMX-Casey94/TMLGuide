@@ -1,0 +1,430 @@
+/*
+  Admin console (Dusk Programme).
+
+  Plain namespaced CSS with a hard `tml-admin-` prefix, not a `.module.css`: the
+  Turbopack Tailwind setup downgrades CSS modules to plain CSS and the class-name
+  exports come out empty. Every selector is prefixed and nothing targets a bare
+  element type, so this file cannot leak into another workstream's page.
+
+  Tokens come from `globals.css`; nothing here redefines a colour.
+*/
+
+.tml-admin-main {
+  --tml-admin-gutter: 1.25rem;
+  width: 100%;
+  max-width: 1080px;
+  margin-inline: auto;
+}
+
+@media (min-width: 390px) {
+  .tml-admin-main {
+    --tml-admin-gutter: 1.5rem;
+  }
+}
+
+@media (min-width: 700px) {
+  .tml-admin-main {
+    --tml-admin-gutter: 1.75rem;
+  }
+}
+
+.tml-admin {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: 3rem var(--tml-admin-gutter) 5rem;
+}
+
+@media (min-width: 900px) {
+  .tml-admin {
+    padding-top: 4rem;
+  }
+}
+
+/* ---------- Hero ---------- */
+
+.tml-admin__hero {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.tml-admin__title {
+  margin: 0;
+  max-width: 20ch;
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 5vw, 2.85rem);
+  font-weight: 400;
+  line-height: 1.02;
+  letter-spacing: -0.03em;
+  color: var(--cream);
+  overflow-wrap: break-word;
+  font-variation-settings:
+    "SOFT" 100,
+    "WONK" 1;
+}
+
+.tml-admin__lede {
+  margin: 0;
+  max-width: 66ch;
+  color: var(--cream-mute);
+  font-size: 0.9375rem;
+  line-height: 1.6;
+}
+
+/* ---------- Live region ---------- */
+
+.tml-admin__notice {
+  margin: 0;
+  max-width: 70ch;
+  min-height: 0;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.tml-admin__notice:empty {
+  display: none;
+}
+
+.tml-admin__notice[data-tone="ok"] {
+  padding: 0.7rem 0.9rem;
+  border: 1px solid rgb(43 196 180 / 0.45);
+  border-left-width: 2px;
+  border-radius: 0 12px 12px 0;
+  background-color: rgb(43 196 180 / 0.08);
+  color: var(--cream);
+}
+
+.tml-admin__notice[data-tone="error"] {
+  padding: 0.7rem 0.9rem;
+  border: 1px solid rgb(255 106 61 / 0.5);
+  border-left-width: 2px;
+  border-radius: 0 12px 12px 0;
+  background-color: rgb(255 106 61 / 0.1);
+  color: var(--cream);
+}
+
+/* ---------- Panels ---------- */
+
+.tml-admin__panel {
+  padding: clamp(1.25rem, 3.5vw, 1.85rem);
+  border: 1px solid var(--hair);
+  border-radius: var(--radius-card);
+  background-color: rgb(21 17 15 / 0.55);
+}
+
+.tml-admin__panel-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(1.25rem, 2.8vw, 1.55rem);
+  font-weight: 400;
+  line-height: 1.2;
+  color: var(--cream);
+}
+
+.tml-admin__subtitle {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--cream);
+}
+
+.tml-admin__panel-text {
+  margin: 0.7rem 0 0;
+  max-width: 68ch;
+  color: var(--cream-mute);
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.tml-admin__panel-text code {
+  padding: 0.1rem 0.35rem;
+  border: 1px solid var(--hair);
+  border-radius: 6px;
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  color: var(--cream);
+  overflow-wrap: anywhere;
+}
+
+/* ---------- Signed-in bar ---------- */
+
+.tml-admin__bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid var(--hair);
+}
+
+.tml-admin__who {
+  margin: 0;
+  color: var(--cream-mute);
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  overflow-wrap: anywhere;
+}
+
+/* ---------- Forms ---------- */
+
+.tml-admin__form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 1.25rem;
+}
+
+.tml-admin__editor {
+  margin-top: 1.25rem;
+}
+
+.tml-admin__grid {
+  display: grid;
+  gap: 1rem;
+}
+
+@media (min-width: 700px) {
+  .tml-admin__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.tml-admin__field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.tml-admin__fieldset {
+  margin: 0;
+  padding: 1rem;
+  border: 1px solid var(--hair);
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.tml-admin__label {
+  color: var(--cream);
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  padding: 0;
+}
+
+.tml-admin__input {
+  width: 100%;
+  min-height: 44px;
+  padding: 0.6rem 0.85rem;
+  border: 1px solid var(--hair-strong);
+  border-radius: 12px;
+  background-color: rgb(12 10 9 / 0.72);
+  color: var(--cream);
+  font-family: inherit;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+}
+
+.tml-admin__input::placeholder {
+  color: rgb(244 236 224 / 0.4);
+}
+
+.tml-admin__input--code {
+  max-width: 12rem;
+  font-family: var(--font-mono);
+  font-size: 1.25rem;
+  letter-spacing: 0.35em;
+  text-align: center;
+}
+
+.tml-admin__textarea {
+  min-height: 5rem;
+  resize: vertical;
+}
+
+.tml-admin__textarea--tall {
+  min-height: 14rem;
+}
+
+.tml-admin__hint {
+  margin: 0;
+  color: var(--cream-mute);
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+
+.tml-admin__error {
+  margin: 0;
+  color: #ffb9a3;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}
+
+.tml-admin__error--form {
+  padding: 0.7rem 0.9rem;
+  border: 1px solid rgb(255 106 61 / 0.5);
+  border-left-width: 2px;
+  border-radius: 0 12px 12px 0;
+  background-color: rgb(255 106 61 / 0.1);
+}
+
+/* ---------- Buttons ---------- */
+
+.tml-admin__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.tml-admin__button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0.6rem 1.3rem;
+  border: 1px solid var(--ea);
+  border-radius: 999px;
+  background-color: var(--ea);
+  color: var(--on-accent);
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+@media (hover: hover) {
+  .tml-admin__button:hover:not(:disabled) {
+    opacity: 0.9;
+  }
+}
+
+.tml-admin__button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.tml-admin__button[aria-busy="true"] {
+  cursor: progress;
+}
+
+.tml-admin__button--ghost {
+  border-color: var(--hair-strong);
+  background-color: transparent;
+  color: var(--cream);
+}
+
+.tml-admin__button--danger {
+  border-color: #ff6a3d;
+  background-color: rgb(255 106 61 / 0.16);
+  color: #ffb9a3;
+}
+
+@media (hover: hover) {
+  .tml-admin__button--ghost:hover:not(:disabled) {
+    border-color: var(--ea);
+    color: var(--ea);
+  }
+
+  .tml-admin__button--danger:hover:not(:disabled) {
+    background-color: rgb(255 106 61 / 0.26);
+  }
+}
+
+/* ---------- Danger zone ---------- */
+
+.tml-admin__danger {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-top: 1.75rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--hair);
+}
+
+/* ---------- Table ---------- */
+
+.tml-admin__table-wrap {
+  margin-top: 1.1rem;
+  overflow-x: auto;
+}
+
+.tml-admin__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.tml-admin__caption {
+  padding-bottom: 0.7rem;
+  color: var(--cream-mute);
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  text-align: left;
+}
+
+.tml-admin__table th,
+.tml-admin__table td {
+  padding: 0.65rem 0.9rem 0.65rem 0;
+  border-bottom: 1px solid var(--hair);
+  text-align: left;
+  vertical-align: top;
+}
+
+.tml-admin__table thead th {
+  color: var(--cream-mute);
+  font-family: var(--font-mono);
+  font-size: 0.5625rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.tml-admin__table tbody th {
+  color: var(--cream);
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+
+.tml-admin__table td {
+  color: var(--cream-mute);
+  overflow-wrap: anywhere;
+}
+
+.tml-admin__table td code {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--cream);
+}
+
+.tml-admin__table tr:last-child th,
+.tml-admin__table tr:last-child td {
+  border-bottom: 0;
+}
+
+.tml-admin__num {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tml-admin__button {
+    transition: none;
+  }
+}

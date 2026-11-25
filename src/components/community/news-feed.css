@@ -1,0 +1,323 @@
+/*
+  Community news feed (Dusk Programme).
+
+  Plain namespaced CSS with a hard `tml-news-` prefix, not a `.module.css`: the
+  Turbopack Tailwind setup downgrades CSS modules to plain CSS and the class-name
+  exports come out empty, so a module would render `class=""`. Every selector here
+  is prefixed, and nothing targets a bare element type, so this file cannot leak
+  into another workstream's page.
+
+  Tokens come from `globals.css`; nothing here redefines a colour.
+*/
+
+/* ---------- The list ---------- */
+
+.tml-news-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin: 2rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (min-width: 900px) {
+  .tml-news-list {
+    gap: 2rem;
+  }
+}
+
+/* ---------- One article ---------- */
+
+.tml-news-article {
+  padding: clamp(1.25rem, 3.5vw, 2rem);
+  background-image: linear-gradient(170deg, var(--surface-2), var(--surface) 62%);
+  border: 1px solid var(--hair);
+  border-radius: var(--radius-card);
+  /* The accent edge is a top rule, so the top-left corner squares off to let it
+     run straight instead of bending down the curve. */
+  border-top-left-radius: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.tml-news-article::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 2px;
+  background-image: linear-gradient(90deg, var(--ea), transparent 72%);
+  opacity: 0.8;
+  pointer-events: none;
+}
+
+.tml-news-article__header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.tml-news-article__date {
+  margin: 0;
+  color: var(--cream-mute);
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.tml-news-article__title {
+  margin: 0;
+  max-width: 36ch;
+  font-family: var(--font-display);
+  font-size: clamp(1.35rem, 3vw, 1.85rem);
+  font-weight: 400;
+  line-height: 1.15;
+  letter-spacing: -0.015em;
+  color: var(--cream);
+  overflow-wrap: break-word;
+  font-variation-settings:
+    "SOFT" 100,
+    "WONK" 1;
+}
+
+.tml-news-article__summary {
+  margin: 0;
+  max-width: 62ch;
+  color: var(--cream-mute);
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+/* ---------- Tags ---------- */
+
+.tml-news-article__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 1rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tml-news-article__tag {
+  padding: 0.2rem 0.6rem;
+  border: 1px solid var(--hair-strong);
+  border-radius: 999px;
+  color: var(--cream-mute);
+  font-family: var(--font-mono);
+  font-size: 0.5625rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+/* ---------- Body ---------- */
+
+.tml-news-article__body {
+  margin-top: 1.25rem;
+}
+
+.tml-news-article__para {
+  margin: 0 0 0.9rem;
+  max-width: 64ch;
+  color: var(--cream-mute);
+  font-size: 0.9375rem;
+  line-height: 1.65;
+}
+
+.tml-news-article__para:last-child {
+  margin-bottom: 0;
+}
+
+.tml-news-article__para strong {
+  color: var(--cream);
+  font-weight: 600;
+}
+
+.tml-news-article__subhead {
+  margin: 1.4rem 0 0.6rem;
+  max-width: 40ch;
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  font-weight: 500;
+  line-height: 1.25;
+  color: var(--cream);
+}
+
+.tml-news-article__list {
+  margin: 0 0 0.9rem;
+  padding-left: 1.15rem;
+  max-width: 64ch;
+  color: var(--cream-mute);
+  font-size: 0.9375rem;
+  line-height: 1.65;
+}
+
+.tml-news-article__list li + li {
+  margin-top: 0.4rem;
+}
+
+.tml-news-article__list li::marker {
+  color: var(--ea);
+}
+
+/* ---------- Footer: citation and the like control ---------- */
+
+.tml-news-article__footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--hair);
+}
+
+.tml-news-article__source {
+  margin: 0;
+  max-width: 56ch;
+  color: var(--cream-mute);
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  line-height: 1.6;
+  letter-spacing: 0.04em;
+}
+
+.tml-news-article__source-link {
+  color: var(--cream);
+  text-decoration: underline;
+  text-decoration-color: var(--hair-strong);
+  text-underline-offset: 0.22em;
+  /* A 44px target would be out of proportion on an inline citation, so the
+     line-height of the paragraph is raised instead and the link keeps its place
+     in the sentence. */
+  overflow-wrap: anywhere;
+}
+
+@media (hover: hover) {
+  .tml-news-article__source-link:hover {
+    color: var(--ea);
+    text-decoration-color: currentColor;
+  }
+}
+
+.tml-news-article__host {
+  color: var(--cream-mute);
+  opacity: 0.8;
+}
+
+/* ---------- Like control ---------- */
+
+.tml-news-like {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  /* Pushed to the end of the footer row on a wide screen, full width on a phone. */
+  margin-left: auto;
+}
+
+.tml-news-like__button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-height: 44px;
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--hair-strong);
+  border-radius: 999px;
+  background-color: transparent;
+  color: var(--cream);
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition:
+    border-color 0.2s ease,
+    color 0.2s ease;
+}
+
+@media (hover: hover) {
+  .tml-news-like__button:hover:not(:disabled) {
+    border-color: var(--ea);
+    color: var(--ea);
+  }
+}
+
+.tml-news-like__button:disabled {
+  cursor: default;
+  opacity: 0.75;
+}
+
+.tml-news-like__glyph {
+  font-size: 1rem;
+  line-height: 1;
+  color: var(--ea);
+}
+
+.tml-news-like__count {
+  min-width: 1.6rem;
+  padding-left: 0.45rem;
+  border-left: 1px solid var(--hair);
+  color: var(--cream-mute);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.tml-news-like__note {
+  margin: 0;
+  max-width: 34ch;
+  color: var(--cream-mute);
+  font-size: 0.75rem;
+  line-height: 1.5;
+  /* An empty live region still occupies a line, which would leave a gap under
+     every button. `:empty` collapses it without removing the region from the DOM,
+     so it is still there when the message arrives. */
+}
+
+.tml-news-like__note:empty {
+  display: none;
+}
+
+/* ---------- Empty state ---------- */
+
+.tml-news-empty {
+  margin-top: 2rem;
+  padding: clamp(1.5rem, 4vw, 2.25rem);
+  border: 1px solid var(--hair);
+  border-radius: var(--radius-card);
+  background-color: rgb(21 17 15 / 0.6);
+}
+
+.tml-news-empty__title {
+  margin: 0;
+  max-width: 30ch;
+  font-family: var(--font-display);
+  font-size: clamp(1.35rem, 3vw, 1.75rem);
+  font-weight: 400;
+  line-height: 1.2;
+  color: var(--cream);
+}
+
+.tml-news-empty__text {
+  margin: 0.75rem 0 0;
+  max-width: 62ch;
+  color: var(--cream-mute);
+  font-size: 0.9375rem;
+  line-height: 1.65;
+}
+
+.tml-news-empty__note {
+  margin: 1rem 0 0;
+  max-width: 62ch;
+  color: var(--cream-mute);
+  font-size: 0.8125rem;
+  line-height: 1.6;
+  opacity: 0.85;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tml-news-like__button {
+    transition: none;
+  }
+}
