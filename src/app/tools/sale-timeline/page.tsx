@@ -5,12 +5,17 @@ import type { SaleRecord } from "@/components/tools/timeline-logic";
 import { saleWindows as belgiumSaleWindows } from "@/data/belgium";
 import { winterSaleWindows } from "@/data/winter";
 import { brasilSaleWindows } from "@/data/brasil";
+import { socialMetadata } from "@/lib/seo/social";
+
+const TITLE = "Ticket sale timeline";
+const DESCRIPTION =
+  "Every published Tomorrowland ticket sale for Belgium, Winter and Brasil, with a live countdown, times in your own zone and Brussels time, and a calendar export carrying two reminders.";
 
 export const metadata: Metadata = {
-  title: "Ticket sale timeline",
-  description:
-    "Every published Tomorrowland ticket sale for Belgium, Winter and Brasil, with a live countdown, times in your own zone and Brussels time, and a calendar export carrying two reminders.",
+  title: TITLE,
+  description: DESCRIPTION,
   alternates: { canonical: "/tools/sale-timeline" },
+  ...socialMetadata({ path: "/tools/sale-timeline", title: TITLE, description: DESCRIPTION }),
 };
 
 /**

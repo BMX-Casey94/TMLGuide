@@ -8,19 +8,17 @@
  * `TURNSTILE_SECRET_KEY` is set. This component only produces that token, so a
  * reader is never shown a challenge they cannot pass.
  *
- * ## Deployment requirement this component cannot satisfy on its own
+ * ## The policy support this component needs
  *
  * Turnstile loads a script from `challenges.cloudflare.com` and renders an
- * iframe. The site's CSP currently allows neither (`script-src` is `'self'` plus
- * a nonce and hashes; `frame-src` is `'none'`). A deployment that enables
- * Turnstile must therefore add those two sources in `src/lib/security/csp.ts`:
+ * iframe. Both are admitted by `src/lib/security/csp.ts` when
+ * `NEXT_PUBLIC_TURNSTILE_SITE_KEY` is configured, and neither is admitted when it
+ * is not — so an unconfigured deployment keeps `frame-src 'none'`. That module
+ * owns the decision rather than this one: a component cannot know whether the
+ * proxy running in front of it granted an exemption.
  *
- * - `script-src … https://challenges.cloudflare.com`
- * - `frame-src https://challenges.cloudflare.com` (replacing `'none'`)
- *
- * That file belongs to the security workstream, so this module documents the
- * requirement rather than editing it. When the script fails to load — which is
- * exactly what happens without that change — the component says so plainly
+ * When the script fails to load anyway — an ad blocker, a proxy stripping the
+ * header, a key configured after the last deploy — the component says so plainly
  * instead of leaving an empty box, and the answer panel tells the reader the
  * check is required but unavailable. It never silently pretends to have passed.
  */

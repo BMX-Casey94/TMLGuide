@@ -3,6 +3,10 @@ import { cleanup, render, screen } from "@testing-library/react";
 
 import HomePage, { metadata } from "@/app/page";
 import { expectResolvableLinks, expectSoundHeadingOrder, sectionByName } from "@/components/home/page-assertions";
+import { sitemapRoutes } from "@/lib/seo/routes";
+
+/** Every path the sitemap publishes, for the "does this link exist?" checks. */
+const SITEMAP_PATHS = sitemapRoutes().map((route) => route.path);
 
 /**
  * Page-level tests for the home page.
@@ -87,12 +91,28 @@ describe("HomePage structure", () => {
     for (const href of [
       "/guides/tickets",
       "/tools/sale-timeline",
-      "/tools/budget-calculator",
-      "/tools/pearl-calculator",
+      // The tool pages are /tools/budget and /tools/pearls. The longer names
+      // ("budget-calculator", "pearl-calculator") describe the component, not the
+      // route, and linking to them 404'd.
+      "/tools/budget",
+      "/tools/pearls",
       "/community",
       "/radio",
     ]) {
       expect(screen.getAllByRole("link").some((link) => link.getAttribute("href") === href)).toBe(true);
+    }
+  });
+
+  it("links to no tool route the site does not serve", () => {
+    const { container } = render(<HomePage />);
+    const hrefs = Array.from(container.querySelectorAll("a[href]"))
+      .map((a) => a.getAttribute("href") ?? "")
+      .filter((href) => href.startsWith("/tools/"));
+
+    expect(hrefs.length).toBeGreaterThan(0);
+    for (const href of hrefs) {
+      // Whatever the home page calls a tool must be a path the sitemap lists.
+      expect(SITEMAP_PATHS, href).toContain(href.split(/[?#]/)[0]);
     }
   });
 

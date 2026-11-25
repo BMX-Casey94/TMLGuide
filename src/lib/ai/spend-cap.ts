@@ -102,6 +102,29 @@ export function isCapImplausible(capPence: number): boolean {
 }
 
 /**
+ * Turns a requested amount into whole pence to reserve.
+ *
+ * A non-finite request is a *large* request, not a zero one. The distinction is
+ * the difference between a cap and no cap: an absurd-but-finite token count, or a
+ * cost estimate that overflowed to `Infinity`, would otherwise be floored to `0`
+ * and the call it describes would be free. Returning `Infinity` makes the
+ * reservation exceed any cap and be refused, which is the fail-closed reading.
+ *
+ * A negative or `NaN` amount is treated as zero: it cannot be paid for and it
+ * carries no information about cost.
+ */
+export function normaliseReservationPence(pence: number): number {
+  if (Number.isNaN(pence) || pence < 0) return 0;
+  if (!Number.isFinite(pence)) return Number.POSITIVE_INFINITY;
+  return Math.ceil(pence);
+}
+
+/** True when a reservation could not be satisfied, whatever the cap is. */
+function exceedsCap(reserved: number, capPence: number): boolean {
+  return !Number.isFinite(reserved) || reserved > capPence;
+}
+
+/**
  * The current month in Europe/London, as `YYYY-MM`.
  *
  * `Intl` rather than arithmetic on `Date`, so the boundary is the operator's local
@@ -155,14 +178,14 @@ export class InMemorySpendLedger implements SpendLedger {
 
   async reserve(pence: number): Promise<ReserveResult> {
     const month = currentMonth();
-    const requested = Number.isFinite(pence) ? Math.max(0, Math.ceil(pence)) : 0;
+    const requested = normaliseReservationPence(pence);
 
     this.prune(month);
 
     const spent = this.totals.get(month) ?? 0;
     const next = spent + requested;
 
-    if (next > this.capPence) {
+    if (exceedsCap(requested, this.capPence) || !Number.isFinite(next) || next > this.capPence) {
       return { ok: false, code: "spend-cap", spentPence: spent, capPence: this.capPence, month };
     }
 
@@ -174,7 +197,24 @@ export class InMemorySpendLedger implements SpendLedger {
     const month = currentMonth();
     const spent = this.totals.get(month);
     if (spent === undefined) return;
-    const delta = Math.max(0, Math.ceil(reservedPence)) - Math.max(0, Math.ceil(actualPence));
+
+    /*
+      An unknown actual cost keeps the reservation. Releasing it would hand back
+      budget for a call whose real cost nobody knows, and a run of such calls would
+      then spend without ever being counted — the one direction a cap must not
+      move in. Reconciling is only ever allowed to release money it can prove was
+      not spent.
+    */
+    if (!Number.isFinite(actualPence)) return;
+    if (!Number.isFinite(reservedPence)) {
+      // An infinite reservation was refused before it was ever added, so there is
+      // nothing here to adjust.
+      return;
+    }
+
+    const reserved = Math.max(0, Math.ceil(reservedPence));
+    const actual = Math.max(0, Math.ceil(actualPence));
+    const delta = reserved - actual;
     // A negative delta means the answer cost more than reserved; the counter must
     // go up, not down, or a systematic underestimate would never be corrected.
     this.totals.set(month, Math.max(0, spent - delta));
@@ -273,7 +313,16 @@ export class RedisSpendLedger implements SpendLedger {
   async reserve(pence: number): Promise<ReserveResult> {
     const month = currentMonth();
     const key = this.key(month);
-    const requested = Number.isFinite(pence) ? Math.max(0, Math.ceil(pence)) : 0;
+    const requested = normaliseReservationPence(pence);
+
+    // A reservation that cannot be represented never reaches Redis: an
+    // `INCRBY Infinity` would be rejected there and reported as
+    // `ledger-unavailable`, which would answer `503` and invite a retry. The
+    // honest answer is that the cap is the reason.
+    if (!Number.isFinite(requested)) {
+      const spent = await this.spent();
+      return { ok: false, code: "spend-cap", spentPence: spent, capPence: this.capPence, month };
+    }
 
     const after = await this.command(["INCRBY", key, String(requested)]);
     if (after === null) {
@@ -298,6 +347,7 @@ export class RedisSpendLedger implements SpendLedger {
   }
 
   async reconcile(reservedPence: number, actualPence: number): Promise<void> {
+    if (!Number.isFinite(actualPence) || !Number.isFinite(reservedPence)) return;
     const delta = Math.max(0, Math.ceil(reservedPence)) - Math.max(0, Math.ceil(actualPence));
     if (delta === 0) return;
     const key = this.key(currentMonth());

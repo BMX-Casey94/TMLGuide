@@ -24,8 +24,10 @@ const metadata = pageModule.metadata;
 afterEach(cleanup);
 
 describe("page metadata", () => {
-  it("uses the requested title", () => {
-    expect(metadata.title).toBe("Tickets and packages");
+  it("titles itself apart from the Winter ticket chapter", () => {
+    // Both were "Tickets and packages", so the two pages competed for one
+    // result. The hub is the cross-edition explorer.
+    expect(metadata.title).toBe("Tickets and packages, all editions");
   });
 
   it("describes what the page covers", () => {
@@ -39,11 +41,23 @@ describe("page metadata", () => {
     expect(metadata.alternates?.canonical).toBe("/guides/tickets");
   });
 
-  it("sets an Open Graph title and description", () => {
+  it("sets a complete Open Graph block for the page", () => {
+    // The title carries the site name because the Open Graph title is written
+    // explicitly rather than left to the metadata title template, which does not
+    // apply to `og:title`. Every page in the site is prefixed the same way.
     expect(metadata.openGraph).toMatchObject({
-      title: "Tickets and packages",
+      title: "Tickets and packages, all editions | TMLGuide",
       type: "article",
       url: "/guides/tickets",
+      siteName: "TMLGuide",
+      locale: "en_GB",
+    });
+  });
+
+  it("sets a Twitter card, rather than leaving the platform to guess", () => {
+    expect(metadata.twitter).toMatchObject({
+      card: "summary",
+      title: "Tickets and packages, all editions | TMLGuide",
     });
   });
 });

@@ -223,6 +223,42 @@ describe("body size", () => {
     const response = await POST(makeRequest({ ...VALID, message }));
     expect(response.status).toBe(202);
   });
+
+  it("stops reading an oversized chunked body instead of buffering it", async () => {
+    /*
+      Regression: the route used to call `request.text()` and measure the result,
+      so an unbounded body was read into memory before the limit was applied. The
+      stream below is far larger than the cap and is read incrementally, which is
+      what a chunked request with no Content-Length looks like on the wire.
+    */
+    let pulled = 0;
+    const chunk = new Uint8Array(8 * 1024);
+    const stream = new ReadableStream<Uint8Array>({
+      pull(controller) {
+        pulled += chunk.byteLength;
+        if (pulled > MAX_BODY_BYTES * 4) {
+          controller.close();
+          return;
+        }
+        controller.enqueue(chunk);
+      },
+    });
+
+    const request = new Request("https://tmlguide.com/api/contact", {
+      method: "POST",
+      headers: { origin: SITE, "content-type": "application/json" },
+      body: stream,
+      // @ts-expect-error -- `duplex` is required for a stream body and missing from the DOM types.
+      duplex: "half",
+    });
+    expect(request.headers.get("content-length")).toBeNull();
+
+    const response = await POST(request);
+    expect(response.status).toBe(413);
+    expect(fetchSpy).not.toHaveBeenCalled();
+    // The read stopped near the cap rather than consuming the whole stream.
+    expect(pulled).toBeLessThan(MAX_BODY_BYTES * 4);
+  });
 });
 
 describe("origin", () => {

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { GoldDivider } from "@/components/ui/gold-divider";
 import { CORRECTIONS_EMAIL } from "@/components/home/contact";
+import { socialMetadata } from "@/lib/seo/social";
 import "./a11y-page.css";
 
 const TITLE = "Accessibility";
@@ -20,19 +21,7 @@ export const metadata: Metadata = {
   title: TITLE,
   description: DESCRIPTION,
   alternates: { canonical: PATH },
-  openGraph: {
-    type: "website",
-    siteName: "TMLGuide",
-    title: `${TITLE} | TMLGuide`,
-    description: DESCRIPTION,
-    url: PATH,
-    locale: "en_GB",
-  },
-  twitter: {
-    card: "summary",
-    title: `${TITLE} | TMLGuide`,
-    description: DESCRIPTION,
-  },
+  ...socialMetadata({ path: PATH, title: TITLE, description: DESCRIPTION }),
 };
 
 /**

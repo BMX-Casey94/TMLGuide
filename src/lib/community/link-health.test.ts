@@ -98,6 +98,52 @@ describe("parseTarget", () => {
     expect(parseTarget("https://printer.local/").url).toBeNull();
   });
 
+  it("refuses every spelling of a loopback address, including the IPv6 ones", () => {
+    /*
+      Regression: the IPv4-compatible (`::7f00:1`) and 6to4 (`2002:7f00:1::`)
+      shapes reached `isPrivateHost` and were reported as public. They are
+      `127.0.0.1` written differently, and a resolver returns whichever form the
+      stack prefers.
+    */
+    for (const url of [
+      "https://127.0.0.1/",
+      "https://::ffff:127.0.0.1/",
+      "https://[::ffff:127.0.0.1]/",
+      "https://[::ffff:7f00:1]/",
+      "https://[::127.0.0.1]/",
+      "https://[::7f00:1]/",
+      "https://[64:ff9b::7f00:1]/",
+      "https://[2002:7f00:1::]/",
+      "https://[0:0:0:0:0:ffff:7f00:1]/",
+    ]) {
+      const result = parseTarget(url);
+      // Either the parser rejects the literal outright or the range check does;
+      // both are refusals, and both mean the URL never reaches the network.
+      expect(result.url, url).toBeNull();
+    }
+  });
+
+  it("refuses the metadata service by every route", () => {
+    for (const url of [
+      "https://169.254.169.254/latest/meta-data/",
+      "https://[::ffff:169.254.169.254]/",
+      "https://[::ffff:a9fe:a9fe]/",
+      "https://[64:ff9b::a9fe:a9fe]/",
+      "https://[2002:a9fe:a9fe::]/",
+    ]) {
+      expect(parseTarget(url).url, url).toBeNull();
+    }
+  });
+
+  it("refuses carrier-grade NAT and IPv6 site-local addresses", () => {
+    expect(parseTarget("https://100.64.0.1/").url).toBeNull();
+    expect(parseTarget("https://[fec0::1]/").url).toBeNull();
+  });
+
+  it("still accepts an ordinary public IPv6 host", () => {
+    expect(parseTarget("https://[2606:4700:4700::1111]/").url).not.toBeNull();
+  });
+
   it("refuses a non-string", () => {
     expect(parseTarget(undefined).url).toBeNull();
     expect(parseTarget(42).url).toBeNull();

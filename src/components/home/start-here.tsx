@@ -37,14 +37,14 @@ export const START_HERE: readonly StartHereItem[] = [
     body: "Every sale moment on one timeline, shown in the zone it was published in and in UK time, with the date it was last checked.",
   },
   {
-    href: "/tools/budget-calculator",
+    href: "/tools/budget",
     title: "Budget calculator",
     kicker: "Costs",
     icon: "wallet",
     body: "Ticket, travel, DreamVille and spending money in one total, so the whole trip is a number before you commit to it.",
   },
   {
-    href: "/tools/pearl-calculator",
+    href: "/tools/pearls",
     title: "Pearl calculator",
     kicker: "On site",
     icon: "money-bag",

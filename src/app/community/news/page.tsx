@@ -4,13 +4,18 @@ import { NewsFeed } from "@/components/community/news-feed";
 import { ReportLinkForm } from "@/components/community/report-link-form";
 import { GoldDivider } from "@/components/ui/gold-divider";
 import { getPublishedNews, type NewsFeed as NewsFeedData } from "@/lib/community/news";
+import { socialMetadata } from "@/lib/seo/social";
 import "./news-page.css";
 
+const TITLE = "News";
+const DESCRIPTION =
+  "Dated announcements about Tomorrowland, each with the source it came from and the date it was checked. No undated claims and no announcements without a citation.";
+
 export const metadata: Metadata = {
-  title: "News",
-  description:
-    "Dated announcements about Tomorrowland, each with the source it came from and the date it was checked. No undated claims and no announcements without a citation.",
+  title: TITLE,
+  description: DESCRIPTION,
   alternates: { canonical: "/community/news" },
+  ...socialMetadata({ path: "/community/news", title: TITLE, description: DESCRIPTION }),
 };
 
 /**

@@ -4,12 +4,17 @@ import { WinterTimerTool } from "@/components/tools/winter-timer/winter-timer-to
 import { GoldDivider } from "@/components/ui/gold-divider";
 import { winterFacts } from "@/data/winter/facts";
 import { winterStages } from "@/data/winter/stages";
+import { socialMetadata } from "@/lib/seo/social";
+
+const TITLE = "Winter stage-hopping & lift timer";
+const DESCRIPTION =
+  "Estimate transit times between Alpe d'Huez mountain stages, village stages, and resort hubs for Tomorrowland Winter 2027, broken down into walk or ski, lift ride, and queue buffer.";
 
 export const metadata: Metadata = {
-  title: "Winter stage-hopping & lift timer",
-  description:
-    "Estimate transit times between Alpe d'Huez mountain stages, village stages, and resort hubs for Tomorrowland Winter 2027, broken down into walk or ski, lift ride, and queue buffer.",
+  title: TITLE,
+  description: DESCRIPTION,
   alternates: { canonical: "/tools/winter-timer" },
+  ...socialMetadata({ path: "/tools/winter-timer", title: TITLE, description: DESCRIPTION }),
 };
 
 const RELEVANT_FACT_IDS = new Set([

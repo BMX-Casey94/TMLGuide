@@ -22,6 +22,8 @@ import {
 import { breadcrumbListJsonLd, serialiseJsonLd } from "@/components/guides/json-ld";
 import { TableOfContents } from "@/components/guides/table-of-contents";
 import { resolveChapterRoute } from "@/components/guides/routes";
+import { socialMetadata } from "@/lib/seo/social";
+import { chapterPageTitle } from "@/lib/seo/titles";
 import "@/components/guides/guides.css";
 
 /**
@@ -66,28 +68,34 @@ export async function generateMetadata({
   if (resolved === null) return { title: "Chapter not found" };
 
   const path = `/guides/${resolved.edition}/${resolved.slug}`;
+  /*
+    The page title is made unique here rather than left as the chapter's own
+    title: Belgium and Winter both have an "Accommodation" chapter, and Brasil
+    and Winter both have "Getting there", so four pairs of pages were competing
+    with each other under one identical `<title>`. `chapterPageTitle` appends the
+    edition, except where the title already names it.
+  */
+  const title = chapterPageTitle(resolved);
+
   return {
-    title: resolved.title,
+    title,
     description: resolved.summary,
     alternates: { canonical: path },
     /*
+      `article` rather than `website`: a chapter is a dated body of prose with
+      sources, not a landing page. The helper also supplies the Twitter card,
+      which this route previously omitted entirely.
+
       Text only: no `images` entry. The site has no per-chapter artwork, and an
       Open Graph image that does not describe the chapter is worse than the
       fallback the crawler chooses.
     */
-    openGraph: {
+    ...socialMetadata({
+      path,
+      title,
+      description: resolved.summary,
       type: "article",
-      siteName: "TMLGuide",
-      title: `${resolved.title} | ${editionLabel(resolved.edition)} | TMLGuide`,
-      description: resolved.summary,
-      url: path,
-      locale: "en_GB",
-    },
-    twitter: {
-      card: "summary",
-      title: `${resolved.title} | TMLGuide`,
-      description: resolved.summary,
-    },
+    }),
   };
 }
 

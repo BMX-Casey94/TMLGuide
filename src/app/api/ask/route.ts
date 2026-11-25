@@ -31,6 +31,7 @@ import {
   warnIfLedgerIsNotShared,
 } from "@/lib/ai/spend-cap";
 import { isTurnstileConfigured, verifyTurnstile } from "@/lib/ai/turnstile";
+import { readBoundedBody } from "@/lib/http/json";
 import { getAllowedOrigins } from "@/lib/security/allowed-origins";
 import { getTrustedClientIp, hashClientIp, isIpHashSaltConfigured } from "@/lib/security/client-ip";
 import { isAllowedOrigin } from "@/lib/security/origin";
@@ -188,17 +189,16 @@ export async function POST(request: Request): Promise<NextResponse> {
     );
   }
 
-  // 5. Read, then measure the real body.
-  let raw: string;
-  try {
-    raw = await request.text();
-  } catch {
+  // 5. Read, then measure the real body. Reading stops at the cap, so a chunked
+  // request with no Content-Length cannot buffer an unbounded body first.
+  const read = await readBoundedBody(request, MAX_BODY_BYTES);
+  if (!read.ok) {
+    if (read.reason === "too-large") {
+      return jsonResponse({ error: "Request body is too large" }, 413);
+    }
     return jsonResponse({ error: "Could not read the request body" }, 400);
   }
-
-  if (new TextEncoder().encode(raw).length > MAX_BODY_BYTES) {
-    return jsonResponse({ error: "Request body is too large" }, 413);
-  }
+  const raw = read.text;
 
   let payload: unknown;
   try {

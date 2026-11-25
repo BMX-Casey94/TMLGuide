@@ -4,12 +4,17 @@ import { JourneyPlanner } from "@/components/tools/journey/journey-planner";
 import { allJourneyPlans } from "@/components/tools/journey/journey-logic";
 import { ToolShell, type ToolSource } from "@/components/tools/tool-shell";
 import { GoldDivider } from "@/components/ui/gold-divider";
+import { socialMetadata } from "@/lib/seo/social";
+
+const TITLE = "Journey planner";
+const DESCRIPTION =
+  "Work out how to reach Tomorrowland Belgium or Winter from a published route: the days each shuttle runs, the fares an operator publishes, and a plain notice wherever 2027 is missing.";
 
 export const metadata: Metadata = {
-  title: "Journey planner",
-  description:
-    "Work out how to reach Tomorrowland Belgium or Winter from a published route: the days each shuttle runs, the fares an operator publishes, and a plain notice wherever 2027 is missing.",
+  title: TITLE,
+  description: DESCRIPTION,
   alternates: { canonical: "/tools/journey" },
+  ...socialMetadata({ path: "/tools/journey", title: TITLE, description: DESCRIPTION }),
 };
 
 /** The plans, built once from the validated data layer. */

@@ -36,7 +36,7 @@ import {
   RateLimiterUnavailableError,
   warnIfLimiterIsNotShared,
 } from "@/lib/security/rate-limit";
-import { isJsonContentType, jsonResponse, methodNotAllowed, readLimitedBody } from "@/lib/http/json";
+import { isJsonContentType, jsonResponse, methodNotAllowed, readBoundedBody } from "@/lib/http/json";
 import {
   fieldErrors,
   isHoneypotTripped,
@@ -141,10 +141,14 @@ export async function POST(request: Request): Promise<Response> {
     });
   }
 
-  const raw = await readLimitedBody(request, MAX_BODY_BYTES);
-  if (raw === null) {
+  const body = await readBoundedBody(request, MAX_BODY_BYTES);
+  if (!body.ok) {
+    if (body.reason === "too-large") {
+      return jsonResponse({ error: "Request body is too large" }, 413);
+    }
     return jsonResponse({ error: "Request body could not be read" }, 400);
   }
+  const raw = body.text;
   if (raw.trim() === "") {
     return jsonResponse({ error: "Request body must be valid JSON" }, 400);
   }

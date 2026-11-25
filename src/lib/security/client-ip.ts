@@ -13,6 +13,8 @@
  *    from the same client, which is all it needs.
  */
 
+import { canonicaliseIpAddress, clientIpNetwork, parseIpv6 } from "./ip-address";
+
 /**
  * Headers written by the hosting platform, in order of trust.
  *
@@ -39,42 +41,39 @@ export const FORWARDED_FOR_HEADER = "x-forwarded-for";
 export const UNKNOWN_CLIENT_IP = "unknown";
 
 /**
- * Header carrying the number of proxies in front of the app, when the operator
- * knows it.
+ * Header that *used* to carry the number of proxies in front of the app.
  *
- * Without this, the right-most `x-forwarded-for` entry is taken. That entry was
- * appended by the nearest proxy, which is the only part of the chain a caller
- * cannot forge. Taking the left-most entry instead — the common shortcut — lets
- * a client prepend a fabricated address and be counted under it, which is a free
- * bypass of every rate limit on the site.
+ * It is deliberately no longer read. The value has to match the real topology,
+ * so it is operator configuration, and a request header is written by whoever
+ * sent the request. Reading it from there let a caller send
+ * `x-trusted-proxy-count: 2` alongside a fabricated `x-forwarded-for` chain and
+ * be counted under an address of their choosing — a free bypass of every rate
+ * limit on the site, since rotating that address resets the count. The count now
+ * comes from `TRUSTED_PROXY_COUNT` only.
+ *
+ * The constant is exported so the test suite can prove the header is ignored.
  */
-export const TRUSTED_PROXY_COUNT_HEADER = "x-trusted-proxy-count";
+export const IGNORED_PROXY_COUNT_HEADER = "x-trusted-proxy-count";
 
 const IPV4_PATTERN = /^(?:(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\.){3}(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)$/;
-
-/** Characters an IPv6 literal may contain. `%` (a zone index) is excluded deliberately. */
-const IPV6_CHARS = /^[0-9a-f:.]+$/i;
 
 /**
  * Validates one address token.
  *
- * IPv6 is checked structurally rather than against a full grammar. The value
- * only ever becomes a Redis key segment or a log field, never a URL or a shell
- * argument, and a strict parser would reject legitimate compressed forms such as
- * `2001:db8::1`.
+ * Delegates to the shared parser in `@/lib/security/ip-address` so this module and
+ * the SSRF deny-list cannot disagree about what an address is. The consequence
+ * that matters here is canonicalisation: `2001:DB8::1` and
+ * `2001:0db8:0000:0000:0000:0000:0000:0001` are one client, and a limiter that
+ * treats them as two can be evaded by re-spelling.
  */
 export function isPlausibleIp(value: string): boolean {
   if (value === "") return false;
   if (IPV4_PATTERN.test(value)) return true;
-  if (!value.includes(":")) return false;
-  if (!IPV6_CHARS.test(value)) return false;
-  if (value.includes(":::")) return false;
-  if ((value.match(/::/g) ?? []).length > 1) return false;
-  return true;
+  return parseIpv6(value) !== null;
 }
 
 /**
- * Strips the decorations a proxy may add to an address.
+ * Strips the decorations a proxy may add to an address, and canonicalises it.
  *
  * Values arrive as `1.2.3.4`, `1.2.3.4:5678`, `[2001:db8::1]:443` or
  * `[2001:db8::1]`. Only the address is kept: a port is not part of an identity,
@@ -87,8 +86,7 @@ export function normaliseIp(raw: string): string | null {
   if (value.startsWith("[")) {
     const close = value.indexOf("]");
     if (close === -1) return null;
-    value = value.slice(1, close);
-    return isPlausibleIp(value) ? value.toLowerCase() : null;
+    return canonicaliseIpAddress(value.slice(1, close));
   }
 
   if (IPV4_PATTERN.test(value)) return value;
@@ -102,7 +100,7 @@ export function normaliseIp(raw: string): string | null {
     if (IPV4_PATTERN.test(host) && /^\d{1,5}$/.test(port)) return host;
   }
 
-  return isPlausibleIp(value) ? value.toLowerCase() : null;
+  return canonicaliseIpAddress(value);
 }
 
 /**
@@ -124,15 +122,15 @@ export function pickFromChain(value: string, proxyCount: number): string | null 
   return parts[parts.length - trusted] ?? parts[0] ?? null;
 }
 
-/** Reads the configured trusted proxy count, defaulting to one. */
-function configuredProxyCount(headers: { get(name: string): string | null }): number {
-  const header = headers.get(TRUSTED_PROXY_COUNT_HEADER);
-  const fromHeader = header === null ? Number.NaN : Number.parseInt(header, 10);
-  if (Number.isFinite(fromHeader) && fromHeader >= 1 && fromHeader <= 10) return fromHeader;
-
+/**
+ * Reads the configured trusted proxy count, defaulting to one.
+ *
+ * Only the environment is consulted. A header must never decide this, because a
+ * header is attacker-controlled: see {@link IGNORED_PROXY_COUNT_HEADER}.
+ */
+function configuredProxyCount(): number {
   const fromEnv = Number.parseInt(process.env.TRUSTED_PROXY_COUNT ?? "", 10);
   if (Number.isFinite(fromEnv) && fromEnv >= 1 && fromEnv <= 10) return fromEnv;
-
   return 1;
 }
 
@@ -145,19 +143,21 @@ function configuredProxyCount(headers: { get(name: string): string | null }): nu
  * escape throttling by doing so.
  */
 export function getTrustedClientIp(headers: { get(name: string): string | null }): string {
+  const proxyCount = configuredProxyCount();
+
   for (const name of TRUSTED_SINGLE_VALUE_HEADERS) {
     const value = headers.get(name);
     if (value === null || value.trim() === "") continue;
 
     // The platform writes exactly one address for these, usually. Reading it as
     // a chain keeps working on a platform that appends instead of overwriting.
-    const ip = pickFromChain(value, configuredProxyCount(headers));
+    const ip = pickFromChain(value, proxyCount);
     if (ip !== null) return ip;
   }
 
   const forwarded = headers.get(FORWARDED_FOR_HEADER);
   if (forwarded !== null && forwarded.trim() !== "") {
-    const ip = pickFromChain(forwarded, configuredProxyCount(headers));
+    const ip = pickFromChain(forwarded, proxyCount);
     if (ip !== null) return ip;
   }
 
@@ -205,13 +205,30 @@ function toBase64Url(bytes: Uint8Array): string {
  *
  * `UNKNOWN_CLIENT_IP` hashes to the same digest for every such request, which is
  * intended: they share one bucket.
+ *
+ * ## Why the identity is a network, not an address
+ *
+ * The value hashed is `clientIpNetwork(ip)`, so an IPv4 address is hashed as
+ * itself and an IPv6 address as its `/64`. Without that, a residential IPv6
+ * customer — delegated a whole `/64` and free to rotate inside it — could present
+ * a new address on every request and never share a bucket. Grouping to `/64` is
+ * the smallest unit that cannot be gamed that way without changing ISP, and it is
+ * still narrow enough that two households do not collide in practice.
+ *
+ * The digest is over the network rather than the address, which does not weaken
+ * the data-minimisation position: a `/64` is no more identifying than the address
+ * inside it, and the salt is what makes the digest unlinkable.
  */
 export async function hashClientIp(
   ip: string,
   salt: string = process.env.RATE_LIMIT_IP_SALT ?? "",
 ): Promise<string> {
+  // An address that will not parse is hashed as it arrived. Callers only ever
+  // pass a value `getTrustedClientIp` produced, so this is the sentinel and not a
+  // raw header; hashing it unchanged keeps the sentinel's one shared bucket.
+  const identity = clientIpNetwork(ip) ?? ip;
   const encoder = new TextEncoder();
-  const digest = await globalThis.crypto.subtle.digest("SHA-256", encoder.encode(`${salt}:${ip}`));
+  const digest = await globalThis.crypto.subtle.digest("SHA-256", encoder.encode(`${salt}:${identity}`));
   return `${HASH_PREFIX}${toBase64Url(new Uint8Array(digest))}`;
 }
 

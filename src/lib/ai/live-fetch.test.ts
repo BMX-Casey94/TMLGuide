@@ -25,6 +25,7 @@ import {
   truncateAtBoundary,
   type HostResolver,
 } from "./live-fetch";
+import { isBlockedIpAddress } from "@/lib/security/ip-address";
 
 /** A resolver that answers with a public address, so address checks do not block. */
 const publicResolver: HostResolver = async () => ["93.184.216.34"];
@@ -136,6 +137,41 @@ describe("isDeniedPath", () => {
     expect(isDeniedPath("/TICKETS")).toBe(true);
     expect(isDeniedPath("/hc/EN-US/SEARCH")).toBe(true);
   });
+
+  it("denies a percent-encoded spelling the far end would decode to the denied path", () => {
+    /*
+      Regression: `robots.txt` is enforced by the server against the decoded path,
+      so `/%74ickets` reaches the same handler as `/tickets`. Comparing only the
+      literal string let a citation past the deny-list and still fetch a page the
+      compliance document forbids.
+    */
+    for (const path of ["/%74ickets", "/%74%69%63%6b%65%74%73", "/%54ickets", "/T%49CKETS"]) {
+      expect(isDeniedPath(path), path).toBe(true);
+    }
+    for (const path of ["/hc/en-us/%73earch", "/hc/pt-br/%72equests/1", "/hc/en-us/sign%69n"]) {
+      expect(isDeniedPath(path), path).toBe(true);
+    }
+  });
+
+  it("denies a double-encoded spelling", () => {
+    expect(isDeniedPath("/%2574ickets")).toBe(true);
+  });
+
+  it("denies the slash and dot variants a router normalises", () => {
+    for (const path of ["//tickets", "/./tickets", "/tickets/.", "/access/.", "//api/v2"]) {
+      expect(isDeniedPath(path), path).toBe(true);
+    }
+  });
+
+  it("still permits an article whose path merely contains an escape", () => {
+    expect(isDeniedPath("/hc/en-us/articles/360037215812-Can-I-re-%65nter")).toBe(false);
+    expect(isDeniedPath("/en/tickets/festival-tickets/%66ull-madness-pass/")).toBe(false);
+  });
+
+  it("does not throw on a malformed escape", () => {
+    expect(() => isDeniedPath("/%zz")).not.toThrow();
+    expect(isDeniedPath("/%zz")).toBe(false);
+  });
 });
 
 describe("ALLOWED_HOSTS", () => {
@@ -172,8 +208,86 @@ describe("isBlockedAddress", () => {
 
   it("fails closed on an unparseable value", () => {
     expect(isBlockedAddress("")).toBe(true);
-    expect(isBlockedAddress("not-an-address")).toBe(true);
+    expect(isBlockedAddress("not-an-address"),).toBe(true);
     expect(isBlockedAddress("256.1.1.1")).toBe(true);
+  });
+
+  it("blocks the IPv4-mapped IPv6 forms in every spelling", () => {
+    /*
+      Regression: the old test was a single regex for the dotted form, so the
+      hex-compressed spelling of the same address was admitted. `::ffff:7f00:1`
+      *is* `127.0.0.1`, and a resolver can return either.
+    */
+    for (const address of [
+      "::ffff:127.0.0.1",
+      "::ffff:7f00:1",
+      "0:0:0:0:0:ffff:7f00:1",
+      "::FFFF:127.0.0.1",
+      "::ffff:169.254.169.254",
+      "::ffff:a9fe:a9fe",
+    ]) {
+      expect(isBlockedAddress(address), address).toBe(true);
+    }
+  });
+
+  it("blocks the IPv4-compatible, NAT64 and 6to4 forms that carry an address", () => {
+    for (const address of [
+      "::127.0.0.1",
+      "::7f00:1",
+      "64:ff9b::127.0.0.1",
+      "64:ff9b::a9fe:a9fe", // NAT64 to the metadata service
+      "2002:7f00:1::", // 6to4 for 127.0.0.1
+      "2002:a9fe:a9fe::", // 6to4 for 169.254.169.254
+    ]) {
+      expect(isBlockedAddress(address), address).toBe(true);
+    }
+  });
+
+  it("blocks carrier-grade NAT, which the comparison chain missed", () => {
+    // 100.64.0.0/10 is where a cloud provider puts internal load balancers.
+    for (const address of ["100.64.0.1", "100.64.0.0", "100.127.255.255"]) {
+      expect(isBlockedAddress(address), address).toBe(true);
+    }
+    // Just outside it is ordinary global unicast.
+    expect(isBlockedAddress("100.63.255.255")).toBe(false);
+    expect(isBlockedAddress("100.128.0.1")).toBe(false);
+  });
+
+  it("blocks the documentation and deprecated ranges", () => {
+    for (const address of ["192.0.2.1", "198.51.100.1", "203.0.113.1", "192.88.99.1", "2001:db8::1"]) {
+      expect(isBlockedAddress(address), address).toBe(true);
+    }
+  });
+
+  it("blocks a site-local IPv6 address as well as link-local", () => {
+    expect(isBlockedAddress("fec0::1")).toBe(true);
+    expect(isBlockedAddress("fe80::1")).toBe(true);
+  });
+
+  it("fails closed on an IPv6 literal that will not parse", () => {
+    for (const address of ["1:2:3", ":::", "12345::1", "::ffff:not-an-ip", "fe80::1%eth0"]) {
+      expect(isBlockedAddress(address), address).toBe(true);
+    }
+  });
+
+  it("allows ordinary global unicast IPv6", () => {
+    for (const address of ["2606:4700:4700::1111", "2a00:1450:4009:81f::200e", "2001:4860:4860::8888"]) {
+      expect(isBlockedAddress(address), address).toBe(false);
+    }
+  });
+
+  it("agrees with the shared classifier the rest of the app uses", () => {
+    // One implementation, so the fetcher and the link checker cannot disagree.
+    for (const address of [
+      "127.0.0.1",
+      "::ffff:7f00:1",
+      "169.254.169.254",
+      "8.8.8.8",
+      "2606:4700:4700::1111",
+      "garbage",
+    ]) {
+      expect(isBlockedAddress(address), address).toBe(isBlockedIpAddress(address));
+    }
   });
 });
 

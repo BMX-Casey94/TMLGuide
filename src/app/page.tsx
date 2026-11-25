@@ -12,6 +12,7 @@ import { TrustStrip } from "@/components/home/trust-strip";
 import { formatLongDate } from "@/components/home/format";
 import { serialiseJsonLd, websiteJsonLd } from "@/components/home/json-ld";
 import { oldestVerifiedOn } from "@/components/home/verified-on";
+import { socialMetadata } from "@/lib/seo/social";
 import "@/components/home/home.css";
 
 const TITLE = "The independent guide to Tomorrowland";
@@ -22,19 +23,7 @@ export const metadata: Metadata = {
   title: TITLE,
   description: DESCRIPTION,
   alternates: { canonical: "/" },
-  openGraph: {
-    type: "website",
-    siteName: "TMLGuide",
-    title: `${TITLE} | TMLGuide`,
-    description: DESCRIPTION,
-    url: "/",
-    locale: "en_GB",
-  },
-  twitter: {
-    card: "summary",
-    title: `${TITLE} | TMLGuide`,
-    description: DESCRIPTION,
-  },
+  ...socialMetadata({ path: "/", title: TITLE, description: DESCRIPTION }),
 };
 
 /**

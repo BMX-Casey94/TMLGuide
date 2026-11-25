@@ -1,13 +1,16 @@
 /**
  * Routes this page group is allowed to link to.
  *
- * The home and About pages are built before most of the site exists, so every
- * link on them is checked against this list. That turns a typo into a failing
- * test rather than a dead end for a reader, and it keeps the two pages from
- * advertising a destination nobody has agreed to build.
+ * The home page is built before most of the site exists, so every link on it is
+ * checked against this list. That turns a typo into a failing test rather than a
+ * dead end for a reader.
  *
- * `/tools/*` is a family rather than a single page: the planning tools live at
- * their own paths under it.
+ * Every entry is a page that exists today. There is deliberately no wildcard for
+ * `/tools/*`: an earlier version accepted any path under that prefix, which let
+ * links to `/tools/budget-calculator` and `/tools/pearl-calculator` pass this
+ * check and 404 in production, because the real pages are `/tools/budget` and
+ * `/tools/pearls`. A tool is listed here when it is built, so linking to one that
+ * does not exist fails in the suite instead of on a reader's screen.
  */
 
 /** Destinations the pages in this group may use, exactly as written in a link. */
@@ -17,8 +20,8 @@ export const KNOWN_ROUTES = [
   "/guides/tickets",
   "/tools",
   "/tools/sale-timeline",
-  "/tools/budget-calculator",
-  "/tools/pearl-calculator",
+  "/tools/budget",
+  "/tools/pearls",
   "/community",
   "/community#partners",
   "/radio",
@@ -26,9 +29,6 @@ export const KNOWN_ROUTES = [
 ] as const;
 
 export type KnownRoute = (typeof KNOWN_ROUTES)[number];
-
-/** Path prefixes that stand for a family of routes. */
-const ROUTE_FAMILIES: readonly string[] = ["/tools/"];
 
 /**
  * Strips a query string and fragment, which never change which page is served.
@@ -48,8 +48,7 @@ export function routePath(href: string): string {
 export function isKnownRoute(href: string): boolean {
   if (!href.startsWith("/")) return false;
   const path = routePath(href);
-  if ((KNOWN_ROUTES as readonly string[]).includes(path)) return true;
-  return ROUTE_FAMILIES.some((prefix) => path.startsWith(prefix) && path.length > prefix.length);
+  return (KNOWN_ROUTES as readonly string[]).includes(path);
 }
 
 /** True for a link that leaves the site. */
@@ -59,13 +58,8 @@ export function isExternalHref(href: string): boolean {
 
 /**
  * Origin used for canonical URLs and JSON-LD when `NEXT_PUBLIC_SITE_URL` is not
- * set. The root layout applies the same fallback to `metadataBase`, so a link
- * built here and a canonical URL built by Next always agree.
+ * set. The root layout, the sitemap and `robots.txt` all read the same origin
+ * through `@/lib/seo/site`, so a link built here and a canonical URL built by
+ * Next cannot disagree about which site they describe.
  */
-export const SITE_URL_FALLBACK = "http://localhost:3000";
-
-/** Resolves a site path to an absolute URL for metadata and JSON-LD. */
-export function absoluteUrl(path: string): string {
-  const origin = (process.env.NEXT_PUBLIC_SITE_URL ?? SITE_URL_FALLBACK).replace(/\/+$/, "");
-  return `${origin}${path.startsWith("/") ? path : `/${path}`}`;
-}
+export { SITE_URL_FALLBACK, absoluteUrl } from "@/lib/seo/site";

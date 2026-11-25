@@ -16,6 +16,39 @@ const INPUT_PATH = fileURLToPath(
   new URL("../../../docs/factcheck/links-input.json", import.meta.url),
 );
 
+/**
+ * The three resources the 2026-11-25 link run found behind a redirect.
+ *
+ * `docs/factcheck/links-input.json` records what the old site published, so it
+ * still names the redirecting address. Each record here is a measurement: the
+ * input URL, the address its chain ended on with a 200, the hops in between, and
+ * the date it was followed. The allowlist below is exactly this table, so a
+ * fourth published URL the input does not mention cannot slip in unnoticed.
+ */
+const RESOLVED_REDIRECTS = [
+  {
+    resourceId: "resource-discord",
+    from: "https://discord.gg/tomorrowland",
+    to: "https://discord.com/invite/tomorrowland",
+    hops: 1,
+  },
+  {
+    resourceId: "resource-radio",
+    from: "https://www.tomorrowland.com/home/one-world-radio/",
+    to: "https://www.tomorrowland.com/one-world-radio/",
+    hops: 2,
+  },
+  {
+    resourceId: "resource-official",
+    from: "https://www.tomorrowland.com/home/",
+    to: "https://www.tomorrowland.com/",
+    hops: 2,
+  },
+] as const;
+
+/** The date those three chains were followed and their final addresses answered 200. */
+const REDIRECTS_CHECKED_ON = "2026-11-25";
+
 interface InputLink {
   readonly id: string;
   readonly kind: string;
@@ -128,9 +161,56 @@ describe("community data", () => {
     expect(urls).not.toContain("https://chat.whatsapp.com/DmeA53dRZpW3x2afZKRgHS");
   });
 
-  it("links only to URLs that appear in the factcheck input", () => {
-    const unknown = everyRecord.filter((record) => !inputUrls.has(normalise(record.url)));
+  it("links only to URLs that appear in the factcheck input, or to a measured final address", () => {
+    /*
+      Three records legitimately publish an address the input does not contain:
+      the input recorded a URL that only redirects, and the site stores the
+      address a reader actually lands on. That is allowed only for an entry in
+      RESOLVED_REDIRECTS, so a URL nobody measured still fails here.
+    */
+    const resolvedTargets = new Set(RESOLVED_REDIRECTS.map((redirect) => normalise(redirect.to)));
+    const unknown = everyRecord.filter(
+      (record) => !inputUrls.has(normalise(record.url)) && !resolvedTargets.has(normalise(record.url)),
+    );
     expect(unknown).toEqual([]);
+  });
+
+  it("moves a redirecting URL only where the fact check measured the destination", () => {
+    for (const redirect of RESOLVED_REDIRECTS) {
+      // The address it replaces is one the fact check actually read.
+      expect(inputUrls.has(normalise(redirect.from)), redirect.from).toBe(true);
+
+      // It moves an existing record to that destination, and the hop is gone.
+      const record = resources.find((resource) => resource.id === redirect.resourceId);
+      expect(normalise(record?.url ?? ""), redirect.resourceId).toBe(normalise(redirect.to));
+
+      const stillPublished = everyRecord.filter(
+        (entry) => normalise(entry.url) === normalise(redirect.from),
+      );
+      expect(stillPublished, redirect.from).toEqual([]);
+
+      // A hop count below one would mean this is not a redirect at all.
+      expect(redirect.hops, redirect.resourceId).toBeGreaterThan(0);
+    }
+  });
+
+  it("dates each moved resource on the day its final address was measured", () => {
+    for (const redirect of RESOLVED_REDIRECTS) {
+      const record = communityData.resources.find((resource) => resource.id === redirect.resourceId);
+      expect(record?.lastVerified, redirect.resourceId).toBe(REDIRECTS_CHECKED_ON);
+      expect(record?.source.retrievedOn, redirect.resourceId).toBe(REDIRECTS_CHECKED_ON);
+    }
+  });
+
+  it("does not date any other resource as freshly as the redirect run", () => {
+    // A record whose URL nobody re-opened must not borrow the newer date: the
+    // card prints `lastVerified`, so a wrong date claims a check that did not
+    // happen. Only the three measured records may carry the later date.
+    const moved = new Set<string>(RESOLVED_REDIRECTS.map((redirect) => redirect.resourceId));
+    for (const record of communityData.resources) {
+      if (moved.has(record.id)) continue;
+      expect(record.lastVerified, record.id).toBe("2026-11-18");
+    }
   });
 
   it("gives every partner a disclosure of at least 20 characters", () => {

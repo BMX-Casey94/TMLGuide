@@ -8,9 +8,16 @@ import { parseTicketView, TICKET_EDITIONS, type TicketEditionId } from "@/compon
 import { SaleTimeline } from "@/components/tickets/sale-timeline";
 import { buildCatalogue } from "@/components/tickets/selectors";
 import { TicketsExplorer } from "@/components/tickets/tickets-explorer";
+import { socialMetadata } from "@/lib/seo/social";
 import "./tickets-page.css";
 
-const PAGE_TITLE = "Tickets and packages";
+/*
+  "All editions" separates this page from the Winter chapter at
+  /guides/winter/tickets-and-packages: both were titled "Tickets and packages",
+  so they competed for the same result. This page is the cross-edition price
+  explorer, which is what a reader comparing Belgium, Winter and Brasil wants.
+*/
+const PAGE_TITLE = "Tickets and packages, all editions";
 const PAGE_DESCRIPTION =
   "Tomorrowland ticket and package prices for Belgium, Winter and Brasil, with the 2027 sale dates, what each package includes and the official page behind every figure.";
 
@@ -18,12 +25,15 @@ export const metadata: Metadata = {
   title: PAGE_TITLE,
   description: PAGE_DESCRIPTION,
   alternates: { canonical: "/guides/tickets" },
-  openGraph: {
+  // A dated price list is an article rather than a landing page, and the shared
+  // helper supplies the `siteName`, `locale` and Twitter card that a partial
+  // `openGraph` object would drop.
+  ...socialMetadata({
+    path: "/guides/tickets",
     title: PAGE_TITLE,
     description: PAGE_DESCRIPTION,
     type: "article",
-    url: "/guides/tickets",
-  },
+  }),
 };
 
 /**

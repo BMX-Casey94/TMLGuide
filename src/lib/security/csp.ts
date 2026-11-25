@@ -53,6 +53,22 @@ export const NONCE_BYTE_LENGTH = 16;
  */
 export const ONE_WORLD_RADIO_STREAM_ORIGIN = "https://*.streamtheworld.com";
 
+/**
+ * Cloudflare Turnstile's origin, and the only third party admitted to
+ * `script-src` and `frame-src`.
+ *
+ * The bot challenge needs two permissions that a strict policy withholds: the
+ * widget script itself, and the iframe it renders the challenge into. They are
+ * granted together, and only when the deployment has configured a site key, so a
+ * deployment that does not use Turnstile keeps `frame-src 'none'` — which is the
+ * stronger position, and the one this site should have by default.
+ *
+ * `challenges.cloudflare.com` is used rather than a wildcard: Turnstile serves
+ * both `api.js` and the challenge frame from that one host, so nothing else on
+ * `cloudflare.com` becomes reachable.
+ */
+export const TURNSTILE_ORIGIN = "https://challenges.cloudflare.com";
+
 export interface CspOptions {
   /** Base64 nonce, as produced by `generateNonce`. */
   readonly nonce: string;
@@ -78,6 +94,14 @@ export interface CspOptions {
   readonly scriptHashes?: readonly string[];
   /** Extra origins for `connect-src`, for example a configured analytics endpoint. */
   readonly connectSrc?: readonly string[];
+  /**
+   * True when the deployment has configured Cloudflare Turnstile.
+   *
+   * Only then is {@link TURNSTILE_ORIGIN} admitted to `script-src` and
+   * `frame-src`. When false — the default — `frame-src` stays `'none'`, so this
+   * is an opt-in that a misconfiguration cannot switch on by accident.
+   */
+  readonly turnstile?: boolean;
 }
 
 /** Same inputs as the policy itself: the headers are a superset of the policy. */
@@ -182,7 +206,7 @@ export function toCspHashSource(hash: string): string | null {
 }
 
 /**
- * Normalises a candidate origin, or returns null when it is not one.
+ * Normalises a candidate URL, or returns null when it is not one.
  *
  * Only `https:` is admitted. `connect-src` is about data leaving the page, and
  * this site is served over HTTPS everywhere; a plain-HTTP endpoint would be
@@ -195,6 +219,30 @@ export function normaliseConnectOrigin(origin: string): string | null {
     const url = new URL(trimmed);
     if (url.protocol !== "https:") return null;
     return url.origin;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Normalises a URL that may legitimately carry a path, or returns null.
+ *
+ * A CSP reporting endpoint is a full URL, not an origin: `/csp` is a different
+ * collector from `/`. The value is rebuilt from parsed components and checked
+ * against a grammar with no whitespace and no semicolon, so it cannot terminate
+ * the directive it sits in and start another one. That is the difference between
+ * a reported violation and an injected policy.
+ */
+export function normaliseReportUrl(value: string): string | null {
+  const trimmed = value.trim();
+  if (trimmed === "") return null;
+  // A CSP source expression cannot contain whitespace or a directive separator.
+  if (/[\s;,'"\\]/.test(trimmed)) return null;
+  try {
+    const url = new URL(trimmed);
+    if (url.protocol !== "https:") return null;
+    if (url.username !== "" || url.password !== "") return null;
+    return `${url.origin}${url.pathname}${url.search}`;
   } catch {
     return null;
   }
@@ -231,6 +279,7 @@ export function buildCspHeader({
   strictDynamic = false,
   scriptHashes = [],
   connectSrc = [],
+  turnstile = false,
 }: CspOptions): string {
   const hashSources = scriptHashes
     .map((hash) => toCspHashSource(hash))
@@ -240,6 +289,7 @@ export function buildCspHeader({
     "'self'",
     `'nonce-${nonce}'`,
     ...hashSources,
+    ...(turnstile ? [TURNSTILE_ORIGIN] : []),
     ...(strictDynamic ? ["'strict-dynamic'"] : []),
     ...(isDev ? ["'unsafe-eval'"] : []),
   ].join(" ");
@@ -248,6 +298,13 @@ export function buildCspHeader({
     .map((origin) => normaliseConnectOrigin(origin))
     .filter((origin): origin is string => origin !== null);
 
+  /*
+    `frame-src 'none'` unless Turnstile is configured. The widget renders its
+    challenge into an iframe on Cloudflare's origin, so a policy that kept
+    `'none'` would fail the check silently in the browser while the server still
+    demanded it — a dead end for the reader. The two directives are granted from
+    the same flag so they cannot drift apart.
+  */
   const directives: string[] = [
     "default-src 'self'",
     `script-src ${scriptSrc}`,
@@ -259,7 +316,7 @@ export function buildCspHeader({
     `media-src 'self' ${ONE_WORLD_RADIO_STREAM_ORIGIN}`,
     "manifest-src 'self'",
     "worker-src 'self' blob:",
-    "frame-src 'none'",
+    turnstile ? `frame-src ${TURNSTILE_ORIGIN}` : "frame-src 'none'",
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",
@@ -270,12 +327,22 @@ export function buildCspHeader({
     directives.push("upgrade-insecure-requests");
   }
 
-  if (reportToUrl) {
-    // `report-uri` is deprecated but still the only reporting directive older
-    // browsers understand; `report-to` names the group declared in the
-    // `Reporting-Endpoints` header. Emitting both costs nothing.
-    directives.push(`report-uri ${reportToUrl}`);
-    directives.push(`report-to ${CSP_REPORT_GROUP}`);
+  if (reportToUrl !== undefined) {
+    /*
+      The endpoint is validated, not interpolated. `CSP_REPORT_URI` is operator
+      configuration, but a value containing a semicolon or a space would append
+      directives of its choosing to the policy — `report-uri x; script-src *`
+      would turn a reporting setting into a full policy bypass. Validating here
+      means a malformed value is dropped rather than trusted.
+    */
+    const endpoint = normaliseReportUrl(reportToUrl);
+    if (endpoint !== null) {
+      // `report-uri` is deprecated but still the only reporting directive older
+      // browsers understand; `report-to` names the group declared in the
+      // `Reporting-Endpoints` header. Emitting both costs nothing.
+      directives.push(`report-uri ${endpoint}`);
+      directives.push(`report-to ${CSP_REPORT_GROUP}`);
+    }
   }
 
   return directives.join("; ");
@@ -320,6 +387,7 @@ export function buildSecurityHeaders({
   strictDynamic,
   scriptHashes,
   connectSrc,
+  turnstile,
 }: SecurityHeaderOptions): Record<string, string> {
   const headers: Record<string, string> = {
     [CSP_HEADER]: buildCspHeader({
@@ -329,6 +397,7 @@ export function buildSecurityHeaders({
       strictDynamic,
       scriptHashes,
       connectSrc,
+      turnstile: turnstile === true,
     }),
     "X-Content-Type-Options": "nosniff",
     "X-Frame-Options": "DENY",
@@ -358,4 +427,57 @@ export function buildSecurityHeaders({
 /** True when the app is running under `next dev`. */
 export function isDevelopment(): boolean {
   return process.env.NODE_ENV === "development";
+}
+
+/** The part of the environment that decides whether the challenge is active. */
+export interface TurnstileEnv {
+  readonly NEXT_PUBLIC_TURNSTILE_SITE_KEY?: string | undefined;
+  readonly TURNSTILE_SECRET_KEY?: string | undefined;
+  readonly [key: string]: string | undefined;
+}
+
+/**
+ * The Cloudflare Turnstile site key, or null when the challenge is not in use.
+ *
+ * The site key is the switch, because it is the value that makes the widget
+ * appear: a deployment that sets it intends readers to be challenged, so the
+ * policy has to admit Cloudflare's script and frame or the widget cannot render.
+ *
+ * The key is validated against the documented character set before it is
+ * returned. It is interpolated into a policy header and into a script URL, and
+ * permitting a value containing a semicolon or a space would let an environment
+ * variable inject CSP directives — which is the one way a "public" key could
+ * become a policy bypass.
+ *
+ * `TURNSTILE_SECRET_KEY` is what makes the challenge *enforced*, and
+ * `verifyTurnstile` fails closed on a missing token whenever it is set. A
+ * deployment that sets only the site key renders a widget whose token the server
+ * never checks; `describeTurnstile` reports that state so it can be caught.
+ */
+export function readTurnstileSiteKey(env: TurnstileEnv = process.env): string | null {
+  const siteKey = env.NEXT_PUBLIC_TURNSTILE_SITE_KEY?.trim();
+  if (!siteKey) return null;
+  return /^[A-Za-z0-9_-]{1,128}$/.test(siteKey) ? siteKey : null;
+}
+
+/** True when this deployment renders the challenge, and so needs the CSP exemption. */
+export function isTurnstileEnabled(env: TurnstileEnv = process.env): boolean {
+  return readTurnstileSiteKey(env) !== null;
+}
+
+/**
+ * The state of the challenge, for a startup log or a health endpoint.
+ *
+ * `rendered` and `enforced` are separate because the gap between them is the
+ * failure worth catching: a widget the reader solves and the server never checks
+ * is worse than no widget, since it costs the reader effort for no protection.
+ */
+export function describeTurnstile(env: TurnstileEnv = process.env): {
+  rendered: boolean;
+  enforced: boolean;
+  misconfigured: boolean;
+} {
+  const rendered = readTurnstileSiteKey(env) !== null;
+  const enforced = (env.TURNSTILE_SECRET_KEY?.trim() ?? "") !== "";
+  return { rendered, enforced, misconfigured: rendered !== enforced };
 }

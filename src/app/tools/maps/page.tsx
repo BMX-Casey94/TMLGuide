@@ -3,12 +3,17 @@ import { ToolShell, type ToolSource } from "@/components/tools/tool-shell";
 import { VenueMapsTool } from "@/components/tools/maps/venue-maps-tool";
 import { GoldDivider } from "@/components/ui/gold-divider";
 import { belgiumFacts } from "@/data/belgium/facts";
+import { socialMetadata } from "@/lib/seo/social";
+
+const TITLE = "Venue & DreamVille maps";
+const DESCRIPTION =
+  "Original schematic planning maps for De Schorre and DreamVille in Belgium, with a point-to-point walking-time estimator in minutes and miles plus peak crowd-surge notes.";
 
 export const metadata: Metadata = {
-  title: "Venue & DreamVille maps",
-  description:
-    "Original schematic planning maps for De Schorre and DreamVille in Belgium, with a point-to-point walking-time estimator in minutes and miles plus peak crowd-surge notes.",
+  title: TITLE,
+  description: DESCRIPTION,
   alternates: { canonical: "/tools/maps" },
+  ...socialMetadata({ path: "/tools/maps", title: TITLE, description: DESCRIPTION }),
 };
 
 function mapSources(): readonly ToolSource[] {

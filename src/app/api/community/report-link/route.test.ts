@@ -195,7 +195,9 @@ describe("body size", () => {
     });
     expect(request.headers.get("content-length")).toBeNull();
 
-    expect((await POST(request)).status).toBe(400);
+    // 413, not 400: the body was measured and found too large, which is a size
+    // fault rather than a syntax one. It also matches the declared-length path.
+    expect((await POST(request)).status).toBe(413);
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 });

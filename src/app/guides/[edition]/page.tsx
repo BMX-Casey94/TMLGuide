@@ -15,6 +15,7 @@ import { ChapterCard } from "@/components/guides/chapter-cards";
 import { formatCheckedDate } from "@/components/guides/format";
 import { breadcrumbListJsonLd, serialiseJsonLd } from "@/components/guides/json-ld";
 import { parseEditionParam } from "@/components/guides/routes";
+import { socialMetadata } from "@/lib/seo/social";
 import "@/components/guides/guides.css";
 
 interface EditionPageData {
@@ -50,19 +51,7 @@ export async function generateMetadata({
     title: data.title,
     description: data.summary,
     alternates: { canonical: path },
-    openGraph: {
-      type: "website",
-      siteName: "TMLGuide",
-      title: `${data.title} | TMLGuide`,
-      description: data.summary,
-      url: path,
-      locale: "en_GB",
-    },
-    twitter: {
-      card: "summary",
-      title: `${data.title} | TMLGuide`,
-      description: data.summary,
-    },
+    ...socialMetadata({ path, title: data.title, description: data.summary }),
   };
 }
 

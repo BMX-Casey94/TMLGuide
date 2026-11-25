@@ -8,8 +8,12 @@ import {
   webPageJsonLd,
   websiteJsonLd,
 } from "./json-ld";
-import { SITE_URL_FALLBACK } from "./routes";
 import { oldestVerifiedOn, verifiedDates } from "./verified-on";
+
+/** The path of a JSON-LD URL, so the assertion does not depend on the ambient origin. */
+function pathOf(url: string): string {
+  return new URL(url).pathname;
+}
 
 describe("websiteJsonLd", () => {
   const markup = websiteJsonLd();
@@ -22,7 +26,10 @@ describe("websiteJsonLd", () => {
   it("describes a WebSite at the site root", () => {
     expect(markup["@context"]).toBe("https://schema.org");
     expect(markup["@type"]).toBe("WebSite");
-    expect(markup.url).toBe(`${SITE_URL_FALLBACK}/`);
+    // The origin is `siteOrigin()`, which `site.test.ts` covers exhaustively;
+    // here the point is that the URL sits at the root of that origin.
+    expect(pathOf(markup.url)).toBe("/");
+    expect(new URL(markup.url).origin).toMatch(/^https?:\/\//);
   });
 
   it("declares the page language", () => {
@@ -57,14 +64,14 @@ describe("webPageJsonLd", () => {
 
   it("describes the page at its own path", () => {
     expect(markup["@type"]).toBe("WebPage");
-    expect(markup.url).toBe(`${SITE_URL_FALLBACK}/about`);
+    expect(pathOf(markup.url)).toBe("/about");
     expect(markup.name).toBe("About this guide");
   });
 
   it("ties the page back to the site node by name and URL", () => {
     expect(markup.isPartOf["@type"]).toBe("WebSite");
     expect(markup.isPartOf.name).toBe("TMLGuide");
-    expect(markup.isPartOf.url).toBe(`${SITE_URL_FALLBACK}/`);
+    expect(pathOf(markup.isPartOf.url)).toBe("/");
   });
 
   it("claims no organisation", () => {

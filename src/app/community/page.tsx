@@ -9,12 +9,17 @@ import { ResourceDirectory } from "@/components/community/resource-directory";
 import { WhatsappDirectory } from "@/components/community/whatsapp-directory";
 import { communityCounts, whatsappSummary } from "@/components/community/community-counts";
 import { partners, resources, whatsappGroups } from "@/data/community";
+import { socialMetadata } from "@/lib/seo/social";
+
+const TITLE = "Community";
+const DESCRIPTION =
+  "Community-run WhatsApp groups, third-party resources and partner offers for Tomorrowland, with every link checked and every partner disclosure printed in full.";
 
 export const metadata: Metadata = {
-  title: "Community",
-  description:
-    "Community-run WhatsApp groups, third-party resources and partner offers for Tomorrowland, with every link checked and every partner disclosure printed in full.",
+  title: TITLE,
+  description: DESCRIPTION,
   alternates: { canonical: "/community" },
+  ...socialMetadata({ path: "/community", title: TITLE, description: DESCRIPTION }),
 };
 
 /**

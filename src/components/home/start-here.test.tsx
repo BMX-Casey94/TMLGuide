@@ -19,8 +19,8 @@ describe("START_HERE", () => {
     expect(START_HERE.map((item) => item.href)).toEqual([
       "/guides/tickets",
       "/tools/sale-timeline",
-      "/tools/budget-calculator",
-      "/tools/pearl-calculator",
+      "/tools/budget",
+      "/tools/pearls",
       "/community",
       "/radio",
     ]);

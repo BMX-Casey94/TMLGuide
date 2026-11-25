@@ -57,22 +57,37 @@ export function isJsonContentType(value: string | null): boolean {
 }
 
 /**
- * Reads a request body while enforcing a byte limit.
+ * The outcome of reading a bounded body.
+ *
+ * `too-large` and `unreadable` are distinct because they are different answers:
+ * one is a `413` telling the caller to send less, the other a `400` telling them
+ * the bytes did not decode. Collapsing them would either mismeasure a size
+ * problem as a syntax error or the reverse.
+ */
+export type LimitedBodyResult =
+  | { readonly ok: true; readonly text: string }
+  | { readonly ok: false; readonly reason: "too-large" | "unreadable" };
+
+/**
+ * Reads a request body while enforcing a byte limit, reporting why it failed.
  *
  * `Content-Length` is checked by the caller first, but a chunked request carries
  * none, so the real size is measured here. Reading stops at the limit instead of
  * buffering the whole body and rejecting it afterwards: a caller who sends a
  * hundred megabytes should not be given the memory to do it.
  *
+ * This is the version routes should prefer. `request.text()` looks equivalent and
+ * is not: it buffers the entire body before anyone can measure it, so a chunked
+ * request of arbitrary length is accepted into memory and only then rejected.
+ * The limit becomes an assertion made after the damage.
+ *
  * The decode is fatal, so a malformed UTF-8 body is a rejection rather than a
  * string with replacement characters that then fails validation for the wrong
  * reason.
- *
- * @returns the body text, or `null` when it could not be read or exceeded `maxBytes`.
  */
-export async function readLimitedBody(request: Request, maxBytes: number): Promise<string | null> {
+export async function readBoundedBody(request: Request, maxBytes: number): Promise<LimitedBodyResult> {
   const body = request.body;
-  if (body === null) return "";
+  if (body === null) return { ok: true, text: "" };
 
   const reader = body.getReader();
   const chunks: Uint8Array[] = [];
@@ -86,13 +101,13 @@ export async function readLimitedBody(request: Request, maxBytes: number): Promi
       total += value.byteLength;
       if (total > maxBytes) {
         await reader.cancel().catch(() => undefined);
-        return null;
+        return { ok: false, reason: "too-large" };
       }
       chunks.push(value);
     }
   } catch {
     await reader.cancel().catch(() => undefined);
-    return null;
+    return { ok: false, reason: "unreadable" };
   }
 
   const joined = new Uint8Array(total);
@@ -103,8 +118,22 @@ export async function readLimitedBody(request: Request, maxBytes: number): Promi
   }
 
   try {
-    return new TextDecoder("utf-8", { fatal: true }).decode(joined);
+    return { ok: true, text: new TextDecoder("utf-8", { fatal: true }).decode(joined) };
   } catch {
-    return null;
+    return { ok: false, reason: "unreadable" };
   }
+}
+
+/**
+ * Reads a request body while enforcing a byte limit.
+ *
+ * Kept for callers that only need "text or nothing". Anything that answers a
+ * different status for a size problem than for a decode problem should call
+ * {@link readBoundedBody} and read the reason.
+ *
+ * @returns the body text, or `null` when it could not be read or exceeded `maxBytes`.
+ */
+export async function readLimitedBody(request: Request, maxBytes: number): Promise<string | null> {
+  const result = await readBoundedBody(request, maxBytes);
+  return result.ok ? result.text : null;
 }

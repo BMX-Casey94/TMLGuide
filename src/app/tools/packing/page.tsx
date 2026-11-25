@@ -7,12 +7,17 @@ import {
 } from "@/components/tools/packing/packing-catalogue";
 import { ToolShell, type ToolSource } from "@/components/tools/tool-shell";
 import { guideRegistry } from "@/content";
+import { socialMetadata } from "@/lib/seo/social";
+
+const TITLE = "Packing list";
+const DESCRIPTION =
+  "An interactive Tomorrowland packing checklist for Belgium, Winter and Brasil, split by campsite or off-site stay, with every official item traced to the page that states it.";
 
 export const metadata: Metadata = {
-  title: "Packing list",
-  description:
-    "An interactive Tomorrowland packing checklist for Belgium, Winter and Brasil, split by campsite or off-site stay, with every official item traced to the page that states it.",
+  title: TITLE,
+  description: DESCRIPTION,
   alternates: { canonical: "/tools/packing" },
+  ...socialMetadata({ path: "/tools/packing", title: TITLE, description: DESCRIPTION }),
 };
 
 

@@ -5,12 +5,17 @@ import { ToolShell, type ToolSource } from "@/components/tools/tool-shell";
 import { addOns, saleWindows as belgiumSaleWindows, tickets as belgiumTickets } from "@/data/belgium";
 import { winterFacts, winterTickets } from "@/data/winter";
 import { brasilTickets } from "@/data/brasil";
+import { socialMetadata } from "@/lib/seo/social";
+
+const TITLE = "Festival budget calculator";
+const DESCRIPTION =
+  "An independent Tomorrowland budget calculator for Belgium, Winter and Brasil. Add tickets, accommodation, travel, food and extras for one person or a group, in euros or reais, with a category breakdown.";
 
 export const metadata: Metadata = {
-  title: "Festival budget calculator",
-  description:
-    "An independent Tomorrowland budget calculator for Belgium, Winter and Brasil. Add tickets, accommodation, travel, food and extras for one person or a group, in euros or reais, with a category breakdown.",
+  title: TITLE,
+  description: DESCRIPTION,
   alternates: { canonical: "/tools/budget" },
+  ...socialMetadata({ path: "/tools/budget", title: TITLE, description: DESCRIPTION }),
 };
 
 /**

@@ -2,12 +2,17 @@ import type { Metadata } from "next";
 import { PearlCalculator } from "@/components/tools/pearl-calculator";
 import { ToolShell, type ToolSource } from "@/components/tools/tool-shell";
 import { sharedData } from "@/data/shared";
+import { socialMetadata } from "@/lib/seo/social";
+
+const TITLE = "Pearl calculator";
+const DESCRIPTION =
+  "Convert between euros and Tomorrowland Pearls at a rate you supply. The 2027 Pearl rate is not published, so this tool asks for it rather than assuming one.";
 
 export const metadata: Metadata = {
-  title: "Pearl calculator",
-  description:
-    "Convert between euros and Tomorrowland Pearls at a rate you supply. The 2027 Pearl rate is not published, so this tool asks for it rather than assuming one.",
+  title: TITLE,
+  description: DESCRIPTION,
   alternates: { canonical: "/tools/pearls" },
+  ...socialMetadata({ path: "/tools/pearls", title: TITLE, description: DESCRIPTION }),
 };
 
 /**

@@ -11,6 +11,7 @@ import { breadcrumbListJsonLd, serialiseJsonLd } from "@/components/guides/json-
 import { CheckSeparator } from "@/components/ui/source-check";
 import { faqAnchor, type FaqCollection } from "@/lib/search/anchors";
 import { plainMarkdown } from "@/lib/search/sources/faqs";
+import { socialMetadata } from "@/lib/seo/social";
 import "@/components/guides/guides.css";
 
 const TITLE = "Guides";
@@ -21,19 +22,7 @@ export const metadata: Metadata = {
   title: TITLE,
   description: DESCRIPTION,
   alternates: { canonical: "/guides" },
-  openGraph: {
-    type: "website",
-    siteName: "TMLGuide",
-    title: `${TITLE} | TMLGuide`,
-    description: DESCRIPTION,
-    url: "/guides",
-    locale: "en_GB",
-  },
-  twitter: {
-    card: "summary",
-    title: `${TITLE} | TMLGuide`,
-    description: DESCRIPTION,
-  },
+  ...socialMetadata({ path: "/guides", title: TITLE, description: DESCRIPTION }),
 };
 
 /** The three editions, in the order the hub presents them. */

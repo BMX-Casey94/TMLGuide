@@ -8,6 +8,7 @@ import { NavigationProgress } from "@/components/loading";
 import { SwRegister } from "@/components/pwa/sw-register";
 import { SearchDialog } from "@/components/search";
 import { SiteShell } from "@/components/shell";
+import { siteOrigin } from "@/lib/seo/site";
 import "./globals.css";
 
 const fraunces = Fraunces({
@@ -31,19 +32,35 @@ const jetbrains = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"),
+  /*
+    One origin for every absolute URL the site emits. `siteOrigin()` validates
+    `NEXT_PUBLIC_SITE_URL` and drops any path, so a canonical tag, an Open Graph
+    URL and the sitemap cannot disagree; a value such as
+    `https://tml.guide/guides` would otherwise have silently become the base for
+    every relative path on the site.
+  */
+  metadataBase: new URL(siteOrigin()),
   title: {
     default: "TMLGuide — Independent Tomorrowland guide",
     template: "%s | TMLGuide",
   },
   description:
     "An independent, fan-made guide to Tomorrowland: tickets, sale dates, DreamVille, travel, add-ons and Pearls, with every fact sourced and dated.",
-  alternates: {
-    languages: {
-      "en-GB": "/",
-      "x-default": "/",
-    },
-  },
+  /*
+    No `alternates.languages` here.
+
+    A block declaring `en-GB` and `x-default` both as "/" was removed: every page
+    overrides `alternates` with its own canonical, so that block never rendered
+    once (checked against all 60 prerendered documents — zero `hreflang` tags),
+    and had it rendered it would have been wrong, because it marked every page's
+    English alternate as the home page.
+
+    hreflang arrives with the locale routing: once `/nl`, `/fr` and the rest are
+    built, each page declares its own set pointing at its own translations. The
+    `<html lang="en-GB">` attribute below already declares the document language,
+    which is what a single-locale site needs. `src/lib/i18n/locales.ts` holds the
+    registry those routes will be generated from.
+  */
 };
 
 export const viewport: Viewport = {

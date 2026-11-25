@@ -86,6 +86,8 @@ beforeEach(() => {
   vi.stubEnv("NODE_ENV", "production");
   vi.stubEnv("CSP_REPORT_URI", "");
   vi.stubEnv("NEXT_PUBLIC_ANALYTICS_ENDPOINT", "");
+  vi.stubEnv("NEXT_PUBLIC_TURNSTILE_SITE_KEY", "");
+  vi.stubEnv("TURNSTILE_SECRET_KEY", "");
 });
 
 afterEach(() => {
@@ -263,6 +265,68 @@ describe("cacheability", () => {
   it("leaves a non-document response's cache headers alone", () => {
     const { responseHeaders } = run(makeRequest("/api/contact", { accept: "application/json" }));
     expect(responseHeaders.get("Cache-Control")).toBeNull();
+  });
+});
+
+describe("Cloudflare Turnstile", () => {
+  it("keeps frame-src at 'none' when no site key is configured", () => {
+    vi.stubEnv("NEXT_PUBLIC_TURNSTILE_SITE_KEY", "");
+    vi.stubEnv("TURNSTILE_SECRET_KEY", "");
+    const csp = run(makeRequest("/ask", { "sec-fetch-dest": "document" })).responseHeaders.get(CSP_HEADER) ?? "";
+    expect(csp).toContain("frame-src 'none'");
+    expect(csp).not.toContain("challenges.cloudflare.com");
+  });
+
+  it("admits Cloudflare to script-src and frame-src when a site key is configured", () => {
+    vi.stubEnv("NEXT_PUBLIC_TURNSTILE_SITE_KEY", "0x4AAAAAAABkMYinukE8nzY");
+    const csp = run(makeRequest("/ask", { "sec-fetch-dest": "document" })).responseHeaders.get(CSP_HEADER) ?? "";
+    const directives = new Map(
+      csp.split(";").map((part) => {
+        const [name, ...sources] = part.trim().split(/\s+/);
+        return [name ?? "", sources] as const;
+      }),
+    );
+    expect(directives.get("frame-src")).toEqual(["https://challenges.cloudflare.com"]);
+    expect(directives.get("script-src")).toContain("https://challenges.cloudflare.com");
+    // The exemption must not relax anything else.
+    expect(directives.get("connect-src")).toEqual(["'self'"]);
+    expect(directives.get("default-src")).toEqual(["'self'"]);
+    expect(directives.get("script-src")).not.toContain("'unsafe-inline'");
+  });
+
+  it("cannot be switched on by a request header", () => {
+    /*
+      The exemption is read from the environment only. A caller that sends the
+      variable name, or a header shaped like it, must not be able to widen its own
+      policy.
+    */
+    vi.stubEnv("NEXT_PUBLIC_TURNSTILE_SITE_KEY", "");
+    const csp =
+      run(
+        makeRequest("/ask", {
+          "sec-fetch-dest": "document",
+          "next_public_turnstile_site_key": "0x4AAAAAAABkMYinukE8nzY",
+          "x-turnstile": "1",
+        }),
+      ).responseHeaders.get(CSP_HEADER) ?? "";
+    expect(csp).toContain("frame-src 'none'");
+  });
+
+  it("ignores a malformed site key, so an injected directive cannot reach the header", () => {
+    vi.stubEnv("NEXT_PUBLIC_TURNSTILE_SITE_KEY", "key'; frame-src * '");
+    const csp = run(makeRequest("/ask", { "sec-fetch-dest": "document" })).responseHeaders.get(CSP_HEADER) ?? "";
+    expect(csp).toContain("frame-src 'none'");
+    expect(csp).not.toMatch(/frame-src \*/);
+  });
+
+  it("applies the exemption to every document route, not only /ask", () => {
+    // The widget is only on /ask today, but a policy that differed per route
+    // would be a source of surprises; the decision is deployment-wide.
+    vi.stubEnv("NEXT_PUBLIC_TURNSTILE_SITE_KEY", "0x4AAAAAAABkMYinukE8nzY");
+    for (const path of ["/", "/about", "/community", "/guides"]) {
+      const csp = run(makeRequest(path, { "sec-fetch-dest": "document" })).responseHeaders.get(CSP_HEADER) ?? "";
+      expect(csp, path).toContain("https://challenges.cloudflare.com");
+    }
   });
 });
 

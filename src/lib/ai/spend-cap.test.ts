@@ -18,6 +18,7 @@ import {
   describeSpendLedger,
   hasSharedLedger,
   isCapImplausible,
+  normaliseReservationPence,
   readCapPence,
   setSpendLedgerForTesting,
   type SpendLedger,
@@ -159,6 +160,51 @@ describe("InMemorySpendLedger", () => {
     expect(await ledger.spent()).toBe(0);
   });
 
+  it("refuses an infinite reservation rather than treating it as free", async () => {
+    /*
+      Regression: a non-finite amount used to be floored to 0, so an estimate that
+      overflowed to Infinity — or a provider reporting an absurd token count —
+      reserved nothing and the call it described cost nothing against the cap. An
+      infinite reservation must exceed the cap, not vanish.
+    */
+    for (const pence of [Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY]) {
+      const result = await ledger.reserve(pence);
+      if (pence === Number.POSITIVE_INFINITY) {
+        expect(result.ok, String(pence)).toBe(false);
+        if (result.ok) continue;
+        expect(result.code).toBe("spend-cap");
+      } else {
+        // Negative infinity is not a cost; it is treated as zero.
+        expect(result.ok, String(pence)).toBe(true);
+      }
+    }
+    expect(await ledger.spent()).toBe(0);
+  });
+
+  it("refuses an infinite reservation even against an enormous cap", async () => {
+    const huge = new InMemorySpendLedger({ capPence: Number.MAX_SAFE_INTEGER });
+    const result = await huge.reserve(Number.POSITIVE_INFINITY);
+    expect(result.ok).toBe(false);
+  });
+
+  it("normalises a reservation without ever turning a large cost into a free one", () => {
+    expect(normaliseReservationPence(0)).toBe(0);
+    expect(normaliseReservationPence(0.4)).toBe(1);
+    expect(normaliseReservationPence(Number.NaN)).toBe(0);
+    expect(normaliseReservationPence(-5)).toBe(0);
+    expect(normaliseReservationPence(Number.POSITIVE_INFINITY)).toBe(Number.POSITIVE_INFINITY);
+  });
+
+  it("does not let a non-finite reconciliation invent budget", async () => {
+    await ledger.reserve(500);
+    await ledger.reconcile(Number.POSITIVE_INFINITY, 0);
+    // The reservation is unchanged: an infinite release would hand back an
+    // unbounded amount of budget.
+    expect(await ledger.spent()).toBe(500);
+    await ledger.reconcile(500, Number.NaN);
+    expect(await ledger.spent()).toBe(500);
+  });
+
   it("rounds a fractional reservation up, never down", async () => {
     await ledger.reserve(0.4);
     expect(await ledger.spent()).toBe(1);
@@ -237,6 +283,23 @@ describe("RedisSpendLedger", () => {
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.code).toBe("ledger-unavailable");
+  });
+
+  it("answers spend-cap, not ledger-unavailable, for an infinite reservation", async () => {
+    /*
+      Regression: an `INCRBY Infinity` is rejected by Redis, which this adapter
+      reports as `ledger-unavailable`. The route turns that into a `503` inviting
+      a retry, so the same unstoppable cost would keep producing retries. The cap
+      is the honest reason and the reservation never leaves the process.
+    */
+    const { state, fetchImpl } = upstash(500);
+    const ledger = new RedisSpendLedger({ url: "https://redis.test", token: "t", capPence: 1000, fetchImpl: fetchImpl as unknown as typeof fetch });
+    const result = await ledger.reserve(Number.POSITIVE_INFINITY);
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.code).toBe("spend-cap");
+    // No write was attempted: the counter is untouched.
+    expect(state.calls.some((call) => call[0] === "INCRBY")).toBe(false);
   });
 
   it("treats an Upstash error envelope as unavailable", async () => {

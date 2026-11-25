@@ -27,6 +27,7 @@ import {
   buildSecurityHeaders,
   generateNonce,
   isDevelopment,
+  isTurnstileEnabled,
   CSP_HEADER,
   NONCE_HEADER,
 } from "@/lib/security/csp";
@@ -117,6 +118,14 @@ export function proxy(request: NextRequest): NextResponse {
     reportToUrl: reportToUrl(),
     scriptHashes,
     connectSrc: connectOrigins(),
+    /*
+      The Turnstile exemption is applied from the deployment's own configuration,
+      never from anything in the request. A request cannot ask for its own
+      `script-src` and `frame-src` to be widened: the flag is read from the
+      environment here, and `readTurnstileSiteKey` requires both the public key
+      and the secret before it reports the challenge as in use.
+    */
+    turnstile: isTurnstileEnabled(),
   });
 
   // The request copy carries the nonce and nothing else. Next only reads the

@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { AskGuide } from "@/components/ai/ask-guide";
+import { readTurnstileSiteKey } from "@/lib/security/csp";
+import { socialMetadata } from "@/lib/seo/social";
 
 /**
  * `/ask` — "Ask the guide".
@@ -27,19 +29,7 @@ export const metadata: Metadata = {
   title: TITLE,
   description: DESCRIPTION,
   alternates: { canonical: PATH },
-  openGraph: {
-    type: "website",
-    siteName: "TMLGuide",
-    title: `${TITLE} | TMLGuide`,
-    description: DESCRIPTION,
-    url: PATH,
-    locale: "en_GB",
-  },
-  twitter: {
-    card: "summary",
-    title: `${TITLE} | TMLGuide`,
-    description: DESCRIPTION,
-  },
+  ...socialMetadata({ path: PATH, title: TITLE, description: DESCRIPTION }),
 };
 
 /**
@@ -48,10 +38,14 @@ export const metadata: Metadata = {
  * Read at module scope so it is inlined at build time. Passing it down rather
  * than letting the client component read `process.env` keeps the environment out
  * of the browser bundle and makes the widget's presence a build-time decision.
+ *
+ * `readTurnstileSiteKey` validates the value, so a malformed key renders nothing
+ * rather than a broken widget — and, more importantly, the proxy and this page
+ * derive the same answer from the same function, so the policy exemption and the
+ * widget cannot disagree about whether the challenge is in use.
  */
 function turnstileSiteKey(): string | undefined {
-  const key = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY?.trim();
-  return key ? key : undefined;
+  return readTurnstileSiteKey() ?? undefined;
 }
 
 export default function AskPage() {

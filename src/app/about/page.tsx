@@ -8,6 +8,7 @@ import { formatLongDate } from "@/components/home/format";
 import { serialiseJsonLd, webPageJsonLd } from "@/components/home/json-ld";
 import { OFFICIAL_HOST_ROLES, citedSourceUrls } from "@/components/home/source-hosts";
 import { oldestVerifiedOn } from "@/components/home/verified-on";
+import { socialMetadata } from "@/lib/seo/social";
 import "@/components/home/home.css";
 import "./about.css";
 
@@ -20,19 +21,7 @@ export const metadata: Metadata = {
   title: TITLE,
   description: DESCRIPTION,
   alternates: { canonical: PATH },
-  openGraph: {
-    type: "website",
-    siteName: "TMLGuide",
-    title: `${TITLE} | TMLGuide`,
-    description: DESCRIPTION,
-    url: PATH,
-    locale: "en_GB",
-  },
-  twitter: {
-    card: "summary",
-    title: `${TITLE} | TMLGuide`,
-    description: DESCRIPTION,
-  },
+  ...socialMetadata({ path: PATH, title: TITLE, description: DESCRIPTION }),
 };
 
 /** Every source URL the data cites, so the host table can be checked against it. */

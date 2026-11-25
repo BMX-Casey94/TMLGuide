@@ -47,6 +47,18 @@ export const MFA_FACTOR_TYPE = "totp";
 /** Timeout for the Auth call. A hung identity provider must not hold a request open. */
 const AUTH_TIMEOUT_MS = 8_000;
 
+/**
+ * Longest bearer token accepted, in characters.
+ *
+ * A JWT for this project is well under 2 kB. The cap exists because the token is
+ * forwarded verbatim in a header to the identity provider: an 8 MB "token" would
+ * be a cheap way to make the server build and send a huge request, and the
+ * identity provider would reject it after the cost had been paid. A value beyond
+ * the cap is refused before any network call, as a malformed credential rather
+ * than an unavailable service.
+ */
+export const MAX_TOKEN_LENGTH = 4096;
+
 /** Why a session was refused. Reported so an operator can act on it. */
 export type AdminAuthFailureReason =
   | "missing-token"
@@ -247,6 +259,9 @@ export async function requireAdminSession(
 ): Promise<AdminSessionResult> {
   const token = readBearerToken(request.headers);
   if (token === null) return adminAuthFailure("missing-token");
+  // Refused before the identity provider is contacted, so an oversized header
+  // cannot make the server build and send a huge request.
+  if (token.length > MAX_TOKEN_LENGTH) return adminAuthFailure("invalid-token");
 
   const config = readSupabasePublicConfig(options.env);
   if (config === null) return adminAuthFailure("not-configured");
@@ -263,6 +278,14 @@ export async function requireAdminSession(
         Accept: "application/json",
       },
       cache: "no-store",
+      /*
+        Redirects are never followed. The bearer token is in an `Authorization`
+        header, and a `fetch` that follows a `302` re-sends headers to whatever
+        `Location` names. The URL here is built from `NEXT_PUBLIC_SUPABASE_URL`
+        and cannot be redirected by a caller, but a misconfigured or compromised
+        project URL should not be able to hand the token to a third host.
+      */
+      redirect: "error",
       signal: AbortSignal.timeout(AUTH_TIMEOUT_MS),
     });
   } catch (error) {

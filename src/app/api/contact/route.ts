@@ -23,11 +23,8 @@
 
 import { NextResponse } from "next/server";
 import { getAllowedOrigins } from "@/lib/security/allowed-origins";
-import {
-  getTrustedClientIp,
-  hashClientIp,
-  isIpHashSaltConfigured,
-} from "@/lib/security/client-ip";
+import { getTrustedClientIp, hashClientIp, isIpHashSaltConfigured } from "@/lib/security/client-ip";
+import { readBoundedBody } from "@/lib/http/json";
 import {
   contactSubmissionSchema,
   fieldErrors,
@@ -233,17 +230,16 @@ export async function POST(request: Request): Promise<NextResponse> {
   }
 
   // 6. Read, then measure the real body. A chunked request carries no
-  // Content-Length, so the declared check above cannot be relied on alone.
-  let raw: string;
-  try {
-    raw = await request.text();
-  } catch {
+  // Content-Length, so the declared check above cannot be relied on alone, and
+  // reading stops at the cap rather than buffering an unbounded body first.
+  const body = await readBoundedBody(request, MAX_BODY_BYTES);
+  if (!body.ok) {
+    if (body.reason === "too-large") {
+      return jsonResponse({ error: "Request body is too large" }, 413);
+    }
     return jsonResponse({ error: "Could not read the request body" }, 400);
   }
-
-  if (new TextEncoder().encode(raw).length > MAX_BODY_BYTES) {
-    return jsonResponse({ error: "Request body is too large" }, 413);
-  }
+  const raw = body.text;
 
   let payload: unknown;
   try {

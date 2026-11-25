@@ -1,13 +1,18 @@
 import type { Metadata } from "next";
 import { ToolCard, type ToolCardStatus } from "@/components/tools/tool-card";
 import type { Icon3DName } from "@/components/ui/icon-3d";
+import { socialMetadata } from "@/lib/seo/social";
 import "@/components/tools/tools.css";
 
+const TITLE = "Tools";
+const DESCRIPTION =
+  "Independent planning tools for Tomorrowland: budget and Pearl calculators, sale timeline with calendar export, journey planner, packing list and My Trip sheet. Every figure is sourced and dated.";
+
 export const metadata: Metadata = {
-  title: "Tools",
-  description:
-    "Independent planning tools for Tomorrowland: budget and Pearl calculators, sale timeline with calendar export, journey planner, packing list and My Trip sheet. Every figure is sourced and dated.",
+  title: TITLE,
+  description: DESCRIPTION,
   alternates: { canonical: "/tools" },
+  ...socialMetadata({ path: "/tools", title: TITLE, description: DESCRIPTION }),
 };
 
 interface ToolEntry {

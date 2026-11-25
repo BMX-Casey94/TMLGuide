@@ -13,13 +13,24 @@ import {
   orderRadioChannels,
   orderRadioMilestones,
 } from "./radio-facts";
+import { socialMetadata } from "@/lib/seo/social";
 import "./radio-page.css";
 
+/*
+  "Live stream" is what distinguishes this page from the guide chapter at
+  /guides/general/radio, which explains the station's history and presenters.
+  Both were titled "One World Radio | TMLGuide", so they competed for one
+  result; this is the page a reader wants when they search for a way to listen.
+*/
+const TITLE = "One World Radio live stream";
+const DESCRIPTION =
+  "How to listen to One World Radio, Tomorrowland's own station: the official stream, the apps and services that carry it, and which countries have DAB+, FM or syndicated coverage.";
+
 export const metadata: Metadata = {
-  title: "One World Radio",
-  description:
-    "How to listen to One World Radio, Tomorrowland's own station: the official stream, the apps and services that carry it, and which countries have DAB+, FM or syndicated coverage.",
+  title: TITLE,
+  description: DESCRIPTION,
   alternates: { canonical: "/radio" },
+  ...socialMetadata({ path: "/radio", title: TITLE, description: DESCRIPTION }),
 };
 
 /* Server rendered: the panel is the only client component on the page. */

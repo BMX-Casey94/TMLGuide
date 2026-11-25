@@ -12,11 +12,11 @@ import {
   FORWARDED_FOR_HEADER,
   getTrustedClientIp,
   hashClientIp,
+  IGNORED_PROXY_COUNT_HEADER,
   isIpHashSaltConfigured,
   isPlausibleIp,
   normaliseIp,
   pickFromChain,
-  TRUSTED_PROXY_COUNT_HEADER,
   UNKNOWN_CLIENT_IP,
 } from "./client-ip";
 
@@ -45,7 +45,14 @@ describe("isPlausibleIp", () => {
 
   it("accepts compressed and full IPv6", () => {
     for (const ip of ["::1", "2001:db8::1", "fe80::1", "2001:0db8:0000:0000:0000:0000:0000:0001"]) {
-      expect(isPlausibleIp(ip)).toBe(true);
+      expect(isPlausibleIp(ip), ip).toBe(true);
+    }
+  });
+
+  it("rejects an IPv6 literal that does not expand to eight groups", () => {
+    // The old structural check accepted these: it only looked at the characters.
+    for (const ip of ["1:2:3", "1:2:3:4:5:6:7", ":::", "1::2::3", "12345::1", "::gg"]) {
+      expect(isPlausibleIp(ip), ip).toBe(false);
     }
   });
 
@@ -78,8 +85,18 @@ describe("normaliseIp", () => {
     expect(normaliseIp("[2001:db8::1]")).toBe("2001:db8::1");
   });
 
-  it("lower-cases IPv6 so two spellings of one address agree", () => {
+  it("lower-cases and compresses IPv6 so two spellings of one address agree", () => {
     expect(normaliseIp("2001:DB8::1")).toBe("2001:db8::1");
+    expect(normaliseIp("2001:0db8:0000:0000:0000:0000:0000:0001")).toBe("2001:db8::1");
+    expect(normaliseIp("2001:db8:0:0:1:0:0:1")).toBe("2001:db8::1:0:0:1");
+  });
+
+  it("collapses the mapped forms of one IPv4 address to one key", () => {
+    // A dual-stack resolver can report either spelling. Both are one client.
+    const forms = ["::ffff:127.0.0.1", "::ffff:7f00:1", "0:0:0:0:0:ffff:7f00:1"];
+    const normalised = forms.map((form) => normaliseIp(form));
+    expect(new Set(normalised).size).toBe(1);
+    expect(normalised[0]).toBe("::ffff:7f00:1");
   });
 
   it("does not split a bare IPv6 address on its own colons", () => {
@@ -174,27 +191,55 @@ describe("getTrustedClientIp", () => {
     expect(ip).toBe("203.0.113.9");
   });
 
-  it("honours a declared trusted proxy count", () => {
-    const ip = getTrustedClientIp(
-      headers({
-        "x-forwarded-for": "203.0.113.9, 10.0.0.1, 10.0.0.2",
-        [TRUSTED_PROXY_COUNT_HEADER]: "3",
-      }),
-    );
-    expect(ip).toBe("203.0.113.9");
-  });
-
   it("honours TRUSTED_PROXY_COUNT from the environment", () => {
     process.env.TRUSTED_PROXY_COUNT = "2";
     const ip = getTrustedClientIp(headers({ "x-forwarded-for": "203.0.113.9, 10.0.0.2" }));
     expect(ip).toBe("203.0.113.9");
   });
 
-  it("ignores an out-of-range proxy count header", () => {
-    const ip = getTrustedClientIp(
-      headers({ "x-forwarded-for": "1.2.3.4, 203.0.113.9", [TRUSTED_PROXY_COUNT_HEADER]: "999" }),
+  it("ignores a client-supplied proxy count header, which would be a rate-limit bypass", () => {
+    /*
+      Regression: the count used to be readable from `x-trusted-proxy-count`. A
+      caller could send `: 2` with a fabricated `x-forwarded-for` chain and be
+      counted under an address of their choosing, resetting the limit whenever
+      they liked. Only the operator's environment decides the count.
+    */
+    const spoofed = getTrustedClientIp(
+      headers({
+        "x-forwarded-for": "1.1.1.1, 2.2.2.2",
+        [IGNORED_PROXY_COUNT_HEADER]: "2",
+      }),
     );
-    expect(ip).toBe("203.0.113.9");
+    // One trusted proxy means the right-most entry, which is the one the proxy added.
+    expect(spoofed).toBe("2.2.2.2");
+
+    for (const value of ["1", "3", "10", "999", "-1", "abc"]) {
+      expect(
+        getTrustedClientIp(
+          headers({ "x-forwarded-for": "1.1.1.1, 2.2.2.2", [IGNORED_PROXY_COUNT_HEADER]: value }),
+        ),
+        value,
+      ).toBe("2.2.2.2");
+    }
+  });
+
+  it("cannot be steered onto a spoofed address even with a header and a long chain", () => {
+    // The attack in full: rotate the apparent address by prepending a new one and
+    // claiming more trusted proxies each time.
+    const seen = new Set<string>();
+    for (let hop = 0; hop < 5; hop += 1) {
+      const chain = Array.from({ length: hop + 1 }, (_unused, index) => `9.9.9.${index}`).join(", ");
+      seen.add(
+        getTrustedClientIp(
+          headers({
+            "x-forwarded-for": `${chain}, 203.0.113.9`,
+            [IGNORED_PROXY_COUNT_HEADER]: String(hop + 2),
+          }),
+        ),
+      );
+    }
+    // Every attempt lands on the same address, so every attempt shares one bucket.
+    expect([...seen]).toEqual(["203.0.113.9"]);
   });
 
   it("returns the sentinel when no header is present, never an empty string", () => {
@@ -277,6 +322,37 @@ describe("hashClientIp", () => {
     const a = await hashClientIp(UNKNOWN_CLIENT_IP, "salt");
     const b = await hashClientIp(UNKNOWN_CLIENT_IP, "salt");
     expect(a).toBe(b);
+  });
+
+  it("groups a rotating IPv6 client by its /64, so re-spelling cannot escape a limit", async () => {
+    /*
+      Regression: the hash was taken over the full address. A residential IPv6
+      customer is delegated a /64 and can present a new address on every request,
+      which gave them an unlimited supply of rate-limit buckets.
+    */
+    const first = await hashClientIp("2001:db8:1234:5678:aaaa:bbbb:cccc:dddd", "salt");
+    const second = await hashClientIp("2001:db8:1234:5678:1111:2222:3333:4444", "salt");
+    expect(first).toBe(second);
+  });
+
+  it("keeps different IPv6 /64s apart", async () => {
+    const first = await hashClientIp("2001:db8:1234:5678::1", "salt");
+    const second = await hashClientIp("2001:db8:1234:9999::1", "salt");
+    expect(first).not.toBe(second);
+  });
+
+  it("treats the mapped forms of one IPv4 client as one bucket", async () => {
+    const plain = await hashClientIp("127.0.0.1", "salt");
+    const mapped = await hashClientIp("::ffff:127.0.0.1", "salt");
+    const mappedHex = await hashClientIp("::ffff:7f00:1", "salt");
+    expect(mapped).toBe(plain);
+    expect(mappedHex).toBe(plain);
+  });
+
+  it("still separates two different IPv4 clients", async () => {
+    const first = await hashClientIp("203.0.113.9", "salt");
+    const second = await hashClientIp("203.0.113.10", "salt");
+    expect(first).not.toBe(second);
   });
 });
 

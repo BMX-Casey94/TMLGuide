@@ -32,6 +32,8 @@
  *    is no cache, no disk write, no embedding, and no log of the body.
  */
 
+import { isBlockedIpAddress } from "@/lib/security/ip-address";
+
 /** Hosts the compliance document permits, exactly as written there. */
 export const ALLOWED_HOSTS: ReadonlySet<string> = new Set([
   "belgium.tomorrowland.com",
@@ -88,14 +90,59 @@ export const MAX_EXCERPT_CHARS = 1400;
 /**
  * True when a pathname is denied on any host.
  *
+ * The comparison is made against every spelling the far end might read as the
+ * denied path, not just the literal one. A `robots.txt` `Disallow: /tickets` is
+ * enforced by the server against the *decoded* path, so `/%74ickets`,
+ * `//tickets` and `/tickets/.` all reach the same handler. Checking only the raw
+ * string would let a citation past the deny-list and still hit the page the
+ * compliance document forbids fetching.
+ *
  * Exported because the test suite exercises the rule directly, and because a
  * future caller (a sitemap checker, say) should be able to reuse the same answer
  * rather than reimplement it.
  */
 export function isDeniedPath(pathname: string): boolean {
-  const lower = pathname.toLowerCase();
-  if (DENIED_UNDER_HC.test(lower)) return true;
-  return DENIED_ROOTS.some((root) => lower === root || lower.startsWith(`${root}/`));
+  for (const candidate of pathSpellings(pathname)) {
+    const lower = candidate.toLowerCase();
+    if (DENIED_UNDER_HC.test(lower)) return true;
+    if (DENIED_ROOTS.some((root) => lower === root || lower.startsWith(`${root}/`))) return true;
+  }
+  return false;
+}
+
+/**
+ * The forms of a path a server might act on.
+ *
+ * Percent-decoding is attempted rather than assumed, because a malformed escape
+ * makes `decodeURIComponent` throw and the raw form is then the only one there
+ * is. Repeated slashes and `.` segments are collapsed because that is what a
+ * path normaliser does before routing.
+ */
+function pathSpellings(pathname: string): readonly string[] {
+  const spellings = new Set<string>([pathname]);
+
+  let decoded = pathname;
+  // Two passes, so a double-encoded `%2574ickets` is also seen as `/tickets`.
+  for (let pass = 0; pass < 2; pass += 1) {
+    let next: string;
+    try {
+      next = decodeURIComponent(decoded);
+    } catch {
+      break;
+    }
+    if (next === decoded) break;
+    decoded = next;
+    spellings.add(decoded);
+  }
+
+  for (const value of [...spellings]) {
+    // `//tickets` and `/./tickets` are `/tickets` to a router.
+    const collapsed = value.replace(/\/{2,}/g, "/").replace(/\/\.\//g, "/");
+    spellings.add(collapsed);
+    spellings.add(collapsed.replace(/\/\.$/, "/"));
+  }
+
+  return [...spellings];
 }
 
 /** True when a hostname is on the allow-list. Exact comparison, always. */
@@ -130,50 +177,20 @@ export function permittedTarget(raw: string): string | null {
 /**
  * True for an address the fetcher must never reach.
  *
- * IPv4 private, loopback, link-local (including the cloud metadata address
- * `169.254.169.254`), carrier-grade NAT, benchmarking and multicast ranges are
- * all refused, as are their IPv6 equivalents. An address in an unknown or
- * unparseable form is treated as unsafe: this is a deny-list with a fail-closed
- * default, not a permit-list.
+ * Delegates to {@link isBlockedIpAddress} in `@/lib/security/ip-address`, so the
+ * fetcher and every other consumer share one parser. That matters for the
+ * mapped, IPv4-compatible, NAT64 and 6to4 shapes, which carry an IPv4 address
+ * inside an IPv6 one: a second copy of this logic is how one consumer ends up
+ * blocking `::ffff:127.0.0.1` but admitting `::ffff:7f00:1`, which are the same
+ * address.
+ *
+ * Hex and octal spellings of IPv4 (`0x7f000001`, `0177.0.0.1`, `2130706433`)
+ * never arrive here as such: the WHATWG URL parser canonicalises all of them to
+ * `127.0.0.1` before the allow-list or a resolver sees them.
  */
 export function isBlockedAddress(address: string): boolean {
-  const value = address.trim().toLowerCase();
-  if (value === "") return true;
-
-  // IPv6 forms, including the mapped/compatible 6to4 shapes that carry an IPv4
-  // address inside them.
-  if (value.includes(":")) {
-    const bare = value.startsWith("[") ? value.slice(1, value.indexOf("]")) : value;
-    if (bare === "::1" || bare === "::") return true;
-    if (bare.startsWith("fe80")) return true; // link-local
-    if (bare.startsWith("fc") || bare.startsWith("fd")) return true; // unique local
-    if (bare.startsWith("ff")) return true; // multicast
-    const mapped = /^::ffff:(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$/.exec(bare);
-    if (mapped !== null) return isBlockedAddress(mapped[1] ?? "");
-    return false;
-  }
-
-  const parts = value.split(".").map((part) => Number.parseInt(part, 10));
-  if (parts.length !== 4 || parts.some((part) => !Number.isInteger(part) || part < 0 || part > 255)) {
-    // Not a dotted quad at all. A hostname reaching this function has already
-    // passed the allow-list; anything else is refused rather than guessed at.
-    return true;
-  }
-
-  const [a = 0, b = 0] = parts;
-  if (a === 0) return true; // "this network"
-  if (a === 10) return true; // private
-  if (a === 127) return true; // loopback
-  if (a === 169 && b === 254) return true; // link-local, incl. cloud metadata
-  if (a === 172 && b >= 16 && b <= 31) return true; // private
-  if (a === 192 && b === 168) return true; // private
-  if (a === 192 && b === 0) return true; // IETF protocol assignments
-  if (a === 198 && (b === 18 || b === 19)) return true; // benchmarking
-  if (a >= 224) return true; // multicast and reserved
-
-  return false;
+  return isBlockedIpAddress(address);
 }
-
 /** Resolves a hostname to addresses. Injectable so a test never touches DNS. */
 export type HostResolver = (hostname: string) => Promise<readonly string[]>;
 

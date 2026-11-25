@@ -3,12 +3,17 @@ import type { EditionTripData } from "@/components/tools/my-trip/trip-logic";
 import { MyTrip } from "@/components/tools/my-trip/my-trip";
 import { ToolShell, type ToolSource } from "@/components/tools/tool-shell";
 import { buildTripData } from "./trip-data";
+import { socialMetadata } from "@/lib/seo/social";
+
+const TITLE = "My Trip";
+const DESCRIPTION =
+  "Keep one private trip sheet for Tomorrowland in your browser: the weekend, your ticket, where you are staying and the sale dates, with nothing sent anywhere.";
 
 export const metadata: Metadata = {
-  title: "My Trip",
-  description:
-    "Keep one private trip sheet for Tomorrowland in your browser: the weekend, your ticket, where you are staying and the sale dates, with nothing sent anywhere.",
+  title: TITLE,
+  description: DESCRIPTION,
   alternates: { canonical: "/tools/my-trip" },
+  ...socialMetadata({ path: "/tools/my-trip", title: TITLE, description: DESCRIPTION }),
 };
 
 /**

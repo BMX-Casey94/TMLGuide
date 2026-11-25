@@ -17,11 +17,15 @@ import {
   generateNonce,
   HSTS_MAX_AGE_SECONDS,
   isDevelopment,
+  describeTurnstile,
+  isTurnstileEnabled,
   NONCE_BYTE_LENGTH,
   normaliseConnectOrigin,
   ONE_WORLD_RADIO_STREAM_ORIGIN,
   PERMISSIONS_POLICY,
+  readTurnstileSiteKey,
   toCspHashSource,
+  TURNSTILE_ORIGIN,
 } from "./csp";
 
 /** Splits a policy into `directive -> sources`, for precise assertions. */
@@ -115,6 +119,60 @@ describe("buildCspHeader", () => {
     expect(parsed.get("default-src")).toEqual(["'self'"]);
   });
 
+  it("keeps frame-src at 'none' by default, so no third party can be framed", () => {
+    // The default matters more than the opt-in: a policy that admitted a frame
+    // origin unless told otherwise would make the exemption the baseline.
+    expect(parse(buildCspHeader(BASE)).get("frame-src")).toEqual(["'none'"]);
+    expect(parse(buildCspHeader({ ...BASE, turnstile: false })).get("frame-src")).toEqual(["'none'"]);
+  });
+
+  it("admits Cloudflare Turnstile to script-src and frame-src only when opted in", () => {
+    const parsed = parse(buildCspHeader({ ...BASE, turnstile: true }));
+    expect(parsed.get("script-src")).toContain(TURNSTILE_ORIGIN);
+    expect(parsed.get("frame-src")).toEqual([TURNSTILE_ORIGIN]);
+    // 'none' and an origin together is a malformed directive; the browser would
+    // ignore the origin. It must be replaced, not extended.
+    expect(parsed.get("frame-src")).not.toContain("'none'");
+  });
+
+  it("adds exactly one origin for Turnstile, never a wildcard", () => {
+    const parsed = parse(buildCspHeader({ ...BASE, turnstile: true }));
+    const scriptSrc = parsed.get("script-src") ?? [];
+    expect(scriptSrc.filter((source) => source.includes("cloudflare"))).toEqual([TURNSTILE_ORIGIN]);
+    expect(scriptSrc.some((source) => source.includes("*"))).toBe(false);
+    expect(TURNSTILE_ORIGIN).toBe("https://challenges.cloudflare.com");
+  });
+
+  it("does not leak the Turnstile origin into any other directive", () => {
+    const parsed = parse(buildCspHeader({ ...BASE, turnstile: true }));
+    // The widget makes no same-document fetch of its own; the token goes in the
+    // form post to our own origin. connect-src must therefore stay narrow.
+    expect(parsed.get("connect-src")).toEqual(["'self'"]);
+    expect(parsed.get("img-src")).not.toContain(TURNSTILE_ORIGIN);
+    expect(parsed.get("default-src")).toEqual(["'self'"]);
+    expect(parsed.get("style-src")).not.toContain(TURNSTILE_ORIGIN);
+  });
+
+  it("still refuses 'unsafe-inline' when Turnstile is enabled", () => {
+    for (const turnstile of [true, false]) {
+      for (const isDev of [true, false]) {
+        expect(parse(buildCspHeader({ ...BASE, isDev, turnstile })).get("script-src")).not.toContain(
+          "'unsafe-inline'",
+        );
+      }
+    }
+  });
+
+  it("keeps the nonce and hashes alongside the Turnstile origin", () => {
+    const parsed = parse(
+      buildCspHeader({ ...BASE, turnstile: true, scriptHashes: ["sha256-abc="] }),
+    );
+    const scriptSrc = parsed.get("script-src") ?? [];
+    expect(scriptSrc).toContain("'nonce-TESTNONCE'");
+    expect(scriptSrc).toContain("'sha256-abc='");
+    expect(scriptSrc).toContain(TURNSTILE_ORIGIN);
+  });
+
   it("restricts img-src to self, data and blob", () => {
     expect(parse(buildCspHeader(BASE)).get("img-src")).toEqual(["'self'", "data:", "blob:"]);
   });
@@ -193,6 +251,43 @@ describe("buildCspHeader", () => {
     const reported = parse(buildCspHeader({ ...BASE, reportToUrl: "https://report.example.com/csp" }));
     expect(reported.get("report-uri")).toEqual(["https://report.example.com/csp"]);
     expect(reported.get("report-to")).toEqual(["csp-endpoint"]);
+  });
+
+  it("refuses a reporting endpoint that would inject a directive", () => {
+    /*
+      Regression: `CSP_REPORT_URI` was interpolated into the policy as-is, so
+      `https://r.example/x; script-src *` appended an entire permissive policy.
+      A browser takes the first occurrence of a directive, so the injected
+      `script-src` would not win — but `frame-src` or a second `report-uri` would,
+      and relying on directive ordering is not a control.
+    */
+    for (const value of [
+      "https://r.example/x; script-src *",
+      "x; frame-src *",
+      "https://r.example/x\nframe-src *",
+      "javascript:alert(1)",
+      "http://insecure.example/x",
+      "not a url",
+      "https://r.example/x','default-src *",
+    ]) {
+      const csp = buildCspHeader({ ...BASE, reportToUrl: value });
+      expect(csp, value).not.toMatch(/script-src \*|frame-src \*|default-src \*/);
+      // Either the directive is dropped entirely or only the validated origin lands.
+      expect(csp, value).not.toContain("\n");
+    }
+  });
+
+  it("keeps only the validated endpoint, path included, for the reporting directives", () => {
+    const parsed = parse(
+      buildCspHeader({ ...BASE, reportToUrl: "https://r.example.com/collect?q=a;b" }),
+    );
+    // A reporting endpoint is a URL, not an origin, but a value containing a
+    // directive separator is refused outright rather than truncated.
+    expect(parsed.get("report-uri")).toBeUndefined();
+    expect(parsed.get("report-to")).toBeUndefined();
+
+    const clean = parse(buildCspHeader({ ...BASE, reportToUrl: "https://r.example.com/collect?q=1" }));
+    expect(clean.get("report-uri")).toEqual(["https://r.example.com/collect?q=1"]);
   });
 
   it("produces a header with no newlines, which would truncate it in transit", () => {
@@ -343,6 +438,66 @@ describe("buildReportingEndpointsHeader", () => {
 
   it("returns null for an unusable URL", () => {
     expect(buildReportingEndpointsHeader("http://r.example.com")).toBeNull();
+  });
+});
+
+describe("readTurnstileSiteKey", () => {
+  it("returns null when nothing is configured, so the challenge is off", () => {
+    expect(readTurnstileSiteKey({})).toBeNull();
+    expect(readTurnstileSiteKey({ NEXT_PUBLIC_TURNSTILE_SITE_KEY: "" })).toBeNull();
+    expect(readTurnstileSiteKey({ NEXT_PUBLIC_TURNSTILE_SITE_KEY: "   " })).toBeNull();
+  });
+
+  it("returns the key when it is configured", () => {
+    const key = "0x4AAAAAAABkMYinukE8nzY";
+    expect(readTurnstileSiteKey({ NEXT_PUBLIC_TURNSTILE_SITE_KEY: key })).toBe(key);
+    expect(readTurnstileSiteKey({ NEXT_PUBLIC_TURNSTILE_SITE_KEY: `  ${key}  ` })).toBe(key);
+  });
+
+  it("refuses a key containing characters that would inject a CSP directive", () => {
+    /*
+      The key is interpolated into a policy header. A semicolon or a space would
+      let an environment variable append directives of its choosing, which is the
+      one route by which a "public" value could become a policy bypass.
+    */
+    for (const value of [
+      "key'; script-src * '",
+      "key; frame-src *",
+      "key with space",
+      "key\"onload=\"alert(1)",
+      "key\nframe-src *",
+      "k".repeat(129),
+    ]) {
+      expect(readTurnstileSiteKey({ NEXT_PUBLIC_TURNSTILE_SITE_KEY: value }), value).toBeNull();
+    }
+  });
+
+  it("drives isTurnstileEnabled from the same value, so the two cannot disagree", () => {
+    expect(isTurnstileEnabled({})).toBe(false);
+    expect(isTurnstileEnabled({ NEXT_PUBLIC_TURNSTILE_SITE_KEY: "test-key" })).toBe(true);
+    expect(isTurnstileEnabled({ NEXT_PUBLIC_TURNSTILE_SITE_KEY: "bad;key" })).toBe(false);
+  });
+
+  it("reports a rendered-but-unenforced challenge as a misconfiguration", () => {
+    // A widget the reader solves and the server never verifies is worse than no
+    // widget: it costs the reader effort for no protection.
+    expect(describeTurnstile({})).toEqual({ rendered: false, enforced: false, misconfigured: false });
+    expect(
+      describeTurnstile({
+        NEXT_PUBLIC_TURNSTILE_SITE_KEY: "test-key",
+        TURNSTILE_SECRET_KEY: "secret",
+      }),
+    ).toEqual({ rendered: true, enforced: true, misconfigured: false });
+    expect(describeTurnstile({ NEXT_PUBLIC_TURNSTILE_SITE_KEY: "test-key" })).toEqual({
+      rendered: true,
+      enforced: false,
+      misconfigured: true,
+    });
+    expect(describeTurnstile({ TURNSTILE_SECRET_KEY: "secret" })).toEqual({
+      rendered: false,
+      enforced: true,
+      misconfigured: true,
+    });
   });
 });
 

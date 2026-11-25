@@ -48,7 +48,7 @@ import {
 } from "@/lib/community/news";
 import { newsStatusSchema } from "@/lib/community/news-schema";
 import { fieldErrors } from "@/lib/community/link-report-schema";
-import { isJsonContentType, jsonResponse, methodNotAllowed, readLimitedBody } from "@/lib/http/json";
+import { isJsonContentType, jsonResponse, methodNotAllowed, readBoundedBody, readLimitedBody } from "@/lib/http/json";
 import { isAllowedOrigin } from "@/lib/security/origin";
 import { getAllowedOrigins } from "@/lib/security/allowed-origins";
 import { getTrustedClientIp, hashClientIp } from "@/lib/security/client-ip";
@@ -148,10 +148,14 @@ export async function POST(request: Request): Promise<Response> {
     }
   }
 
-  const raw = await readLimitedBody(request, MAX_BODY_BYTES);
-  if (raw === null) {
+  const body = await readBoundedBody(request, MAX_BODY_BYTES);
+  if (!body.ok) {
+    if (body.reason === "too-large") {
+      return jsonResponse({ error: "Request body is too large" }, 413);
+    }
     return jsonResponse({ error: "Request body could not be read" }, 400);
   }
+  const raw = body.text;
   if (raw.trim() === "") {
     return jsonResponse({ error: "Request body must be valid JSON" }, 400);
   }

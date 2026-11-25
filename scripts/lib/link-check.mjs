@@ -234,16 +234,35 @@ function isPrivateIpv6(groups) {
   if (groups.slice(0, 7).every((group) => group === 0) && groups[7] === 1) return true; // ::1
   if ((first & 0xfe00) === 0xfc00) return true; // fc00::/7 unique local
   if ((first & 0xffc0) === 0xfe80) return true; // fe80::/10 link-local
+  if ((first & 0xffc0) === 0xfec0) return true; // fec0::/10 deprecated site-local
   if ((first & 0xff00) === 0xff00) return true; // ff00::/8 multicast
   if (first === 0x2001 && second === 0x0db8) return true; // documentation
-  // IPv4-mapped (::ffff:0:0/96) and NAT64 (64:ff9b::/96) carry an IPv4 address.
-  const mapped = groups.slice(0, 5).every((group) => group === 0) && groups[5] === 0xffff;
-  if (mapped) {
-    return isPrivateIpv4([groups[6] >> 8, groups[6] & 0xff, groups[7] >> 8, groups[7] & 0xff]);
+  /*
+    Every shape below carries an IPv4 address that has to be judged on its own
+    terms. Each is written out rather than pattern-matched, because the text
+    spellings of these addresses differ wildly while the values are identical:
+    `::ffff:127.0.0.1` and `::ffff:7f00:1` are one address.
+  */
+  const lastTwo = [groups[6] >> 8, groups[6] & 0xff, groups[7] >> 8, groups[7] & 0xff];
+  // IPv4-mapped (::ffff:0:0/96).
+  if (groups.slice(0, 5).every((group) => group === 0) && groups[5] === 0xffff) {
+    return isPrivateIpv4(lastTwo);
   }
-  const nat64 = first === 0x0064 && second === 0xff9b && groups.slice(2, 6).every((g) => g === 0);
-  if (nat64) {
-    return isPrivateIpv4([groups[6] >> 8, groups[6] & 0xff, groups[7] >> 8, groups[7] & 0xff]);
+  // IPv4-compatible (::/96), deprecated but still routable on some stacks. This
+  // is the form `::127.0.0.1` compresses to.
+  if (groups.slice(0, 6).every((group) => group === 0)) return isPrivateIpv4(lastTwo);
+  // NAT64 (64:ff9b::/96).
+  if (first === 0x0064 && second === 0xff9b && groups.slice(2, 6).every((g) => g === 0)) {
+    return isPrivateIpv4(lastTwo);
+  }
+  // 6to4 (2002::/16) carries the IPv4 address in the second and third groups.
+  if (first === 0x2002) {
+    return isPrivateIpv4([
+      (second >> 8) & 0xff,
+      second & 0xff,
+      (groups[2] >> 8) & 0xff,
+      groups[2] & 0xff,
+    ]);
   }
   return false;
 }

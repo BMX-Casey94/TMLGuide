@@ -4,12 +4,18 @@ import type { EditionScope, Resource, ResourceCategory } from "../schemas";
  * Community resources carried over from the original TMLGuide site.
  *
  * Only links measured as ok, or as insecure with an https:// twin that the link
- * check proved live, are published here; each record's URL is the URL that was
- * measured and answered (docs/factcheck/links.md). The one blocked link in the
- * input, faq.tomorrowland.com, is not here: `resourceSchema` has no `linkStatus`
- * field, so an "unchecked" resource cannot be represented, and a 403 is not
- * evidence that the page works. It is recorded in
- * docs/data/community-omissions.md instead.
+ * check proved live, are published here (docs/factcheck/links.md). The one
+ * blocked link in the input, faq.tomorrowland.com, is not here:
+ * `resourceSchema` has no `linkStatus` field, so an "unchecked" resource cannot
+ * be represented, and a 403 is not evidence that the page works. It is recorded
+ * in docs/data/community-omissions.md instead.
+ *
+ * Where a stored URL only redirected, the record now carries the final address
+ * instead of a hop on the way there — three of them as of the 2026-11-25 link
+ * run. A URL that answers 200 on the first request is the only kind that can be
+ * marked verified on that date, so those three carry `2026-11-25` while the
+ * rest keep the date they were actually opened. `index.test.ts` holds the
+ * measured from/to pairs and refuses any published URL outside them.
  *
  * The old site grouped links under its own labels (Travel, Festival, Tickets,
  * Guides, Media, Community, Safety). `resourceCategorySchema` has no media or
@@ -21,6 +27,7 @@ import type { EditionScope, Resource, ResourceCategory } from "../schemas";
  * third-party tools and their descriptions say so.
  */
 
+/** The date every record in this file was last opened, unless a seed says otherwise. */
 const CHECKED_ON = "2026-11-18";
 
 type ResourceSeed = {
@@ -31,9 +38,16 @@ type ResourceSeed = {
   readonly description: string;
   readonly edition: EditionScope;
   readonly official?: true;
+  /**
+   * The date this record's URL answered without a redirect, when it is not
+   * `CHECKED_ON`. Only set on a record whose URL was re-measured later, so the
+   * card never shows today's date against a link nobody opened today.
+   */
+  readonly verifiedOn?: string;
 };
 
 function resource(seed: ResourceSeed): Resource {
+  const verifiedOn = seed.verifiedOn ?? CHECKED_ON;
   return {
     id: seed.id,
     edition: seed.edition,
@@ -41,12 +55,12 @@ function resource(seed: ResourceSeed): Resource {
     url: seed.url,
     category: seed.category,
     description: seed.description,
-    lastVerified: CHECKED_ON,
+    lastVerified: verifiedOn,
     confidence: seed.official ? "official" : "community",
     source: {
       url: seed.url,
       title: seed.title,
-      retrievedOn: CHECKED_ON,
+      retrievedOn: verifiedOn,
     },
   };
 }
@@ -73,11 +87,12 @@ const seeds: readonly ResourceSeed[] = [
   {
     id: "resource-discord",
     title: "Tomorrowland Discord (Official Server - 25K+ Members)",
-    url: "https://discord.gg/tomorrowland",
+    url: "https://discord.com/invite/tomorrowland",
     category: "community",
     edition: "all",
     description:
       "Discord invite for Tomorrowland attendees. Neither the 'official server' wording nor the membership figure in this title was verified by the link check, and the server is not run by this guide.",
+    verifiedOn: "2026-11-25",
   },
   {
     id: "resource-lineup",
@@ -118,20 +133,22 @@ const seeds: readonly ResourceSeed[] = [
   {
     id: "resource-radio",
     title: "One World Radio (Live Stream)",
-    url: "https://www.tomorrowland.com/home/one-world-radio/",
+    url: "https://www.tomorrowland.com/one-world-radio/",
     category: "official",
     edition: "all",
     description: "Official live stream page for One World Radio, Tomorrowland's radio station.",
     official: true,
+    verifiedOn: "2026-11-25",
   },
   {
     id: "resource-official",
     title: "Tomorrowland (Official Website)",
-    url: "https://www.tomorrowland.com/home/",
+    url: "https://www.tomorrowland.com/",
     category: "official",
     edition: "all",
     description: "The official Tomorrowland website.",
     official: true,
+    verifiedOn: "2026-11-25",
   },
   {
     id: "resource-packing",

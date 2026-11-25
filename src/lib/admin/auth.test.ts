@@ -9,6 +9,7 @@ import {
   adminAuthFailureResponse,
   decodeJwtPayload,
   hasVerifiedTotpFactor,
+  MAX_TOKEN_LENGTH,
   readBearerToken,
   requireAdminSession,
   type FetchLike,
@@ -528,6 +529,60 @@ describe("requireAdminSession — configuration and availability", () => {
       });
       expect(result.ok).toBe(false);
     }
+    vi.restoreAllMocks();
+  });
+});
+
+describe("requireAdminSession — token bounds", () => {
+  it("refuses an oversized token before contacting the identity provider", async () => {
+    /*
+      Regression: the token is forwarded verbatim in an Authorization header. An
+      enormous value would make the server build and send a huge request and only
+      be rejected by the far end, after the cost had been paid.
+    */
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const fetchImpl = fetchReturning(200, userPayload());
+    const result = await requireAdminSession(request("a".repeat(MAX_TOKEN_LENGTH + 1)), {
+      env: ENV,
+      fetchImpl,
+    });
+
+    expect(result).toMatchObject({ ok: false, reason: "invalid-token", status: 401 });
+    expect(fetchImpl).not.toHaveBeenCalled();
+    vi.restoreAllMocks();
+  });
+
+  it("accepts a token at exactly the cap", async () => {
+    // A real JWT is far shorter, so the boundary is generous rather than tight.
+    const padded = adminToken() + "a".repeat(MAX_TOKEN_LENGTH - adminToken().length);
+    const result = await requireAdminSession(request(padded), {
+      env: ENV,
+      fetchImpl: fetchReturning(200, userPayload()),
+    });
+    expect(result.ok).toBe(true);
+  });
+
+  it("never follows a redirect, so the token cannot be forwarded to another host", async () => {
+    // `fetch` re-sends headers on a followed redirect. If a project URL ever
+    // answered 302, the token would go wherever `Location` pointed.
+    const fetchImpl = fetchReturning(200, userPayload());
+    vi.spyOn(console, "error").mockImplementation(() => {});
+
+    await requireAdminSession(request(adminToken()), { env: ENV, fetchImpl });
+
+    const [, init] = fetchImpl.mock.calls[0] as unknown as [string, RequestInit];
+    expect((init as RequestInit & { redirect?: string }).redirect).toBe("error");
+    vi.restoreAllMocks();
+  });
+
+  it("answers 503 rather than 500 when a redirect makes fetch throw", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const fetchImpl = vi.fn(async () => {
+      throw new TypeError("unexpected redirect");
+    });
+
+    const result = await requireAdminSession(request(adminToken()), { env: ENV, fetchImpl });
+    expect(result).toMatchObject({ ok: false, reason: "auth-unavailable", status: 503 });
     vi.restoreAllMocks();
   });
 });
