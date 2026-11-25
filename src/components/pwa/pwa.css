@@ -1,0 +1,76 @@
+/*
+  TMLGuide PWA offline banner styles (Dusk Programme).
+*/
+
+.tml-pwa-offline-banner {
+  position: fixed;
+  inset-block-end: calc(var(--tabbar-h, 64px) + 0.75rem);
+  inset-inline: 1rem;
+  z-index: 60;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  max-width: 44rem;
+  margin-inline: auto;
+  padding: 0.75rem 1rem;
+  border: 1px solid rgb(255 106 61 / 0.45);
+  border-radius: 16px;
+  background-color: rgb(21 17 15 / 0.94);
+  color: var(--cream);
+  font-size: 0.875rem;
+  line-height: 1.45;
+  box-shadow: 0 12px 32px rgb(0 0 0 / 0.45);
+}
+
+@media (min-width: 768px) {
+  .tml-pwa-offline-banner {
+    inset-block-end: 1.25rem;
+  }
+}
+
+.tml-pwa-offline-banner__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: #ffcbbc;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.tml-pwa-offline-banner__dot {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 999px;
+  background-color: var(--ember);
+}
+
+.tml-pwa-offline-banner__text {
+  margin: 0;
+  flex: 1 1 18rem;
+  color: var(--cream);
+}
+
+.tml-pwa-offline-banner__link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding-inline: 0.25rem;
+  color: var(--ea);
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+}
+
+@media (hover: hover) {
+  .tml-pwa-offline-banner__link:hover {
+    border-bottom-color: var(--ea);
+  }
+}

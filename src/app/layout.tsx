@@ -5,6 +5,7 @@ import { A11Y_BOOT_SCRIPT } from "@/components/a11y/boot-script";
 import { DEFAULT_A11Y_PREFS } from "@/components/a11y/a11y-prefs";
 import { RadioPlayer, RadioProvider } from "@/components/radio";
 import { NavigationProgress } from "@/components/loading";
+import { SwRegister } from "@/components/pwa/sw-register";
 import { SearchDialog } from "@/components/search";
 import { SiteShell } from "@/components/shell";
 import "./globals.css";
@@ -37,6 +38,12 @@ export const metadata: Metadata = {
   },
   description:
     "An independent, fan-made guide to Tomorrowland: tickets, sale dates, DreamVille, travel, add-ons and Pearls, with every fact sourced and dated.",
+  alternates: {
+    languages: {
+      "en-GB": "/",
+      "x-default": "/",
+    },
+  },
 };
 
 export const viewport: Viewport = {
@@ -94,6 +101,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           </Suspense>
           <SiteShell>{children}</SiteShell>
           <RadioPlayer />
+          <SwRegister />
           <Suspense fallback={null}>
             <SearchDialog />
           </Suspense>

@@ -274,6 +274,17 @@
   font-size: 0.9375rem;
   font-weight: 700;
   letter-spacing: 0.02em;
+  text-align: right;
+}
+
+.tml-tix-tier__gbp {
+  display: block;
+  margin-top: 0.1rem;
+  color: var(--cream-mute);
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 400;
+  letter-spacing: 0.02em;
 }
 
 .tml-tix-tier__unit {
@@ -598,6 +609,16 @@
   font-family: var(--font-mono);
   font-size: 0.875rem;
   font-weight: 700;
+  white-space: nowrap;
+}
+
+.tml-tix-table__gbp {
+  display: block;
+  margin-top: 0.15rem;
+  color: var(--cream-mute);
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 400;
   white-space: nowrap;
 }
 

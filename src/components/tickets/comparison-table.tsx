@@ -12,6 +12,7 @@
  * a pre-sale price and another does not, the missing one shows an explicit dash
  * with a spoken label instead of silently shifting into the wrong row.
  */
+import { formatIndicativeGbp } from "@/lib/currency/gbp-estimate";
 import { formatMoney } from "./format";
 import { COMPARISON_LIMIT, useComparison } from "./comparison";
 import type { CatalogueItem, PriceTier } from "./types";
@@ -149,11 +150,18 @@ export function ComparisonTable({ items, editionLabel }: ComparisonTableProps) {
                         </td>
                       );
                     }
+                    const gbpEstimate = formatIndicativeGbp(tier.amount, tier.currency);
                     return (
                       <td key={item.id}>
                         <span className="tml-tix-table__amount">
                           {formatMoney(tier.amount, tier.currency)}
                         </span>
+                        {gbpEstimate ? (
+                          <span className="tml-tix-table__gbp">
+                            {gbpEstimate}
+                            <span className="tml-tix-sr"> (indicative estimate)</span>
+                          </span>
+                        ) : null}
                         {tier.unit ? <span className="tml-tix-table__missing">{tier.unit}</span> : null}
                       </td>
                     );

@@ -34,12 +34,11 @@ import {
   parseTripImport,
   readTripState,
   saveTripState,
-  serialiseTripExport,
   serialiseTripState,
-  tripExportFilename,
   type TripField,
   type TripState,
 } from "./trip-state";
+import { buildTripHtmlExport, tripHtmlExportFilename } from "./trip-html-export";
 /* Kit and tool styles travel with the component, so a page that renders it
    cannot forget them. This tool's own rules live in my-trip.css. */
 import "@/components/ui/ui.css";
@@ -325,16 +324,16 @@ export function MyTrip({ data }: MyTripProps) {
 
   const onExport = useCallback(() => {
     const started = downloadTextFile(
-      tripExportFilename(state),
-      serialiseTripExport(state, new Date()),
-      "application/json",
+      tripHtmlExportFilename(state),
+      buildTripHtmlExport(state, editionData, new Date()),
+      "text/html;charset=utf-8",
     );
     setActionNote(
       started
-        ? "Trip file downloaded. Keep it somewhere you will find it: it is the only copy that survives clearing this browser's site data."
-        : "This browser could not start a download, so the trip file was not saved. Try another browser, or print this page.",
+        ? "Trip sheet downloaded as an interactive HTML file. Open it in any browser to tick off stages, edit notes and save an updated copy — or re-import it here later."
+        : "This browser could not start a download, so the trip sheet was not saved. Try another browser, or print this page.",
     );
-  }, [state]);
+  }, [editionData, state]);
 
   /**
    * Reads a chosen file.
@@ -777,7 +776,7 @@ export function MyTrip({ data }: MyTripProps) {
             ref={fileInputRef}
             className="trip-file"
             type="file"
-            accept="application/json,.json"
+            accept=".html,text/html,application/json,.json"
             tabIndex={-1}
             aria-hidden="true"
             onChange={(event) => {

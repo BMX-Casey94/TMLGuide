@@ -104,6 +104,24 @@ export const pageEntries: SourceEntry[] = [
     source: "src/app/tools/my-trip/page.tsx",
   },
   {
+    slug: "maps",
+    title: "Venue & DreamVille maps",
+    snippet:
+      "Original schematic planning maps of De Schorre and DreamVille with a point-to-point walking-time estimator in minutes and miles plus peak crowd-surge notes.",
+    edition: "belgium",
+    href: "/tools/maps",
+    source: "src/app/tools/maps/page.tsx",
+  },
+  {
+    slug: "winter-timer",
+    title: "Winter stage-hopping & lift timer",
+    snippet:
+      "Estimate transit times between Alpe d'Huez mountain stages, village stages and resort hubs, broken down into walk or ski, lift ride and queue buffer.",
+    edition: "winter",
+    href: "/tools/winter-timer",
+    source: "src/app/tools/winter-timer/page.tsx",
+  },
+  {
     slug: "community",
     title: "Community",
     snippet:

@@ -68,6 +68,8 @@ describe("pageEntries", () => {
       "/tools/journey",
       "/tools/packing",
       "/tools/my-trip",
+      "/tools/maps",
+      "/tools/winter-timer",
       "/community",
       "/radio",
       "/about",

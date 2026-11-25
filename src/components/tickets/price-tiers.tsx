@@ -11,6 +11,7 @@
  * to the official page instead of a figure. That state is visible and labelled,
  * never a blank a reader could read as free.
  */
+import { formatIndicativeGbp } from "@/lib/currency/gbp-estimate";
 import { formatMoney } from "./format";
 import type { CatalogueItem } from "./types";
 import "./tickets.css";
@@ -49,19 +50,28 @@ export function PriceTiers({ item }: PriceTiersProps) {
 
   return (
     <ul className="tml-tix-tiers">
-      {item.tiers.map((tier) => (
-        <li key={tier.key} className="tml-tix-tier">
-          <span className="tml-tix-tier__label">
-            {tier.label}
-            <span className="tml-tix-sr">, {tier.year} price</span>
-            <span aria-hidden="true"> · {tier.year}</span>
-          </span>
-          <span className="tml-tix-tier__amount">
-            {formatMoney(tier.amount, tier.currency)}
-            {tier.unit ? <span className="tml-tix-tier__unit">{tier.unit}</span> : null}
-          </span>
-        </li>
-      ))}
+      {item.tiers.map((tier) => {
+        const gbpEstimate = formatIndicativeGbp(tier.amount, tier.currency);
+        return (
+          <li key={tier.key} className="tml-tix-tier">
+            <span className="tml-tix-tier__label">
+              {tier.label}
+              <span className="tml-tix-sr">, {tier.year} price</span>
+              <span aria-hidden="true"> · {tier.year}</span>
+            </span>
+            <span className="tml-tix-tier__amount">
+              <span>{formatMoney(tier.amount, tier.currency)}</span>
+              {gbpEstimate ? (
+                <span className="tml-tix-tier__gbp">
+                  {gbpEstimate}
+                  <span className="tml-tix-sr"> (indicative estimate)</span>
+                </span>
+              ) : null}
+              {tier.unit ? <span className="tml-tix-tier__unit">{tier.unit}</span> : null}
+            </span>
+          </li>
+        );
+      })}
     </ul>
   );
 }

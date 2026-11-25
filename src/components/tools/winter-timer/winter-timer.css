@@ -1,0 +1,281 @@
+/*
+  TMLGUIDE Winter Stage-Hopping & Lift Route Timer styles.
+
+  Plain namespaced CSS (`.tml-wtimer-` prefix) — never CSS Modules.
+  Follows the Dusk Programme design tokens from globals.css.
+*/
+
+.tml-wtimer-disclaimer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-top: 1.5rem;
+  padding: 0.95rem 1.15rem;
+  border: 1px solid rgb(142 219 255 / 0.35);
+  border-left: 3px solid #8edbff;
+  border-radius: 14px;
+  background-color: rgb(142 219 255 / 0.08);
+  color: var(--cream);
+  font-size: 0.875rem;
+  line-height: 1.55;
+}
+
+.tml-wtimer-disclaimer__label {
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #8edbff;
+}
+
+.tml-wtimer-disclaimer p {
+  margin: 0;
+  max-width: 72ch;
+}
+
+.tml-wtimer-route-row {
+  display: grid;
+  gap: 1rem;
+}
+
+@media (min-width: 680px) {
+  .tml-wtimer-route-row {
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    align-items: end;
+  }
+}
+
+.tml-wtimer-swap {
+  justify-self: start;
+}
+
+@media (min-width: 680px) {
+  .tml-wtimer-swap {
+    justify-self: center;
+    margin-bottom: 0.15rem;
+  }
+}
+
+.tml-wtimer-options {
+  display: grid;
+  gap: 1.25rem;
+  margin-top: 1.5rem;
+  padding-top: 1.35rem;
+  border-top: 1px solid var(--hair);
+}
+
+@media (min-width: 720px) {
+  .tml-wtimer-options {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.tml-wtimer-timing-row {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1.25rem;
+}
+
+@media (min-width: 620px) {
+  .tml-wtimer-timing-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.tml-wtimer-hero {
+  display: grid;
+  gap: 1rem;
+}
+
+@media (min-width: 720px) {
+  .tml-wtimer-hero {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.tml-wtimer-card {
+  padding: 1.3rem 1.25rem;
+  border: 1px solid var(--hair);
+  border-radius: 18px;
+  background-color: rgb(12 10 9 / 0.5);
+}
+
+.tml-wtimer-card--accent {
+  background-image: linear-gradient(165deg, rgb(142 219 255 / 0.11), var(--surface) 66%);
+  border-color: rgb(142 219 255 / 0.35);
+}
+
+.tml-wtimer-card__label {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--cream-mute);
+}
+
+.tml-wtimer-card__figure {
+  display: block;
+  margin: 0.45rem 0 0;
+  font-family: var(--font-display);
+  font-weight: 300;
+  font-size: clamp(2rem, 6vw, 3rem);
+  line-height: 1;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+  color: var(--cream);
+}
+
+.tml-wtimer-card__sub {
+  margin: 0.45rem 0 0;
+  color: var(--cream-mute);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.tml-wtimer-bar-wrap {
+  margin-top: 1.35rem;
+}
+
+.tml-wtimer-bar {
+  display: flex;
+  width: 100%;
+  height: 0.85rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background-color: rgb(244 236 224 / 0.08);
+}
+
+.tml-wtimer-bar__seg--walk {
+  background-color: var(--teal);
+}
+
+.tml-wtimer-bar__seg--lift {
+  background-color: #8edbff;
+}
+
+.tml-wtimer-bar__seg--queue {
+  background-color: var(--ember);
+}
+
+.tml-wtimer-bar__seg--buffer {
+  background-color: var(--gold);
+}
+
+.tml-wtimer-breakdown {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+@media (min-width: 640px) {
+  .tml-wtimer-breakdown {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.tml-wtimer-metric {
+  padding: 0.85rem 0.95rem;
+  border: 1px solid var(--hair);
+  border-radius: 14px;
+  background-color: rgb(12 10 9 / 0.45);
+}
+
+.tml-wtimer-metric__head {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--cream-mute);
+}
+
+.tml-wtimer-swatch {
+  display: inline-block;
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 50%;
+  flex: none;
+}
+
+.tml-wtimer-swatch--walk {
+  background-color: var(--teal);
+}
+
+.tml-wtimer-swatch--lift {
+  background-color: #8edbff;
+}
+
+.tml-wtimer-swatch--queue {
+  background-color: var(--ember);
+}
+
+.tml-wtimer-swatch--buffer {
+  background-color: var(--gold);
+}
+
+.tml-wtimer-metric__val {
+  display: block;
+  margin-top: 0.35rem;
+  font-family: var(--font-mono);
+  font-size: 1.15rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--cream);
+}
+
+.tml-wtimer-steps {
+  margin: 1.5rem 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.tml-wtimer-step {
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--hair);
+  border-radius: 14px;
+  background-color: rgb(12 10 9 / 0.42);
+}
+
+.tml-wtimer-step__title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 1.1rem;
+  color: var(--cream);
+}
+
+.tml-wtimer-step__meta {
+  margin: 0.35rem 0 0;
+  color: var(--cream-mute);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.tml-wtimer-step__pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-top: 0.6rem;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  color: var(--cream);
+}
+
+.tml-wtimer-pill {
+  padding: 0.2rem 0.55rem;
+  border: 1px solid var(--hair-strong);
+  border-radius: 999px;
+}
+
+.tml-wtimer-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}

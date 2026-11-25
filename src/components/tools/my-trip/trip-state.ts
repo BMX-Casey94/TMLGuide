@@ -54,8 +54,8 @@ export const MAX_PARTY_SIZE = 20;
  */
 export const MAX_STORED_CHARACTERS = 8_000;
 
-/** The largest file this tool will read on import, in bytes. */
-export const MAX_IMPORT_BYTES = 32_768;
+/** The largest file this tool will read on import, in bytes (covers HTML and JSON exports). */
+export const MAX_IMPORT_BYTES = 65_536;
 
 /** The fields of a sheet, for repair messages and test assertions. */
 export type TripField =
@@ -505,13 +505,17 @@ function importFailure(problem: string): TripImportResult {
   return { ok: false, message: `This file was not imported: ${problem}. Your saved trip is unchanged.` };
 }
 
+const EMBEDDED_TRIP_DATA_PATTERN =
+  /<script\b[^>]*\bid=["']tmlguide-trip-data["'][^>]*>([\s\S]*?)<\/script>/i;
+
 /**
  * Reads an imported file.
  *
- * Accepts the document this tool exports, or a bare trip object (the shape a
- * reader gets by copying `trip` out of the file). Either way the validation is
- * strict and all-or-nothing: nothing is applied unless every field is present
- * and valid, because a half-imported sheet is worse than a refusal.
+ * Accepts the interactive HTML trip sheet this tool exports (reading the JSON
+ * embedded in `#tmlguide-trip-data`), a JSON export envelope, or a bare trip
+ * object. Either way the validation is strict and all-or-nothing: nothing is
+ * applied unless every field is present and valid, because a half-imported
+ * sheet is worse than a refusal.
  *
  * Cross-field checks — does this weekend exist for this edition, is this ticket
  * one the edition sells — need the data layer, so they run in the page through
@@ -522,11 +526,21 @@ export function parseTripImport(text: string): TripImportResult {
     return importFailure("the file is empty");
   }
 
+  let jsonText = text;
+  const trimmed = text.trimStart();
+  if (trimmed.startsWith("<!doctype") || trimmed.startsWith("<!DOCTYPE") || trimmed.startsWith("<html")) {
+    const match = EMBEDDED_TRIP_DATA_PATTERN.exec(text);
+    if (match === null || match[1] === undefined) {
+      return importFailure("the HTML file does not contain a TMLGuide trip sheet");
+    }
+    jsonText = match[1];
+  }
+
   let parsed: unknown;
   try {
-    parsed = JSON.parse(text) as unknown;
+    parsed = JSON.parse(jsonText) as unknown;
   } catch {
-    return importFailure("the file is not JSON");
+    return importFailure("the file is not a valid trip sheet or JSON");
   }
 
   if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {

@@ -140,6 +140,15 @@ describe("PriceTiers", () => {
 
     expect(screen.getByText(/R\$\s*3\.160,00/)).toBeInTheDocument();
     expect(screen.queryByText(/€/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/£/)).not.toBeInTheDocument();
+  });
+
+  it("shows an indicative GBP estimate with screen-reader context beside EUR tiers", () => {
+    render(<PriceTiers item={DAY_PASS} />);
+
+    expect(screen.getByText(/≈ £122\.40/)).toBeInTheDocument();
+    expect(screen.getByText(/≈ £135\.15/)).toBeInTheDocument();
+    expect(screen.getAllByText("(indicative estimate)")).toHaveLength(2);
   });
 });
 
@@ -347,6 +356,9 @@ describe("ComparisonTable", () => {
     fireEvent.click(screen.getByRole("checkbox", { name: /Full Madness Pass/ }));
 
     expect(screen.getByText(/never converted between euros and reais/)).toBeInTheDocument();
+    // EUR cell shows an indicative GBP estimate, while the BRL cell never converts.
+    expect(screen.getByText(/≈ £122\.40/)).toBeInTheDocument();
+    expect(screen.getByText(/R\$\s*3\.160,00/)).toBeInTheDocument();
   });
 
   it("caps the comparison at three packages", () => {

@@ -392,7 +392,7 @@ describe("export", () => {
       fireEvent.change(field(/Anything else/), { target: { value: "Export me" } });
       fireEvent.click(screen.getByRole("button", { name: "Export my trip" }));
 
-      expect(clicked).toEqual(["tmlguide-my-trip-belgium.json"]);
+      expect(clicked).toEqual(["tmlguide-my-trip-belgium.html"]);
       expect(blobs).toHaveLength(1);
 
       const text = await new Promise<string>((resolve) => {
@@ -400,11 +400,11 @@ describe("export", () => {
         reader.onload = () => resolve(String(reader.result));
         reader.readAsText(blobs[0] as Blob);
       });
-      const parsed = JSON.parse(text) as { app: string; tool: string; trip: TripState };
-      expect(parsed.app).toBe("tmlguide");
-      expect(parsed.tool).toBe("my-trip");
-      expect(parsed.trip.notes).toBe("Export me");
-      expect(screen.getByText(/Trip file downloaded/i)).toBeInTheDocument();
+      expect(text).toContain("<!doctype html>");
+      expect(text).toContain("Stage 1 · Summary");
+      expect(text).toContain("Save updated copy");
+      expect(text).toContain("Export me");
+      expect(screen.getByText(/Trip sheet downloaded/i)).toBeInTheDocument();
     } finally {
       HTMLAnchorElement.prototype.click = originalClick;
     }
@@ -464,7 +464,7 @@ describe("import", () => {
       target: { files: [jsonFile("definitely not json")] },
     });
     await waitFor(() => {
-      expect(screen.getByRole("alert").textContent).toMatch(/not JSON/i);
+      expect(screen.getByRole("alert").textContent).toMatch(/not a valid trip sheet or JSON/i);
     });
   });
 

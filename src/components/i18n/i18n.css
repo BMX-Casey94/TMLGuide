@@ -1,0 +1,62 @@
+/*
+  TMLGuide i18n translation notice styles (Dusk Programme).
+*/
+
+.tml-i18n-notice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem 1.25rem;
+  margin-block: 1.25rem;
+  padding: 1rem 1.2rem;
+  border: 1px solid var(--hair-strong);
+  border-radius: 16px;
+  background-color: rgb(29 23 20 / 0.85);
+  color: var(--cream);
+  font-size: 0.875rem;
+  line-height: 1.55;
+}
+
+.tml-i18n-notice__body {
+  margin: 0;
+  max-width: 68ch;
+}
+
+.tml-i18n-notice__label {
+  display: block;
+  margin-bottom: 0.25rem;
+  color: var(--ea);
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.tml-i18n-notice__link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding-inline: 0.25rem;
+  color: var(--cream);
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-decoration: none;
+  border-bottom: 1px solid var(--hair-strong);
+  white-space: nowrap;
+}
+
+@media (hover: hover) {
+  .tml-i18n-notice__link:hover {
+    color: var(--ea);
+    border-bottom-color: var(--ea);
+  }
+}
+
+.tml-i18n-notice__link:focus-visible {
+  outline: 2px solid var(--ea);
+  outline-offset: 3px;
+}

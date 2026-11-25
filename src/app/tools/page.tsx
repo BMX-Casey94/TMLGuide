@@ -81,6 +81,24 @@ const TOOLS: readonly ToolEntry[] = [
     icon: "notebook",
     status: "live",
   },
+  {
+    href: "/tools/maps",
+    kicker: "Orientation",
+    title: "Venue & DreamVille maps",
+    description:
+      "Original schematic maps of De Schorre and DreamVille with a point-to-point walking-time estimator in minutes and miles plus crowd-surge notes.",
+    icon: "flag",
+    status: "live",
+  },
+  {
+    href: "/tools/winter-timer",
+    kicker: "Winter",
+    title: "Winter stage-hopping & lift timer",
+    description:
+      "Estimate Alpe d'Huez stage-to-stage transit times broken down into walk or ski, lift ride, and queue buffer so you know when to leave for a set.",
+    icon: "flash",
+    status: "live",
+  },
 ];
 
 /**

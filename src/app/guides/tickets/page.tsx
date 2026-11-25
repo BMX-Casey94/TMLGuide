@@ -264,8 +264,10 @@ export default function TicketsPage({
       <footer className="tml-tix-footnote">
         <p>
           Prices are shown in the currency each edition publishes: euros for Belgium and Winter,
-          Brazilian reais for Brasil. No figure is converted between currencies, because no
-          official exchange rate is published for them.
+          Brazilian reais for Brasil. Official euro figures appear alongside indicative GBP (£)
+          estimates for planning only (never an official Tomorrowland rate), while Brasil prices
+          remain in reais without conversion. No figure is converted between currencies officially,
+          because no official exchange rate is published for them.
         </p>
         <p>
           The Exchange Desk is the only official resale route. TMLGuide does not verify listings on
