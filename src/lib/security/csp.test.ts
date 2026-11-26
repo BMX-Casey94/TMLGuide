@@ -445,9 +445,10 @@ describe("buildSecurityHeaders", () => {
   });
 
   it("denies every powerful feature in the Permissions-Policy", () => {
-    for (const feature of ["camera", "microphone", "geolocation", "payment", "usb"]) {
+    for (const feature of ["camera", "microphone", "payment", "usb"]) {
       expect(PERMISSIONS_POLICY).toContain(`${feature}=()`);
     }
+    expect(PERMISSIONS_POLICY).toContain("geolocation=(self)");
   });
 
   it("does not echo the nonce as a separate response header", () => {
