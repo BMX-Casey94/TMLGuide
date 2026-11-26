@@ -26,8 +26,8 @@
 
 import { useCallback, useSyncExternalStore } from "react";
 
-import { VENUE_MAPS } from "@/lib/maps/geo-data";
-import type { VenueMapId } from "@/lib/maps/geo-types";
+import { PHYSICAL_VENUE_MAPS } from "@/lib/maps/geo-data";
+import type { PhysicalVenueId } from "@/lib/maps/geo-types";
 
 import {
   EMPTY_FAVOURITES,
@@ -70,7 +70,7 @@ function currentStorage(): Storage | null {
 function getSnapshot(): FavouritesSnapshot {
   const storage = currentStorage();
   if (cache === null || cache.storage !== storage) {
-    cache = { storage, snapshot: { favourites: readFavourites(VENUE_MAPS), writable: true } };
+    cache = { storage, snapshot: { favourites: readFavourites(PHYSICAL_VENUE_MAPS), writable: true } };
   }
   return cache.snapshot;
 }
@@ -110,21 +110,21 @@ export function readFavouritesSnapshot(): FavouritesSnapshot {
 export interface MapFavouritesApi {
   readonly favourites: FavouritesByVenue;
   readonly writable: boolean;
-  readonly isFavourite: (venueId: VenueMapId, nodeId: string) => boolean;
-  readonly toggle: (venueId: VenueMapId, nodeId: string) => void;
+  readonly isFavourite: (venueId: PhysicalVenueId, nodeId: string) => boolean;
+  readonly toggle: (venueId: PhysicalVenueId, nodeId: string) => void;
 }
 
 /** The favourites for the whole app; one store, because there is one browser. */
 export function useMapFavourites(): MapFavouritesApi {
   const snapshot = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
-  const toggle = useCallback((venueId: VenueMapId, nodeId: string) => {
+  const toggle = useCallback((venueId: PhysicalVenueId, nodeId: string) => {
     const current = getSnapshot().favourites;
     commit(toggleFavourite(current, venueId, nodeId));
   }, []);
 
   const isFavourite = useCallback(
-    (venueId: VenueMapId, nodeId: string) => snapshot.favourites[venueId].includes(nodeId),
+    (venueId: PhysicalVenueId, nodeId: string) => snapshot.favourites[venueId].includes(nodeId),
     [snapshot],
   );
 

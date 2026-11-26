@@ -33,22 +33,26 @@
  * ## Data
  *
  * Node positions, footpaths and ground overlays come from
- * `src/lib/maps/geo-data.ts`; the walk comes from `findShortestRoute` in
- * `src/lib/maps/geo-routing.ts`. Nothing is duplicated here.
+ * `src/lib/maps/geo-data.ts`; the walk comes from `routeBetween` in
+ * `src/lib/maps/geo-routing.ts`, which uses one venue's own graph when both ends
+ * are on it and the combined site graph when they are not. Nothing is duplicated
+ * here.
  */
 
 import { useCallback, useEffect, useId, useMemo, useRef, useState, type FormEvent } from "react";
 import { useSyncExternalStore } from "react";
 import type { GeoJSONSource, Map as MapLibreMap, MapLayerMouseEvent } from "maplibre-gl";
 
-import { GEO_DATA_DISCLAIMER, VENUE_MAPS } from "@/lib/maps/geo-data";
-import { filterNodes, findShortestRoute, nodeById } from "@/lib/maps/geo-routing";
+import { GEO_DATA_DISCLAIMER, ALL_VENUE_MAP, VENUE_MAPS, physicalVenueOfNode } from "@/lib/maps/geo-data";
+import { filterNodes, nodeById, routeBetween } from "@/lib/maps/geo-routing";
 import {
   MAP_NODE_CATEGORIES,
   VENUE_MAP_IDS,
+  type GeoJsonPosition,
   type GeoMapNode,
   type GeoRoute,
   type MapNodeCategory,
+  type PhysicalVenueId,
   type VenueMapId,
 } from "@/lib/maps/geo-types";
 
@@ -73,9 +77,12 @@ import "./maps.css";
 import {
   CATEGORY_COLOURS,
   CATEGORY_LABELS,
+  CATEGORY_LETTERS,
+  GROUND_COLOUR,
   SOURCE_IDS,
   buildEndpointCollection,
   buildInspectedCollection,
+  buildLocateCollection,
   buildNodeCollection,
   buildOverlayCollection,
   buildRouteCollection,
@@ -83,6 +90,13 @@ import {
   venueBoundsPair,
   type FeatureCollectionLike,
 } from "./map-layers";
+import {
+  GEOLOCATION_BLOCKED_MESSAGE,
+  GEOLOCATION_UNAVAILABLE_MESSAGE,
+  describeGeoError,
+  describePosition,
+  positionFromCoords,
+} from "./map-locate";
 import { useMapFavourites } from "./use-map-favourites";
 import { configureMapWorker } from "./map-worker";
 
@@ -90,24 +104,38 @@ import { configureMapWorker } from "./map-worker";
 const VENUE_LABELS: Readonly<Record<VenueMapId, string>> = {
   "de-schorre": "De Schorre (Festival Grounds)",
   dreamville: "DreamVille (Camping & Accommodation)",
+  all: "Full site: De Schorre + DreamVille",
 };
 
 /** The same names, for the switcher's own visible text. */
 const VENUE_SHORT_LABELS: Readonly<Record<VenueMapId, string>> = VENUE_LABELS;
 
 /**
- * The walk each venue opens with.
+ * The walk each view opens with.
  *
- * Both are the pair a visitor most often needs: the day gate to the headline
- * stage, and the campsite gate through to the festival gate.
+ * The two single-venue views open with the pair a visitor most often needs: the
+ * day gate to the headline stage, and the campsite gate through to the festival
+ * gate. The combined view opens with the walk that only it can plan: a boutique
+ * camp across the shared crossing to the Mainstage, which is a camper's whole
+ * journey to the headline set in one set of figures.
  */
 const DEFAULT_ROUTE: Readonly<Record<VenueMapId, { readonly from: string; readonly to: string }>> = {
   "de-schorre": { from: "ds-main-entrance", to: "ds-mainstage" },
   dreamville: { from: "dv-main-entrance", to: "dv-festival-gate" },
+  all: { from: "dv-montagoe", to: "ds-mainstage" },
 };
 
 /** How the canvas is doing. `pending` is the moment between mount and the map's `load`. */
 type MapStatus = "pending" | "ready" | "unsupported";
+
+/**
+ * How long to wait for `navigator.permissions.query` before asking anyway.
+ *
+ * The query is a fast local check, not a network call, so anything beyond this is
+ * a browser bug or a blocked API. Falling through after two seconds keeps the
+ * button usable instead of leaving it on "Finding you…" indefinitely.
+ */
+const PERMISSION_QUERY_TIMEOUT_MS = 2_000;
 
 /** Which end of the route a marker press sets. */
 type PickTarget = "from" | "to";
@@ -118,13 +146,35 @@ interface FocusRequest {
   readonly nonce: number;
 }
 
-/** The five collections pushed into the map's sources. */
+/** The collections pushed into the map's sources. */
 interface MapCollections {
   readonly overlay: FeatureCollectionLike<unknown>;
   readonly route: FeatureCollectionLike<unknown>;
   readonly nodes: FeatureCollectionLike<unknown>;
   readonly endpoints: FeatureCollectionLike<unknown>;
   readonly inspected: FeatureCollectionLike<unknown>;
+  readonly locate: FeatureCollectionLike<unknown>;
+}
+
+/**
+ * The visitor's plotted position, exactly as the browser reported it, or null.
+ *
+ * Held in React state for the life of the page and nowhere else: passed straight
+ * into a GeoJSON point, never written to storage, never put in a URL, never sent
+ * to this site's server.
+ */
+type LocatedPosition = GeoJsonPosition | null;
+
+/**
+ * The status note under the "Locate me" button.
+ *
+ * `tone` selects the styling: a drawn marker, a friendly "you are elsewhere", a
+ * refusal, an unusable coordinate or a browser with no location services. The
+ * message is announced as well as printed, so the note is never visual only.
+ */
+interface LocateNote {
+  readonly tone: "inside" | "outside" | "denied" | "invalid" | "unsupported" | "blocked" | "cleared";
+  readonly message: string;
 }
 
 /**
@@ -152,6 +202,7 @@ export function VenueMapsTool({ initialVenueId = "de-schorre" }: VenueMapsToolPr
     () => ({
       "de-schorre": { ...DEFAULT_ROUTE["de-schorre"] },
       dreamville: { ...DEFAULT_ROUTE.dreamville },
+      all: { ...DEFAULT_ROUTE.all },
     }),
   );
   const [pickTarget, setPickTarget] = useState<PickTarget>("to");
@@ -163,6 +214,19 @@ export function VenueMapsTool({ initialVenueId = "de-schorre" }: VenueMapsToolPr
   const [inspectedId, setInspectedId] = useState<string | null>(null);
   const [focusRequest, setFocusRequest] = useState<FocusRequest | null>(null);
   const [announcement, setAnnouncement] = useState("");
+
+  /*
+    The visitor's own position, and nothing else about them.
+
+    `located` starts null: the browser is never asked for a position until the
+    button is pressed, because a prompt on load trains readers to refuse prompts
+    and would be a privacy decision taken on their behalf. `locateNote` is the
+    sentence shown in the status note, and `locatePending` stops a second press
+    starting a second request while the first is outstanding.
+  */
+  const [located, setLocated] = useState<LocatedPosition>(null);
+  const [locateNote, setLocateNote] = useState<LocateNote | null>(null);
+  const [locatePending, setLocatePending] = useState(false);
 
   /*
     WebGL support is fixed for the life of the document, so it is read as an
@@ -190,6 +254,40 @@ export function VenueMapsTool({ initialVenueId = "de-schorre" }: VenueMapsToolPr
   const map = VENUE_MAPS[venueId];
   const { from: fromId, to: toId } = routeEnds[venueId];
 
+  /**
+   * Which favourite bucket a starred zone belongs in.
+   *
+   * The combined view holds zones from both venues, so a star there has to be
+   * written to the venue the zone actually belongs to. Starring Montagoe while
+   * the whole site is on screen must produce the same stored value as starring it
+   * on the DreamVille view, or the two views would disagree about the visitor's
+   * own choices.
+   *
+   * The `?? "de-schorre"` arm is unreachable: `geo-routing.test.ts` asserts that
+   * every node of every view belongs to one of the two venues. It exists so this
+   * function has no `undefined` to leak into `localStorage`, and it picks the
+   * festival side only because a stray id would be a data mistake worth noticing
+   * rather than a campsite favourite quietly appearing in the wrong list.
+   */
+  const favouriteVenueFor = useCallback(
+    (nodeId: string): PhysicalVenueId => physicalVenueOfNode(nodeId) ?? "de-schorre",
+    [],
+  );
+
+  /**
+   * The favourite ids this view should filter by.
+   *
+   * The combined view is the union of both venues', because a filter that hid
+   * half the starred zones would be wrong on the one view that shows them all.
+   */
+  const viewFavouriteIds = useMemo(
+    () =>
+      venueId === "all"
+        ? [...favourites["de-schorre"], ...favourites.dreamville]
+        : favourites[venueId],
+    [favourites, venueId],
+  );
+
   /** What the map area is doing, derived rather than stored. */
   const status: MapStatus = !webgl || mapFailed ? "unsupported" : mapReady ? "ready" : "pending";
 
@@ -203,21 +301,24 @@ export function VenueMapsTool({ initialVenueId = "de-schorre" }: VenueMapsToolPr
         query,
         categories: activeCategories,
         favouritesOnly,
-        favouriteIds: favourites[venueId],
+        favouriteIds: viewFavouriteIds,
       }),
-    [map, query, activeCategories, favouritesOnly, favourites, venueId],
+    [map, query, activeCategories, favouritesOnly, viewFavouriteIds],
   );
 
-  const route: GeoRoute | null = useMemo(() => {
-    try {
-      return findShortestRoute(map, fromId, toId);
-    } catch {
-      // Reachable only if a selection names a node the data file no longer has.
-      // `findShortestRoute` throws for that; showing the "choose two zones" state
-      // is a better outcome than a crashed page.
-      return null;
-    }
-  }, [map, fromId, toId]);
+  /**
+   * The walk between the two ends.
+   *
+   * `routeBetween` tries `[map, ALL_VENUE_MAP]` in that order, so a walk wholly
+   * inside one venue still comes from that venue's own graph and keeps exactly
+   * the figures it has always quoted. The combined map answers only when the
+   * current view cannot — which happens through `initialVenueId` or a future
+   * deep link, because each single-venue view's selects list only its own zones.
+   */
+  const route: GeoRoute | null = useMemo(
+    () => routeBetween([map, ALL_VENUE_MAP], fromId, toId),
+    [map, fromId, toId],
+  );
 
   const inspectedNode = useMemo(
     () => (inspectedId === null ? null : nodeById(map, inspectedId)),
@@ -228,12 +329,17 @@ export function VenueMapsTool({ initialVenueId = "de-schorre" }: VenueMapsToolPr
    * The nodes the map marks: everything the filters allow, plus both route ends
    * even when a filter has hidden them. A route whose ends are invisible cannot be
    * read, and those two ends are the two places the reader is being told about.
+   *
+   * A route end may come from the other venue when the walk spans both, so the
+   * fallback here searches the combined map for a node the current view does not
+   * hold. Without that, a cross-venue walk would draw its line to a gate but
+   * label only one end.
    */
   const markedNodes = useMemo(() => {
     const out: GeoMapNode[] = [...filteredNodes];
     for (const endId of [fromId, toId]) {
       if (out.some((node) => node.id === endId)) continue;
-      const end = nodeById(map, endId);
+      const end = nodeById(map, endId) ?? nodeById(ALL_VENUE_MAP, endId);
       if (end !== null) out.push(end);
     }
     return out;
@@ -246,9 +352,50 @@ export function VenueMapsTool({ initialVenueId = "de-schorre" }: VenueMapsToolPr
       nodes: buildNodeCollection(markedNodes, fromId, toId),
       endpoints: buildEndpointCollection(route),
       inspected: buildInspectedCollection(inspectedNode),
+      locate: buildLocateCollection(located),
     }),
-    [map, route, markedNodes, fromId, toId, inspectedNode],
+    [map, route, markedNodes, fromId, toId, inspectedNode, located],
   );
+
+  /**
+   * The zone options for the two route selects.
+   *
+   * On the combined view the list is grouped by venue, because "Entrance 1" and
+   * "Main Gate" would otherwise sit in one undifferentiated column with no hint
+   * of which side of the brook each belongs to. A route end the current map does
+   * not hold is appended rather than dropped: a `<select>` whose value matches no
+   * `<option>` renders blank, which would look like the reader had chosen nothing.
+   */
+  const routeOptions = useMemo(() => {
+    const groups: { label: string | null; nodes: readonly GeoMapNode[] }[] = [];
+
+    if (venueId === "all") {
+      for (const [id, label] of [
+        ["de-schorre", "De Schorre (festival grounds)"],
+        ["dreamville", "DreamVille (campsite)"],
+      ] as const) {
+        groups.push({
+          label,
+          nodes: map.nodes.filter((node) => physicalVenueOfNode(node.id) === id),
+        });
+      }
+    } else {
+      groups.push({ label: null, nodes: map.nodes });
+    }
+
+    const known = new Set(groups.flatMap((group) => group.nodes.map((node) => node.id)));
+    const strays: GeoMapNode[] = [];
+    for (const endId of [fromId, toId]) {
+      if (known.has(endId)) continue;
+      const end = nodeById(ALL_VENUE_MAP, endId);
+      if (end === null) continue;
+      known.add(endId);
+      strays.push(end);
+    }
+    if (strays.length > 0) groups.push({ label: "Selected elsewhere", nodes: strays });
+
+    return groups;
+  }, [map, venueId, fromId, toId]);
 
   /* ------------------------------------------------------------------ */
   /* Favourites                                                          */
@@ -256,14 +403,150 @@ export function VenueMapsTool({ initialVenueId = "de-schorre" }: VenueMapsToolPr
 
   const handleToggleFavourite = useCallback(
     (node: GeoMapNode) => {
-      const wasFavourite = isFavourite(venueId, node.id);
-      toggleFavouriteFor(venueId, node.id);
+      const bucket = favouriteVenueFor(node.id);
+      const wasFavourite = isFavourite(bucket, node.id);
+      toggleFavouriteFor(bucket, node.id);
       setAnnouncement(
         `${node.name} ${wasFavourite ? "removed from" : "added to"} your favourites.`,
       );
     },
-    [isFavourite, toggleFavouriteFor, venueId],
+    [favouriteVenueFor, isFavourite, toggleFavouriteFor],
   );
+
+  /* ------------------------------------------------------------------ */
+  /* Locate me                                                           */
+  /* ------------------------------------------------------------------ */
+
+  /**
+   * Asks the browser where the visitor is, once, because they pressed the button.
+   *
+   * What this deliberately does not do: it never runs on mount, so no prompt
+   * appears until the reader asks for one, and it never sends the coordinate
+   * anywhere — it goes into React state, becomes a GeoJSON point, and dies with
+   * the page. The camera only moves on a successful fix inside the festival
+   * area; an outside position, a refusal and an unusable coordinate all leave the
+   * view exactly where the reader left it.
+   */
+  const handleLocate = useCallback(() => {
+    if (locatePending) return;
+    setLocateNote(null);
+
+    const geolocation =
+      typeof navigator === "undefined" ? undefined : navigator.geolocation;
+    if (geolocation === undefined || geolocation === null) {
+      setLocated(null);
+      setLocateNote({ tone: "unsupported", message: GEOLOCATION_UNAVAILABLE_MESSAGE });
+      return;
+    }
+
+    setLocatePending(true);
+
+    const request = (): void => {
+      geolocation.getCurrentPosition(
+        (result) => {
+          setLocatePending(false);
+          const outcome = describePosition(
+            positionFromCoords(result.coords),
+            ALL_VENUE_MAP,
+            /*
+              The site's own extent, not `VENUE_BOUNDS`. That constant is a padded
+              search window used for guard tests, so measuring from it would put
+              the five-mile boundary further out than the message claims.
+            */
+            ALL_VENUE_MAP.bounds,
+          );
+
+          if (outcome.kind === "inside") {
+            setLocated(outcome.position);
+            setLocateNote({ tone: "inside", message: outcome.message });
+            return;
+          }
+
+          /*
+            Outside the area, or an unusable coordinate: no marker, and the camera
+            stays exactly where the reader left it. A dot dropped somewhere off the
+            edge would be a lie about where they are.
+          */
+          setLocated(null);
+          setLocateNote({
+            tone: outcome.kind === "outside" ? "outside" : "invalid",
+            message: outcome.message,
+          });
+        },
+        (error) => {
+          setLocatePending(false);
+          setLocated(null);
+          setLocateNote({ tone: "denied", message: describeGeoError(error?.code) });
+        },
+        /*
+          A ten-second ceiling and no cached fix. A festival site is exactly where
+          a stale position is worst: a phone that answers with where it was an hour
+          ago would put the marker in the wrong camping field.
+        */
+        { enableHighAccuracy: true, timeout: 10_000, maximumAge: 0 },
+      );
+    };
+
+    /*
+      Ask the Permissions API first, when the browser has it.
+
+      A state of "denied" means no prompt will appear: the reader has refused this
+      site before, or a `Permissions-Policy` header has switched the feature off
+      for the whole document. Calling `getCurrentPosition` in that state produces
+      an error the reader cannot act on, so the honest message is given straight
+      away and no doomed request is made.
+
+      This is best effort, so every failure path leads to the ordinary request:
+      the API is missing in some browsers, can reject for `geolocation` on older
+      Safari, and — the case a plain `.then` would miss — can leave the promise
+      unsettled. A hung query would otherwise strand the button on "Finding you…"
+      for ever, so a short timer falls through as well.
+    */
+    const permissions = typeof navigator === "undefined" ? undefined : navigator.permissions;
+    if (permissions === undefined || permissions === null || typeof permissions.query !== "function") {
+      request();
+      return;
+    }
+
+    let settled = false;
+    const settle = (run: () => void): void => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      run();
+    };
+
+    const timer = setTimeout(() => {
+      settle(request);
+    }, PERMISSION_QUERY_TIMEOUT_MS);
+
+    try {
+      void permissions.query({ name: "geolocation" }).then(
+        (status) => {
+          if (status.state === "denied") {
+            settle(() => {
+              setLocatePending(false);
+              setLocated(null);
+              setLocateNote({ tone: "blocked", message: GEOLOCATION_BLOCKED_MESSAGE });
+            });
+            return;
+          }
+          settle(request);
+        },
+        () => {
+          settle(request);
+        },
+      );
+    } catch {
+      settle(request);
+    }
+  }, [locatePending]);
+
+  /** Forgets the marker, at the visitor's request, and says so. */
+  const handleClearLocate = useCallback(() => {
+    setLocated(null);
+    setLocateNote({ tone: "cleared", message: "Your location has been cleared from the map." });
+  }, []);
 
   /* ------------------------------------------------------------------ */
   /* Selection                                                           */
@@ -355,11 +638,19 @@ export function VenueMapsTool({ initialVenueId = "de-schorre" }: VenueMapsToolPr
           zoom: 15,
           minZoom: 13,
           maxZoom: 17.6,
-          // Keeps the camera over Boom and Rumst, so a stray drag cannot leave the
-          // reader looking at the North Sea with no way back.
+          /*
+            Keeps the camera over Boom and Rumst, so a stray drag cannot leave the
+            reader looking at the North Sea with no way back.
+
+            The box is wider than the two venues on purpose: the "Locate me"
+            button will mark a visitor anywhere within five miles of the site, and
+            a `maxBounds` tight to the festival fence would clamp the camera away
+            from their own marker. This spans roughly the five-mile area around
+            Boom and Rumst and nothing beyond it.
+          */
           maxBounds: [
-            [4.34, 51.06],
-            [4.45, 51.12],
+            [4.19, 50.97],
+            [4.59, 51.22],
           ],
           attributionControl: false,
           /*
@@ -425,7 +716,12 @@ export function VenueMapsTool({ initialVenueId = "de-schorre" }: VenueMapsToolPr
       const nodeId = hit[0]?.properties?.id;
       if (typeof nodeId !== "string") return;
 
-      const node = nodeById(VENUE_MAPS[venueId], nodeId);
+      /*
+        A cross-venue walk draws an end marker for a zone the current view does
+        not hold, so the combined map is searched after the view. Without that
+        fallback, pressing the far end of such a walk would do nothing.
+      */
+      const node = nodeById(VENUE_MAPS[venueId], nodeId) ?? nodeById(ALL_VENUE_MAP, nodeId);
       if (node === null) return;
       applyPick(node);
     },
@@ -482,12 +778,40 @@ export function VenueMapsTool({ initialVenueId = "de-schorre" }: VenueMapsToolPr
     const instance = mapRef.current;
     if (instance === null) return;
 
-    const node = nodeById(VENUE_MAPS[venueId], focusRequest.nodeId);
+    // A search result on the combined view may be a zone the single-venue map
+    // does not hold, so the view is tried first and the combined map second.
+    const node = nodeById(VENUE_MAPS[venueId], focusRequest.nodeId) ?? nodeById(ALL_VENUE_MAP, focusRequest.nodeId);
     if (node === null) return;
 
     const { center, zoom } = nodeFocus(node);
     instance.flyTo({ center, zoom, duration: prefersReducedMotion() ? 0 : 1100 });
   }, [focusRequest, status, venueId]);
+
+  /*
+    Brings a freshly plotted position into view.
+
+    The camera settles on the visitor's own dot rather than being fitted to both
+    the dot and the nearest zone. Fitting both looks helpful until the reader is
+    four miles out: the frame then has to span four miles, which drags the camera
+    well outside the site and shrinks the markers to nothing. Centring on the dot
+    keeps their position unambiguous, and the note names the nearest zone with
+    its distance, so nothing is lost.
+
+    Only a successful inside-area fix sets `located`, so an outside area, a
+    refusal or an unusable coordinate leaves the camera exactly where the reader
+    left it — which is what stops the button hijacking their view.
+  */
+  useEffect(() => {
+    if (located === null || status !== "ready") return;
+    const instance = mapRef.current;
+    if (instance === null) return;
+
+    instance.easeTo({
+      center: [located[0], located[1]],
+      zoom: Math.max(instance.getZoom(), 15.4),
+      duration: prefersReducedMotion() ? 0 : 800,
+    });
+  }, [located, status]);
 
   /* ------------------------------------------------------------------ */
   /* Handlers                                                            */
@@ -525,8 +849,10 @@ export function VenueMapsTool({ initialVenueId = "de-schorre" }: VenueMapsToolPr
   /* Render                                                              */
   /* ------------------------------------------------------------------ */
 
-  const fromLabel = nodeById(map, fromId)?.name ?? "Not selected";
-  const toLabel = nodeById(map, toId)?.name ?? "Not selected";
+  const fromLabel =
+    route?.from.name ?? nodeById(map, fromId)?.name ?? nodeById(ALL_VENUE_MAP, fromId)?.name ?? "Not selected";
+  const toLabel =
+    route?.to.name ?? nodeById(map, toId)?.name ?? nodeById(ALL_VENUE_MAP, toId)?.name ?? "Not selected";
   const sameEnd = fromId === toId;
 
   return (
@@ -717,6 +1043,63 @@ export function VenueMapsTool({ initialVenueId = "de-schorre" }: VenueMapsToolPr
           )}
         </div>
 
+        {/*
+          The locate controls sit outside the "map is ready" branch on purpose.
+          A reader without WebGL still benefits from being told which zone they
+          are standing nearest, and the note is a sentence rather than a drawn
+          dot, so nothing here needs a canvas.
+        */}
+        <div className="tml-map-locate">
+          <div className="tml-map-locate__actions">
+            {/*
+              `aria-disabled` rather than `disabled`: a genuinely disabled button
+              loses keyboard focus the moment it is pressed, which would drop a
+              keyboard reader back to the top of the page mid-request. The handler
+              already ignores a second press while one is outstanding.
+            */}
+            <button
+              type="button"
+              className="tool-btn tml-map-locate__button"
+              onClick={handleLocate}
+              aria-disabled={locatePending}
+              aria-describedby={`${uid}-locate-privacy`}
+            >
+              <span className="tml-map-locate__icon" aria-hidden="true">
+                ◎
+              </span>
+              {locatePending ? "Finding you…" : "Locate me"}
+            </button>
+
+            {located === null ? null : (
+              <button type="button" className="tool-btn tool-btn--quiet" onClick={handleClearLocate}>
+                Clear my location
+              </button>
+            )}
+          </div>
+
+          <p className="tml-map-locate__privacy" id={`${uid}-locate-privacy`}>
+            Your position is worked out by your browser only when you press this button. It is
+            never sent to this guide or to anyone else, it is not saved, and it disappears when you
+            close the page.
+          </p>
+
+          {/*
+            One polite live region for the outcome. `aria-atomic` makes the whole
+            sentence read rather than just the changed word, and the region is
+            always present so the first result is announced too — a live region
+            inserted at the same moment as its text is often not read out.
+          */}
+          <p
+            className="tml-map-locate__status"
+            data-tone={locateNote?.tone ?? "idle"}
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+          >
+            {locateNote?.message ?? ""}
+          </p>
+        </div>
+
         {status === "ready" ? (
           <div className="tml-map-stage-controls">
             <button type="button" className="tool-btn tool-btn--quiet" onClick={handleResetView}>
@@ -751,17 +1134,40 @@ export function VenueMapsTool({ initialVenueId = "de-schorre" }: VenueMapsToolPr
           </div>
         ) : null}
 
+        {/*
+          The legend repeats the marker badge letter, not just its colour. A
+          reader with a colour vision deficiency, or anyone reading a dark phone
+          screen at arm's length, can match the letter on the map to the letter
+          here without having to judge a shade.
+        */}
         <ul className="tml-map-legend" aria-label="Map legend">
           {MAP_NODE_CATEGORIES.map((category) => (
             <li key={category} className="tml-map-legend__item">
               <span
-                className="tml-map-legend__dot"
-                style={{ backgroundColor: CATEGORY_COLOURS[category] }}
+                className="tml-map-legend__badge"
+                style={{
+                  backgroundColor: CATEGORY_COLOURS[category],
+                  color: GROUND_COLOUR,
+                }}
                 aria-hidden="true"
-              />
+              >
+                {CATEGORY_LETTERS[category]}
+              </span>
               {CATEGORY_LABELS[category]}
             </li>
           ))}
+          <li className="tml-map-legend__item">
+            <span className="tml-map-legend__badge tml-map-legend__badge--end" aria-hidden="true">
+              A
+            </span>
+            Start
+          </li>
+          <li className="tml-map-legend__item">
+            <span className="tml-map-legend__badge tml-map-legend__badge--end" aria-hidden="true">
+              B
+            </span>
+            Destination
+          </li>
           <li className="tml-map-legend__item">
             <span
               className="tml-map-legend__swatch tml-map-legend__swatch--route"
@@ -769,7 +1175,23 @@ export function VenueMapsTool({ initialVenueId = "de-schorre" }: VenueMapsToolPr
             />
             Your walk, A to B
           </li>
+          <li className="tml-map-legend__item">
+            <span className="tml-map-legend__swatch tml-map-legend__swatch--locate" aria-hidden="true" />
+            Your location, when you ask for it
+          </li>
         </ul>
+
+        {/*
+          The key, in words as well as marks. Every list row also names its
+          category, so a reader who cannot separate the five colours, or who is
+          reading a printed copy, has two independent routes to the same answer.
+        */}
+        <p className="tml-map-legend__note">
+          Markers are colour-coded by category and carry a letter: S stage, E entrance, C camp, F
+          facility, T transport. Where two markers are too close for both letters, one letter is
+          left off rather than printed twice, and the category is still named in every row of the
+          zone list below.
+        </p>
       </section>
 
       <section className="tool-panel" aria-labelledby={`${uid}-route-heading`}>
@@ -778,6 +1200,12 @@ export function VenueMapsTool({ initialVenueId = "de-schorre" }: VenueMapsToolPr
           <h3 id={`${uid}-route-heading`} className="tool-panel__title">
             {route === null ? "Choose two zones" : `${fromLabel} to ${toLabel}`}
           </h3>
+          {venueId === "all" ? null : (
+            <p className="tool-panel__hint">
+              Planning a walk from a campsite field to a stage? Switch to Full site above, where
+              both layouts are on one map, joined at the shared DreamVille Gate.
+            </p>
+          )}
         </div>
 
         <div className="tml-map-controls">
@@ -797,11 +1225,23 @@ export function VenueMapsTool({ initialVenueId = "de-schorre" }: VenueMapsToolPr
                 }));
               }}
             >
-              {map.nodes.map((node) => (
-                <option key={node.id} value={node.id}>
-                  {node.name}
-                </option>
-              ))}
+              {routeOptions.map((group) =>
+                group.label === null ? (
+                  group.nodes.map((node) => (
+                    <option key={node.id} value={node.id}>
+                      {node.name}
+                    </option>
+                  ))
+                ) : (
+                  <optgroup key={group.label} label={group.label}>
+                    {group.nodes.map((node) => (
+                      <option key={node.id} value={node.id}>
+                        {node.name}
+                      </option>
+                    ))}
+                  </optgroup>
+                ),
+              )}
             </select>
           </div>
 
@@ -826,11 +1266,23 @@ export function VenueMapsTool({ initialVenueId = "de-schorre" }: VenueMapsToolPr
                 }));
               }}
             >
-              {map.nodes.map((node) => (
-                <option key={node.id} value={node.id}>
-                  {node.name}
-                </option>
-              ))}
+              {routeOptions.map((group) =>
+                group.label === null ? (
+                  group.nodes.map((node) => (
+                    <option key={node.id} value={node.id}>
+                      {node.name}
+                    </option>
+                  ))
+                ) : (
+                  <optgroup key={group.label} label={group.label}>
+                    {group.nodes.map((node) => (
+                      <option key={node.id} value={node.id}>
+                        {node.name}
+                      </option>
+                    ))}
+                  </optgroup>
+                ),
+              )}
             </select>
           </div>
         </div>
@@ -937,16 +1389,25 @@ export function VenueMapsTool({ initialVenueId = "de-schorre" }: VenueMapsToolPr
               const isStart = node.id === fromId;
               const isEnd = node.id === toId;
               const roleTag = isStart && isEnd ? "A/B" : isStart ? "A" : isEnd ? "B" : "";
-              const isFavouriteHere = isFavourite(venueId, node.id);
+              // The star shows the zone's own venue, not the current view, so a
+              // zone starred on the combined map and on its own map agree.
+              const isFavouriteHere = isFavourite(favouriteVenueFor(node.id), node.id);
               const action =
                 pickTarget === "from" ? "set as the starting zone A" : "set as the destination B";
 
               /*
-                WCAG 2.5.3: the printed text — the short label and the A/B badge — has
-                to appear in the accessible name. The name is therefore built from
-                exactly what is on screen, then says what pressing it will do.
+                WCAG 2.5.3 (Label in Name) is met here by construction rather than
+                by a hand-built string.
+
+                This button's visible text is the zone's short label, its A/B
+                badge and the "Category · summary" line. An `aria-label` used to
+                name only the first two, which axe reports as
+                `label-content-name-mismatch` — the control visibly says more than
+                its accessible name admits. Rather than duplicating the visible
+                text inside a label and hoping the two stay in step, the name is
+                now computed straight from the content, with the action appended
+                as visually hidden text in the order a reader needs it.
               */
-              const printed = roleTag === "" ? node.shortLabel : `${node.shortLabel} ${roleTag}`;
               const alias = node.name === node.shortLabel ? "" : `, also known as ${node.name}`;
 
               return (
@@ -954,7 +1415,6 @@ export function VenueMapsTool({ initialVenueId = "de-schorre" }: VenueMapsToolPr
                   <button
                     type="button"
                     className="tml-map-list__select"
-                    aria-label={`${printed}, ${action}${alias}`}
                     aria-pressed={isStart || isEnd}
                     onClick={() => {
                       applyPick(node);
@@ -969,12 +1429,30 @@ export function VenueMapsTool({ initialVenueId = "de-schorre" }: VenueMapsToolPr
                     <span className="tml-map-list__text">
                       <span className="tml-map-list__name">
                         {node.shortLabel}
+                        {/*
+                          A real space before the badge, not only CSS padding: the
+                          accessible name is built from this text, and "MainstageB"
+                          would be read as one word.
+                        */}
                         {roleTag === "" ? null : (
-                          <span className="tml-map-list__badge" aria-hidden="true">
-                            {roleTag}
-                          </span>
+                          <>
+                            {" "}
+                            <span className="tml-map-list__badge">{roleTag}</span>
+                          </>
                         )}
                       </span>
+                      {/*
+                        The action, as visually hidden text.
+
+                        There is deliberately no trailing space. An accessible
+                        name is assembled from these separate text nodes and each
+                        is whitespace-trimmed first, so a joining space cannot
+                        survive — it is gone by the time the name is read. The
+                        full stop ending `alias` (or the action) is the boundary
+                        instead, which a screen reader treats as the end of a
+                        sentence and pauses on.
+                      */}
+                      <span className="sr-only">{`, ${action}${alias}.`}</span>
                       <span className="tml-map-list__meta">
                         {CATEGORY_LABELS[node.category]} · {node.summary}
                       </span>
@@ -1050,6 +1528,7 @@ function pushCollections(instance: MapLibreMap, collections: MapCollections): vo
   write(SOURCE_IDS.nodes, collections.nodes);
   write(SOURCE_IDS.endpoints, collections.endpoints);
   write(SOURCE_IDS.inspected, collections.inspected);
+  write(SOURCE_IDS.locate, collections.locate);
 }
 
 export default VenueMapsTool;

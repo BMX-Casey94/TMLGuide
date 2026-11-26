@@ -1,21 +1,29 @@
 // @vitest-environment node
 import { describe, expect, it } from "vitest";
 
-import { DE_SCHORRE_MAP, DREAMVILLE_MAP } from "@/lib/maps/geo-data";
+import { ALL_VENUE_MAP, DE_SCHORRE_MAP, DREAMVILLE_MAP, VENUE_MAPS } from "@/lib/maps/geo-data";
 import {
   buildEndpointCollection,
   buildInspectedCollection,
+  buildLocateCollection,
   buildNodeCollection,
   buildOverlayCollection,
   buildRouteCollection,
   CATEGORY_COLOURS,
   CATEGORY_LABELS,
+  CATEGORY_LETTERS,
+  GROUND_COLOUR,
+  LOCATE_COLOUR,
+  LOCATE_CORE_COLOUR,
   overlayStyleFor,
   nodeFocus,
   venueBoundsPair,
 } from "./map-layers";
 import { findShortestRoute, nodeById } from "@/lib/maps/geo-routing";
-import { MAP_NODE_CATEGORIES, VENUE_MAP_IDS } from "@/lib/maps/geo-types";
+import { MAP_NODE_CATEGORIES, VENUE_MAP_IDS, type GeoJsonPosition } from "@/lib/maps/geo-types";
+
+/** Every venue id mapped to its own map, so the loops below cannot fall back wrongly. */
+const VIEWS = VENUE_MAP_IDS.map((id) => ({ id, map: VENUE_MAPS[id] }));
 
 /*
   These are pure functions: data in, GeoJSON out. Testing them here is what makes
@@ -38,6 +46,72 @@ describe("CATEGORY_COLOURS and CATEGORY_LABELS", () => {
     for (const colour of Object.values(CATEGORY_COLOURS)) {
       expect(colour).toMatch(/^#[0-9a-f]{6}$/i);
     }
+  });
+});
+
+describe("CATEGORY_LETTERS", () => {
+  it("covers every category, so no marker is left without a badge", () => {
+    expect(Object.keys(CATEGORY_LETTERS).sort()).toEqual([...MAP_NODE_CATEGORIES].sort());
+  });
+
+  it("gives each category its own single letter", () => {
+    const letters = Object.values(CATEGORY_LETTERS);
+    expect(new Set(letters).size).toBe(letters.length);
+    for (const letter of letters) expect(letter).toMatch(/^[A-Z]$/);
+  });
+
+  it("never uses A or B, which the route ends already own", () => {
+    const letters = Object.values(CATEGORY_LETTERS);
+    expect(letters).not.toContain("A");
+    expect(letters).not.toContain("B");
+  });
+
+  it("spells out the mnemonic the legend prints", () => {
+    // S stage, E entrance, C camp, F facility, T transport.
+    expect(CATEGORY_LETTERS.stage).toBe("S");
+    expect(CATEGORY_LETTERS.entrance).toBe("E");
+    expect(CATEGORY_LETTERS.camp).toBe("C");
+    expect(CATEGORY_LETTERS.facility).toBe("F");
+    expect(CATEGORY_LETTERS.transport).toBe("T");
+  });
+
+  it("keeps the badge letter legible on every category colour", () => {
+    /*
+      The letters are printed in the warm black, so each of the five fills has to
+      carry dark text at 4.5:1 or better. Computed rather than assumed: a future
+      palette change that made a badge too light or too dark fails here instead of
+      shipping unreadable text on a phone in the dark.
+    */
+    const channel = (value: number): number => {
+      const v = value / 255;
+      return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+    };
+    const luminance = (hex: string): number => {
+      const r = Number.parseInt(hex.slice(1, 3), 16);
+      const g = Number.parseInt(hex.slice(3, 5), 16);
+      const b = Number.parseInt(hex.slice(5, 7), 16);
+      return 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b);
+    };
+    const contrast = (a: string, b: string): number => {
+      const la = luminance(a);
+      const lb = luminance(b);
+      return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
+    };
+
+    for (const category of MAP_NODE_CATEGORIES) {
+      const ratio = contrast(GROUND_COLOUR, CATEGORY_COLOURS[category]);
+      expect(ratio, `${category} badge is ${ratio.toFixed(2)}:1`).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+});
+
+describe("the locate marker colours", () => {
+  it("uses a pair that is not any category colour, so it cannot be misread", () => {
+    const categoryColours = new Set(Object.values(CATEGORY_COLOURS));
+    expect(categoryColours.has(LOCATE_COLOUR)).toBe(false);
+    expect(categoryColours.has(LOCATE_CORE_COLOUR)).toBe(true);
+    // The core is the cream every category already uses; the halo is what marks it.
+    expect(LOCATE_COLOUR).not.toBe(LOCATE_CORE_COLOUR);
   });
 });
 
@@ -146,6 +220,48 @@ describe("buildNodeCollection", () => {
     }
   });
 
+  it("prints each marker's category letter, so colour is not the only channel", () => {
+    for (const { map } of VIEWS) {
+      const collection = buildNodeCollection(map.nodes, map.nodes[0]?.id as string, map.nodes[1]?.id as string);
+      for (const feature of collection.features) {
+        expect(feature.properties.badge, feature.properties.id).toBe(
+          CATEGORY_LETTERS[feature.properties.category],
+        );
+        expect(feature.properties.badge).toMatch(/^[A-Z]$/);
+      }
+    }
+  });
+
+  it("gives every category a badge that differs from every other category's", () => {
+    const collection = buildNodeCollection(ALL_VENUE_MAP.nodes, "", "");
+    const byCategory = new Map<string, Set<string>>();
+    for (const feature of collection.features) {
+      const badges = byCategory.get(feature.properties.category) ?? new Set<string>();
+      badges.add(feature.properties.badge);
+      byCategory.set(feature.properties.category, badges);
+    }
+
+    // One letter per category, and one category per letter.
+    const seen = new Set<string>();
+    for (const [category, badges] of byCategory) {
+      expect(badges.size, `${category} has more than one badge`).toBe(1);
+      const [letter] = [...badges] as string[];
+      expect(seen.has(letter as string), `${letter} is used by two categories`).toBe(false);
+      seen.add(letter as string);
+    }
+    expect(byCategory.size).toBe(MAP_NODE_CATEGORIES.length);
+  });
+
+  it("marks every zone of the combined view, from both venues", () => {
+    const collection = buildNodeCollection(ALL_VENUE_MAP.nodes, "dv-montagoe", "ds-mainstage");
+    expect(collection.features).toHaveLength(ALL_VENUE_MAP.nodes.length);
+
+    const ids = collection.features.map((feature) => feature.properties.id);
+    expect(ids).toContain("dv-montagoe");
+    expect(ids).toContain("ds-mainstage");
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
   it("returns an empty collection for an empty filter", () => {
     expect(buildNodeCollection([], "a", "b").features).toEqual([]);
   });
@@ -231,8 +347,7 @@ describe("buildInspectedCollection", () => {
 
 describe("venueBoundsPair", () => {
   it("returns the west/south and east/north corners fitBounds expects", () => {
-    for (const id of VENUE_MAP_IDS) {
-      const map = id === "de-schorre" ? DE_SCHORRE_MAP : DREAMVILLE_MAP;
+    for (const { map } of VIEWS) {
       expect(venueBoundsPair(map)).toEqual([
         [map.bounds.west, map.bounds.south],
         [map.bounds.east, map.bounds.north],
@@ -240,12 +355,56 @@ describe("venueBoundsPair", () => {
     }
   });
 
-  it("produces a usable box: west before east, south before north", () => {
-    for (const map of [DE_SCHORRE_MAP, DREAMVILLE_MAP]) {
+  it("produces a usable box for every view, including the combined one", () => {
+    for (const { map } of VIEWS) {
       const [[west, south], [east, north]] = venueBoundsPair(map);
       expect(west).toBeLessThan(east);
       expect(south).toBeLessThan(north);
     }
+  });
+
+  it("gives the combined view a box wide enough to hold both venues", () => {
+    const [[west, south], [east, north]] = venueBoundsPair(ALL_VENUE_MAP);
+    expect(west).toBeLessThanOrEqual(DE_SCHORRE_MAP.bounds.west);
+    expect(east).toBeGreaterThanOrEqual(DREAMVILLE_MAP.bounds.east);
+    expect(south).toBeLessThanOrEqual(DE_SCHORRE_MAP.bounds.south);
+    expect(north).toBeGreaterThanOrEqual(DREAMVILLE_MAP.bounds.north);
+  });
+});
+
+describe("buildLocateCollection", () => {
+  it("draws one point at the position the visitor gave", () => {
+    const collection = buildLocateCollection([4.3968, 51.0922]);
+    expect(collection.features).toHaveLength(1);
+    expect(collection.features[0]?.geometry).toEqual({
+      type: "Point",
+      coordinates: [4.3968, 51.0922],
+    });
+  });
+
+  it("draws nothing until the visitor asks to be located", () => {
+    expect(buildLocateCollection(null).features).toEqual([]);
+  });
+
+  it("refuses a coordinate MapLibre would throw on", () => {
+    for (const position of [
+      [Number.NaN, 51.09],
+      [4.38, Number.POSITIVE_INFINITY],
+      [181, 51.09],
+      [4.38, -91],
+      [999, 999],
+    ] as const) {
+      expect(buildLocateCollection(position as unknown as GeoJsonPosition).features, `${position}`).toEqual(
+        [],
+      );
+    }
+  });
+
+  it("returns a collection MapLibre will accept as a source", () => {
+    const collection = buildLocateCollection([4.3868, 51.0928]);
+    expect(collection.type).toBe("FeatureCollection");
+    expect(collection.features[0]?.type).toBe("Feature");
+    expect(JSON.parse(JSON.stringify(collection))).toEqual(collection);
   });
 });
 

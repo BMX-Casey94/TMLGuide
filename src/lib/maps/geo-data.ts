@@ -26,6 +26,7 @@ import type {
   GeoMapEdge,
   GeoMapNode,
   MapOverlayProperties,
+  PhysicalVenueId,
   VenueMapId,
 } from "./geo-types";
 
@@ -563,8 +564,14 @@ const DREAMVILLE_NODES: readonly GeoMapNode[] = [
     name: "De Schorre Festival Gate",
     shortLabel: "Festival",
     category: "entrance",
-    lng: 4.3868,
-    lat: 51.0928,
+    /*
+      A few tens of metres east of the De Schorre DreamVille Gate, on the campsite
+      side of the same bridge. The two gates are the two ends of one crossing, so
+      the combined view joins them with a short, real edge rather than pretending
+      they occupy one point.
+    */
+    lng: 4.3873,
+    lat: 51.09275,
     summary:
       "The far end of the walkway, where DreamVille meets the festival site; from here the De Schorre map takes over.",
     typicalZoneNote:
@@ -694,7 +701,7 @@ const DREAMVILLE_WALKWAY: GeoJsonLineStringGeometry = {
     [4.3918, 51.0929],
     [4.39, 51.0927],
     [4.3884, 51.0923],
-    [4.3868, 51.0928],
+    [4.3873, 51.09275],
   ],
 };
 
@@ -804,6 +811,71 @@ const DREAMVILLE_OVERLAYS: GeoJsonFeatureCollection<MapOverlayProperties> = {
 };
 
 /* -------------------------------------------------------------------------- */
+/* The combined view: De Schorre and DreamVille on one map                      */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * The De Schorre gate that the two layouts share.
+ *
+ * On the ground there is one crossing: De Schorre's DreamVille Gate on its own
+ * side of the bridge, and DreamVille's festival gate at the far end of the
+ * campsite walkway. The two descriptions name the same piece of tarmac, so the
+ * combined map draws it once — under the De Schorre id, because that is the side
+ * a visitor arrives at first when walking out of the campsite.
+ */
+export const CROSS_VENUE_NODE_ID = "ds-dreamville-gate";
+
+/**
+ * The DreamVille id that stands for the same crossing.
+ *
+ * Kept as a named constant so the merge below, and any test that checks it,
+ * cannot disagree about which node was folded into which.
+ */
+export const CROSS_VENUE_ALIAS_ID = "dv-festival-gate";
+
+/**
+ * The shared crossing, described for a visitor who is looking at both layouts at
+ * once. Only the combined map uses this wording; each venue keeps its own.
+ */
+const CROSS_VENUE_NODE: GeoMapNode = {
+  id: CROSS_VENUE_NODE_ID,
+  name: "DreamVille Gate and Festival Walkway",
+  shortLabel: "DV Gate",
+  category: "entrance",
+  lng: 4.3868,
+  lat: 51.0928,
+  summary:
+    "The shared crossing between the festival site and the campsite: De Schorre's DreamVille Gate on the festival side, the end of DreamVille's Rainbow Walkway on the other.",
+  typicalZoneNote:
+    "Effectively one-way after the headline set, as the whole campsite moves east across it at once.",
+};
+
+/** Every node of both venues, with the shared crossing drawn once. */
+const ALL_VENUE_NODES: readonly GeoMapNode[] = [
+  ...DE_SCHORRE_NODES.map((node) => (node.id === CROSS_VENUE_NODE_ID ? CROSS_VENUE_NODE : node)),
+  ...DREAMVILLE_NODES.filter((node) => node.id !== CROSS_VENUE_ALIAS_ID),
+];
+
+/**
+ * DreamVille's footpaths, retargeted at the shared crossing.
+ *
+ * The DreamVille map keeps `dv-festival-gate`; here the one edge that ended there
+ * ends at the merged node instead, so the combined graph is joined without a
+ * second, invented link between the two gates.
+ */
+const ALL_DREAMVILLE_EDGE_SPECS: readonly EdgeSpec[] = DREAMVILLE_EDGE_SPECS.map((spec) => ({
+  ...spec,
+  from: spec.from === CROSS_VENUE_ALIAS_ID ? CROSS_VENUE_NODE_ID : spec.from,
+  to: spec.to === CROSS_VENUE_ALIAS_ID ? CROSS_VENUE_NODE_ID : spec.to,
+}));
+
+/** The two venues' overlays side by side, each still tagged with its own map. */
+const ALL_VENUE_OVERLAYS: GeoJsonFeatureCollection<MapOverlayProperties> = {
+  type: "FeatureCollection",
+  features: [...DE_SCHORRE_OVERLAYS.features, ...DREAMVILLE_OVERLAYS.features],
+};
+
+/* -------------------------------------------------------------------------- */
 /* Assembled maps                                                              */
 /* -------------------------------------------------------------------------- */
 
@@ -829,11 +901,58 @@ export const DREAMVILLE_MAP: GeoMap = {
   overlays: DREAMVILLE_OVERLAYS,
 };
 
+/**
+ * Both venues on one map, joined at the shared crossing.
+ *
+ * This is the view a camper needs: a single walk from a campsite field to a
+ * stage, measured end to end rather than as two separate estimates added up by
+ * hand. Its bounds are the union of the two venues', so "show the whole site"
+ * fits Boom and Rumst in one frame.
+ */
+export const ALL_VENUE_MAP: GeoMap = {
+  id: "all",
+  name: "Boom and Rumst, full site",
+  disclaimer: GEO_DATA_DISCLAIMER,
+  centre: [4.3893, 51.092],
+  bounds: { south: 51.0865, west: 4.3716, north: 51.0975, east: 4.407 },
+  nodes: ALL_VENUE_NODES,
+  edges: [
+    ...buildEdges(ALL_VENUE_NODES, DE_SCHORRE_EDGE_SPECS),
+    ...buildEdges(ALL_VENUE_NODES, ALL_DREAMVILLE_EDGE_SPECS),
+  ],
+  overlays: ALL_VENUE_OVERLAYS,
+};
+
 /** Every map, keyed so a caller holding a `VenueMapId` can index straight in. */
 export const VENUE_MAPS: Readonly<Record<VenueMapId, GeoMap>> = {
   "de-schorre": DE_SCHORRE_MAP,
   dreamville: DREAMVILLE_MAP,
+  all: ALL_VENUE_MAP,
 };
+
+/**
+ * The two physical venues' maps, for anything that stores a favourite or shows
+ * one venue at a time. The combined view is deliberately not here.
+ */
+export const PHYSICAL_VENUE_MAPS: Readonly<Record<PhysicalVenueId, GeoMap>> = {
+  "de-schorre": DE_SCHORRE_MAP,
+  dreamville: DREAMVILLE_MAP,
+};
+
+/**
+ * Which of the two venues a node id belongs to, or `null` if it is on neither.
+ *
+ * The combined view holds nodes from both venues under one id space, so anything
+ * that is stored per venue — a favourite, most obviously — needs this to know
+ * which bucket a starred zone goes in. A zone starred while viewing the whole
+ * site must be the same favourite as one starred on its own venue's map.
+ */
+export function physicalVenueOfNode(nodeId: string): PhysicalVenueId | null {
+  for (const map of [DE_SCHORRE_MAP, DREAMVILLE_MAP]) {
+    if (map.nodes.some((node) => node.id === nodeId)) return map.id as PhysicalVenueId;
+  }
+  return null;
+}
 
 /**
  * The window that contains both venues, for the "show everything" button and

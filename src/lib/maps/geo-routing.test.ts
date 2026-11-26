@@ -2,26 +2,44 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  ALL_VENUE_MAP,
+  CROSS_VENUE_ALIAS_ID,
+  CROSS_VENUE_NODE_ID,
   DE_SCHORRE_MAP,
   DREAMVILLE_MAP,
   FESTIVAL_PACE_MPH,
   FOOTPATH_WINDING_FACTOR,
   GEO_DATA_DISCLAIMER,
+  PHYSICAL_VENUE_MAPS,
   VENUE_BOUNDS,
   VENUE_MAPS,
+  physicalVenueOfNode,
   walkingMinutesFor,
 } from "./geo-data";
-import { filterNodes, findShortestRoute, haversineMiles, nodeById } from "./geo-routing";
+import {
+  distanceToBoundsMiles,
+  filterNodes,
+  findShortestRoute,
+  haversineMiles,
+  nearestNode,
+  nodeById,
+  routeBetween,
+} from "./geo-routing";
 import type {
   GeoJsonPosition,
   GeoMap,
   GeoMapEdge,
   GeoMapNode,
   MapNodeCategory,
+  PhysicalVenueId,
   VenueMapId,
 } from "./geo-types";
 
+/** The two physical venues. The combined view is checked separately. */
 const MAPS: readonly GeoMap[] = [DE_SCHORRE_MAP, DREAMVILLE_MAP];
+
+/** Every view the switcher offers, combined one included. */
+const ALL_VIEWS: readonly GeoMap[] = [DE_SCHORRE_MAP, DREAMVILLE_MAP, ALL_VENUE_MAP];
 
 /** The window the data must stay inside: Boom and Rumst, and nothing else. */
 const BOUNDS = { south: 51.08, west: 4.36, north: 51.11, east: 4.42 } as const;
@@ -134,15 +152,46 @@ const DISCONNECTED_MAP: GeoMap = {
   overlays: { type: "FeatureCollection", features: [] },
 };
 
+/** A map with no nodes at all, for the empty-graph branch of `nearestNode`. */
+const DISCONNECTED_MAP_EMPTY: GeoMap = {
+  id: "all",
+  name: "Empty fixture",
+  disclaimer: "Test fixture.",
+  centre: [4.38, 51.09],
+  bounds: { south: 51.085, west: 4.375, north: 51.095, east: 4.385 },
+  nodes: [],
+  edges: [],
+  overlays: { type: "FeatureCollection", features: [] },
+};
+
 describe("venue maps", () => {
-  it("exposes both venues under their ids", () => {
+  it("exposes both venues under their ids, plus the combined site view", () => {
     expect(VENUE_MAPS["de-schorre"]).toBe(DE_SCHORRE_MAP);
     expect(VENUE_MAPS.dreamville).toBe(DREAMVILLE_MAP);
-    expect(Object.keys(VENUE_MAPS).sort()).toEqual(["de-schorre", "dreamville"]);
+    expect(VENUE_MAPS.all).toBe(ALL_VENUE_MAP);
+    expect(Object.keys(VENUE_MAPS).sort()).toEqual(["all", "de-schorre", "dreamville"]);
   });
 
-  it("carries the honesty disclaimer on both maps", () => {
-    for (const map of MAPS) {
+  it("keeps the stored-favourites lookup to the two physical venues", () => {
+    // A favourite is a place, not a view, so the combined map gets no bucket.
+    expect(Object.keys(PHYSICAL_VENUE_MAPS).sort()).toEqual(["de-schorre", "dreamville"]);
+    expect(PHYSICAL_VENUE_MAPS["de-schorre"]).toBe(DE_SCHORRE_MAP);
+    expect(PHYSICAL_VENUE_MAPS.dreamville).toBe(DREAMVILLE_MAP);
+  });
+
+  it("attributes every node of the combined view to one of the two venues", () => {
+    for (const node of ALL_VENUE_MAP.nodes) {
+      const venue = physicalVenueOfNode(node.id);
+      expect(venue, `${node.id} belongs to neither venue`).not.toBeNull();
+      expect(["de-schorre", "dreamville"]).toContain(venue);
+    }
+    expect(physicalVenueOfNode("not-a-node")).toBeNull();
+    expect(physicalVenueOfNode("ds-mainstage")).toBe("de-schorre");
+    expect(physicalVenueOfNode("dv-montagoe")).toBe("dreamville");
+  });
+
+  it("carries the honesty disclaimer on every view", () => {
+    for (const map of ALL_VIEWS) {
       expect(map.disclaimer).toBe(GEO_DATA_DISCLAIMER);
       expect(map.disclaimer).toContain("2027");
       expect(map.disclaimer.toLowerCase()).toContain("not published");
@@ -741,6 +790,332 @@ describe("findShortestRoute", () => {
   });
 });
 
+describe("the combined site view", () => {
+  it("holds every zone of both venues, and the shared crossing only once", () => {
+    const combined = new Set(ALL_VENUE_MAP.nodes.map((node) => node.id));
+
+    for (const map of MAPS) {
+      for (const node of map.nodes) {
+        if (node.id === CROSS_VENUE_ALIAS_ID) continue;
+        expect(combined.has(node.id), `${node.id} is missing from the combined view`).toBe(true);
+      }
+    }
+
+    // The one DreamVille id that is folded into the De Schorre gate.
+    expect(combined.has(CROSS_VENUE_ALIAS_ID)).toBe(false);
+    expect(combined.has(CROSS_VENUE_NODE_ID)).toBe(true);
+    expect(ALL_VENUE_MAP.nodes.filter((node) => node.id === CROSS_VENUE_NODE_ID)).toHaveLength(1);
+
+    // Every node accounted for, with one fold and no losses.
+    expect(ALL_VENUE_MAP.nodes).toHaveLength(
+      DE_SCHORRE_MAP.nodes.length + DREAMVILLE_MAP.nodes.length - 1,
+    );
+  });
+
+  it("gives the shared crossing both venues' wording, since it belongs to both", () => {
+    const crossing = nodeById(ALL_VENUE_MAP, CROSS_VENUE_NODE_ID);
+    expect(crossing).not.toBeNull();
+    expect(crossing?.name).toMatch(/DreamVille Gate/i);
+    expect(crossing?.summary).toMatch(/campsite/i);
+    expect(crossing?.category).toBe("entrance");
+  });
+
+  it("joins the two venues into one walkable network", () => {
+    const adjacency = neighbours(ALL_VENUE_MAP);
+    const seen = new Set<string>();
+    const start = ALL_VENUE_MAP.nodes[0]?.id as string;
+    const stack = [start];
+    while (stack.length > 0) {
+      const current = stack.pop() as string;
+      if (seen.has(current)) continue;
+      seen.add(current);
+      for (const link of adjacency.get(current) ?? []) stack.push(link.id);
+    }
+
+    expect(seen.size).toBe(ALL_VENUE_MAP.nodes.length);
+  });
+
+  it("crosses the venue boundary exactly once, at the shared gate", () => {
+    const crossingEdges = ALL_VENUE_MAP.edges.filter((edge) => {
+      const from = physicalVenueOfNode(edge.from);
+      const to = physicalVenueOfNode(edge.to);
+      return from !== null && to !== null && from !== to;
+    });
+
+    /*
+      One edge, not two and not none. DreamVille's Rainbow Walkway reaches the
+      merged gate, which carries the De Schorre node id, so this single edge is
+      the join between the two venue graphs. Anything more would mean an invented
+      bridge; anything less would mean the combined map could not route across it.
+    */
+    expect(crossingEdges).toHaveLength(1);
+
+    const [join] = crossingEdges;
+    expect([join?.from, join?.to].sort()).toEqual(["dv-rainbow-walkway", CROSS_VENUE_NODE_ID].sort());
+    expect(join?.distanceMiles).toBeGreaterThan(0);
+    expect(join?.bottleneckNote).toBeDefined();
+  });
+
+  it("keeps every combined edge consistent with its two node positions", () => {
+    for (const edge of ALL_VENUE_MAP.edges) {
+      const from = nodeById(ALL_VENUE_MAP, edge.from);
+      const to = nodeById(ALL_VENUE_MAP, edge.to);
+      expect(from, `${edge.from} is missing`).not.toBeNull();
+      expect(to, `${edge.to} is missing`).not.toBeNull();
+      if (from === null || to === null) continue;
+
+      const straight = haversineMiles([from.lng, from.lat], [to.lng, to.lat]);
+      expect(edge.distanceMiles, `${edge.from} → ${edge.to}`).toBeGreaterThan(0);
+      expect(edge.distanceMiles, `${edge.from} → ${edge.to}`).toBeGreaterThanOrEqual(straight - 1e-9);
+      expect(edge.walkMinutes).toBe(walkingMinutesFor(edge.distanceMiles));
+      expect(edge.peakMultiplier).toBeGreaterThanOrEqual(1);
+    }
+  });
+
+  it("never repeats an edge, and never links a node to itself", () => {
+    const seen = new Set<string>();
+    for (const edge of ALL_VENUE_MAP.edges) {
+      expect(edge.from).not.toBe(edge.to);
+      const key = [edge.from, edge.to].sort().join("|");
+      expect(seen.has(key), `${key} appears twice`).toBe(false);
+      seen.add(key);
+    }
+  });
+
+  it("draws both venues' ground beneath the combined route", () => {
+    const kinds = ALL_VENUE_MAP.overlays.features.map((feature) => feature.properties.kind);
+    // De Schorre's pieces and DreamVille's, in one collection.
+    expect(kinds).toEqual(expect.arrayContaining(["park-footprint", "stage-bowl", "walking-spine"]));
+    expect(kinds).toEqual(expect.arrayContaining(["site-boundary", "district", "walkway"]));
+
+    const mapIds = new Set(ALL_VENUE_MAP.overlays.features.map((feature) => feature.properties.mapId));
+    expect(mapIds).toEqual(new Set(["de-schorre", "dreamville"]));
+
+    expect(ALL_VENUE_MAP.overlays.features).toHaveLength(
+      DE_SCHORRE_MAP.overlays.features.length + DREAMVILLE_MAP.overlays.features.length,
+    );
+  });
+
+  it("spans both towns in its bounds and centre", () => {
+    expect(ALL_VENUE_MAP.bounds.west).toBeLessThanOrEqual(DE_SCHORRE_MAP.bounds.west);
+    expect(ALL_VENUE_MAP.bounds.east).toBeGreaterThanOrEqual(DREAMVILLE_MAP.bounds.east);
+    expect(ALL_VENUE_MAP.bounds.south).toBeLessThanOrEqual(DE_SCHORRE_MAP.bounds.south);
+    expect(ALL_VENUE_MAP.bounds.north).toBeGreaterThanOrEqual(DREAMVILLE_MAP.bounds.north);
+
+    const [lng, lat] = ALL_VENUE_MAP.centre;
+    expect(lng).toBeGreaterThan(ALL_VENUE_MAP.bounds.west);
+    expect(lng).toBeLessThan(ALL_VENUE_MAP.bounds.east);
+    expect(lat).toBeGreaterThan(ALL_VENUE_MAP.bounds.south);
+    expect(lat).toBeLessThan(ALL_VENUE_MAP.bounds.north);
+  });
+});
+
+describe("cross-venue routes", () => {
+  /** Asserts the figure a reader would be shown: miles, minutes, and a LineString. */
+  function expectUsableRoute(route: ReturnType<typeof findShortestRoute>, label: string): void {
+    expect(route, label).not.toBeNull();
+    if (route === null) return;
+
+    expect(route.mapId, label).toBe("all");
+    expect(route.nodes.length, label).toBeGreaterThanOrEqual(2);
+    expect(route.edges.length, label).toBe(route.nodes.length - 1);
+
+    expect(route.totalDistanceMiles, label).toBeGreaterThan(0.1);
+    expect(Number.isFinite(route.totalDistanceMiles), label).toBe(true);
+    expect(route.totalDistanceMiles, label).toBe(Math.round(route.totalDistanceMiles * 100) / 100);
+
+    expect(route.normalWalkMinutes, label).toBeGreaterThan(0);
+    expect(Number.isInteger(route.normalWalkMinutes), label).toBe(true);
+    expect(route.peakWalkMinutes, label).toBeGreaterThanOrEqual(route.normalWalkMinutes);
+
+    expect(route.geometry.type, label).toBe("LineString");
+    expect(route.geometry.coordinates.length, label).toBeGreaterThanOrEqual(2);
+    expect(route.geometry.coordinates.length, label).toBe(route.nodes.length);
+    expect(route.geometry.coordinates[0], label).toEqual([route.from.lng, route.from.lat]);
+    expect(route.geometry.coordinates[route.geometry.coordinates.length - 1], label).toEqual([
+      route.to.lng,
+      route.to.lat,
+    ]);
+
+    for (const position of route.geometry.coordinates) {
+      expect(inBounds(position), label).toBe(true);
+    }
+  }
+
+  it("walks from Montagoe to the Mainstage across the shared gate", () => {
+    const route = findShortestRoute(ALL_VENUE_MAP, "dv-montagoe", "ds-mainstage");
+    expectUsableRoute(route, "Montagoe → Mainstage");
+
+    // The crossing is unavoidable, so it must appear on the way.
+    const ids = route?.nodes.map((node) => node.id) ?? [];
+    expect(ids).toContain(CROSS_VENUE_NODE_ID);
+    expect(ids[0]).toBe("dv-montagoe");
+    expect(ids[ids.length - 1]).toBe("ds-mainstage");
+
+    // A camper's whole journey is a plausible length, in miles.
+    expect(route?.totalDistanceMiles).toBeGreaterThan(0.4);
+    expect(route?.totalDistanceMiles).toBeLessThan(2.5);
+  });
+
+  it("walks from Magnificent Greens to Freedom across the shared gate", () => {
+    const route = findShortestRoute(ALL_VENUE_MAP, "dv-magnificent-greens", "ds-freedom");
+    expectUsableRoute(route, "Magnificent Greens → Freedom");
+
+    const ids = route?.nodes.map((node) => node.id) ?? [];
+    expect(ids).toContain(CROSS_VENUE_NODE_ID);
+    expect(ids[0]).toBe("dv-magnificent-greens");
+    expect(ids[ids.length - 1]).toBe("ds-freedom");
+  });
+
+  it("works in the other direction too, because a footpath is not one-way", () => {
+    const out = findShortestRoute(ALL_VENUE_MAP, "ds-mainstage", "dv-montagoe");
+    const back = findShortestRoute(ALL_VENUE_MAP, "dv-montagoe", "ds-mainstage");
+    expectUsableRoute(out, "Mainstage → Montagoe");
+    expect(out?.totalDistanceMiles).toBeCloseTo(back?.totalDistanceMiles as number, 6);
+  });
+
+  it("routes between any camp and any stage on the combined view", () => {
+    const camps = ALL_VENUE_MAP.nodes.filter((node) => node.category === "camp");
+    const stages = ALL_VENUE_MAP.nodes.filter(
+      (node) => node.category === "stage" && physicalVenueOfNode(node.id) === "de-schorre",
+    );
+    expect(camps.length).toBeGreaterThan(0);
+    expect(stages.length).toBeGreaterThan(0);
+
+    for (const camp of camps) {
+      for (const stage of stages) {
+        const route = findShortestRoute(ALL_VENUE_MAP, camp.id, stage.id);
+        expectUsableRoute(route, `${camp.id} → ${stage.id}`);
+      }
+    }
+  });
+
+  it("agrees with an exhaustive search across the whole site", () => {
+    for (const [from, to] of [
+      ["dv-montagoe", "ds-mainstage"],
+      ["dv-easy-tent", "ds-core"],
+      ["dv-friendship-garden", "ds-rose-garden"],
+      ["ds-transport", "dv-marketplace"],
+    ] as const) {
+      const route = findShortestRoute(ALL_VENUE_MAP, from, to);
+      const expected = bruteForceMiles(ALL_VENUE_MAP, from, to);
+      expect(route, `${from} → ${to}`).not.toBeNull();
+      expect(expected, `${from} → ${to}`).not.toBeNull();
+      expect(route?.totalDistanceMiles, `${from} → ${to}`).toBeCloseTo(expected as number, 6);
+    }
+  });
+
+  it("quotes a longer walk across the site than within the campsite", () => {
+    const withinSite = findShortestRoute(ALL_VENUE_MAP, "dv-montagoe", "ds-dreamville-gate");
+    const acrossSite = findShortestRoute(ALL_VENUE_MAP, "dv-montagoe", "ds-freedom");
+    expect(withinSite?.totalDistanceMiles).toBeDefined();
+    expect(acrossSite?.totalDistanceMiles).toBeDefined();
+    expect(acrossSite?.totalDistanceMiles as number).toBeGreaterThan(
+      withinSite?.totalDistanceMiles as number,
+    );
+  });
+});
+
+describe("routeBetween", () => {
+  it("uses the venue's own graph when both ends are on it", () => {
+    const route = routeBetween([DE_SCHORRE_MAP, ALL_VENUE_MAP], "ds-main-entrance", "ds-mainstage");
+    expect(route).not.toBeNull();
+    // The single-venue figures are unchanged: the fallback was never used.
+    expect(route?.mapId).toBe("de-schorre");
+    expect(route?.totalDistanceMiles).toBe(
+      findShortestRoute(DE_SCHORRE_MAP, "ds-main-entrance", "ds-mainstage")?.totalDistanceMiles,
+    );
+  });
+
+  it("falls back to the combined map when one end is on the other venue", () => {
+    const route = routeBetween([DE_SCHORRE_MAP, ALL_VENUE_MAP], "ds-mainstage", "dv-montagoe");
+    expect(route).not.toBeNull();
+    expect(route?.mapId).toBe("all");
+    expect(route?.from.id).toBe("ds-mainstage");
+    expect(route?.to.id).toBe("dv-montagoe");
+  });
+
+  it("falls back in the other direction as well", () => {
+    const route = routeBetween([DREAMVILLE_MAP, ALL_VENUE_MAP], "dv-montagoe", "ds-mainstage");
+    expect(route?.mapId).toBe("all");
+    expect(route?.geometry.type).toBe("LineString");
+  });
+
+  it("returns null rather than throwing when nothing connects the pair", () => {
+    expect(routeBetween([DE_SCHORRE_MAP, ALL_VENUE_MAP], "ds-mainstage", "nowhere")).toBeNull();
+    expect(routeBetween([], "ds-mainstage", "ds-core")).toBeNull();
+  });
+
+  it("does not use a candidate map that holds only one end", () => {
+    const route = routeBetween([DE_SCHORRE_MAP], "dv-montagoe", "ds-mainstage");
+    expect(route).toBeNull();
+  });
+});
+
+describe("nearestNode", () => {
+  it("finds the closest zone to a point beside it", () => {
+    const montagoe = nodeById(ALL_VENUE_MAP, "dv-montagoe") as GeoMapNode;
+    const nearest = nearestNode(ALL_VENUE_MAP, [montagoe.lng + 0.0004, montagoe.lat + 0.0004]);
+
+    expect(nearest).not.toBeNull();
+    expect(nearest?.node.id).toBe("dv-montagoe");
+    expect(nearest?.straightLineMiles).toBeGreaterThan(0);
+    expect(nearest?.straightLineMiles).toBeLessThan(0.1);
+  });
+
+  it("returns zero miles for a point standing on a zone", () => {
+    const mainstage = nodeById(DE_SCHORRE_MAP, "ds-mainstage") as GeoMapNode;
+    const nearest = nearestNode(DE_SCHORRE_MAP, [mainstage.lng, mainstage.lat]);
+    expect(nearest?.node.id).toBe("ds-mainstage");
+    expect(nearest?.straightLineMiles).toBe(0);
+  });
+
+  it("picks the nearest across both venues when given the combined map", () => {
+    const greens = nodeById(ALL_VENUE_MAP, "dv-magnificent-greens") as GeoMapNode;
+    const nearest = nearestNode(ALL_VENUE_MAP, [greens.lng, greens.lat + 0.0002]);
+    expect(nearest?.node.id).toBe("dv-magnificent-greens");
+    expect(physicalVenueOfNode(nearest?.node.id as string)).toBe("dreamville");
+  });
+
+  it("returns null for a map with no nodes", () => {
+    expect(nearestNode(DISCONNECTED_MAP_EMPTY, [4.38, 51.09])).toBeNull();
+  });
+
+  it("rejects an invalid position", () => {
+    expect(() => nearestNode(DE_SCHORRE_MAP, [4.38] as unknown as GeoJsonPosition)).toThrow(
+      RangeError,
+    );
+    expect(() => nearestNode(DE_SCHORRE_MAP, [Number.NaN, 51.09])).toThrow(RangeError);
+  });
+});
+
+describe("distanceToBoundsMiles", () => {
+  it("is zero inside the box", () => {
+    expect(distanceToBoundsMiles([4.39, 51.092], VENUE_BOUNDS)).toBe(0);
+    // A point just inside an edge is still inside.
+    expect(distanceToBoundsMiles([VENUE_BOUNDS.west + 1e-6, 51.092], VENUE_BOUNDS)).toBe(0);
+  });
+
+  it("measures from the nearest edge, not from the centre", () => {
+    const insideButEast = VENUE_BOUNDS.east + 0.01;
+    const distance = distanceToBoundsMiles([insideButEast, 51.092], VENUE_BOUNDS);
+
+    // Roughly 0.01 degrees of longitude at this latitude is about 0.43 miles.
+    expect(distance).toBeGreaterThan(0.3);
+    expect(distance).toBeLessThan(0.6);
+  });
+
+  it("grows as the point moves away", () => {
+    const near = distanceToBoundsMiles([VENUE_BOUNDS.east + 0.01, 51.092], VENUE_BOUNDS);
+    const far = distanceToBoundsMiles([VENUE_BOUNDS.east + 0.1, 51.092], VENUE_BOUNDS);
+    expect(far).toBeGreaterThan(near);
+  });
+
+  it("rejects an invalid position", () => {
+    expect(() => distanceToBoundsMiles([4.38, 91], VENUE_BOUNDS)).toThrow(RangeError);
+  });
+});
+
 describe("filterNodes", () => {
   it("returns every node when given no filter", () => {
     for (const map of MAPS) {
@@ -861,10 +1236,10 @@ describe("constants", () => {
     expect(FOOTPATH_WINDING_FACTOR).toBeLessThanOrEqual(1.5);
   });
 
-  it("keeps the shared search window wider than both venues", () => {
+  it("keeps the shared search window wider than every view", () => {
     expect(VENUE_BOUNDS.south).toBeLessThan(BOUNDS.south + 0.0001);
     expect(VENUE_BOUNDS.north).toBeGreaterThanOrEqual(BOUNDS.north - 0.0001);
-    for (const map of MAPS) {
+    for (const map of ALL_VIEWS) {
       expect(map.bounds.south).toBeGreaterThanOrEqual(VENUE_BOUNDS.south);
       expect(map.bounds.north).toBeLessThanOrEqual(VENUE_BOUNDS.north);
       expect(map.bounds.west).toBeGreaterThanOrEqual(VENUE_BOUNDS.west);
@@ -873,7 +1248,12 @@ describe("constants", () => {
   });
 
   it("types the map ids as the union the UI switches on", () => {
-    const ids: VenueMapId[] = MAPS.map((map) => map.id);
+    const ids: VenueMapId[] = ALL_VIEWS.map((map) => map.id);
+    expect(ids.sort()).toEqual(["all", "de-schorre", "dreamville"]);
+  });
+
+  it("types the favourite keys as the two physical venues", () => {
+    const ids: PhysicalVenueId[] = MAPS.map((map) => map.id as PhysicalVenueId);
     expect(ids.sort()).toEqual(["de-schorre", "dreamville"]);
   });
 });

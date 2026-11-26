@@ -26,6 +26,7 @@
 
 import type {
   GeoJsonFeature,
+  GeoJsonPosition,
   GeoMap,
   GeoMapNode,
   GeoRoute,
@@ -41,6 +42,25 @@ export const CATEGORY_COLOURS: Readonly<Record<MapNodeCategory, string>> = {
   camp: "#7ec8a1",
   facility: "#8edbff",
   transport: "#f0527f",
+};
+
+/**
+ * One letter per category, printed on every marker and on every legend swatch.
+ *
+ * Colour alone does not distinguish five categories for a visitor with a colour
+ * vision deficiency, and this map is often read on a phone in the dark. The
+ * letter is a second, independent channel: a disc says "this is a place", the
+ * letter says what kind, and the legend prints the same letter so the key is
+ * never a matter of matching shades. `S` for a stage, `E` for an entrance, `C`
+ * for a camp, `F` for a facility, `T` for transport. Route ends use `A` and `B`,
+ * which are outside that set.
+ */
+export const CATEGORY_LETTERS: Readonly<Record<MapNodeCategory, string>> = {
+  stage: "S",
+  entrance: "E",
+  camp: "C",
+  facility: "F",
+  transport: "T",
 };
 
 /** Human label per category, used by the chips and the legend. */
@@ -68,6 +88,7 @@ export const SOURCE_IDS = {
   nodes: "tml-nodes",
   endpoints: "tml-endpoints",
   inspected: "tml-inspected",
+  locate: "tml-locate",
 } as const;
 
 /** Layer ids, in one place so a handler cannot mistype the one it listens on. */
@@ -79,10 +100,24 @@ export const LAYER_IDS = {
   routeLine: "tml-route-line",
   inspectedRing: "tml-node-inspected",
   nodeCircle: "tml-node-circle",
+  nodeBadge: "tml-node-badge",
   endpointCircle: "tml-endpoint-circle",
   nodeLabel: "tml-node-label",
   endpointLabel: "tml-endpoint-label",
+  locateHalo: "tml-locate-halo",
+  locateDot: "tml-locate-dot",
 } as const;
+
+/**
+ * The visitor's own position marker.
+ *
+ * Deliberately unlike every category colour: a saturated white core inside a
+ * teal halo, so it reads as "you are here" rather than as one more place. Teal
+ * is used nowhere else on the map at full strength, and the marker carries no
+ * letter, so it cannot be mistaken for a badge.
+ */
+export const LOCATE_COLOUR = "#2bc4b4";
+export const LOCATE_CORE_COLOUR = "#f4ece0";
 
 /** The feature properties the overlay layers read. */
 export interface OverlayFeatureProperties {
@@ -187,6 +222,8 @@ export interface NodeFeatureProperties {
   readonly shortLabel: string;
   readonly category: MapNodeCategory;
   readonly colour: string;
+  /** The category letter printed inside the marker: S, E, C, F or T. */
+  readonly badge: string;
   /** 1 for the two route ends, 0 otherwise. Drives label priority. */
   readonly priority: number;
   /** "A", "B" or "" — printed on the marker when it is a route end. */
@@ -209,6 +246,7 @@ export function nodeMarker(
       shortLabel: node.shortLabel,
       category: node.category,
       colour: CATEGORY_COLOURS[node.category],
+      badge: CATEGORY_LETTERS[node.category],
       priority: endpoint === "" ? 0 : 1,
       endpoint,
     },
@@ -333,4 +371,46 @@ export function nodeFocus(node: GeoMapNode): {
   readonly zoom: number;
 } {
   return { center: [node.lng, node.lat], zoom: 16.4 };
+}
+
+/** Properties carried by the visitor's own position marker. */
+export interface LocateFeatureProperties {
+  readonly label: string;
+}
+
+/**
+ * The visitor's position as a single point, or an empty collection.
+ *
+ * The coordinate is held in React state and passed straight here; nothing is
+ * written to storage, sent anywhere, or kept after the page is closed. An empty
+ * collection is the "not located" state, so the layers need no visibility flag.
+ *
+ * The position is validated before it is turned into geometry: a browser is
+ * allowed to hand back a nonsense coordinate, and a longitude of 500 would make
+ * MapLibre throw rather than draw nothing.
+ */
+export function buildLocateCollection(
+  position: GeoJsonPosition | null,
+): FeatureCollectionLike<LocateFeatureProperties> {
+  if (position === null) return { type: "FeatureCollection", features: [] };
+
+  const [lng, lat] = position;
+  if (!Number.isFinite(lng) || !Number.isFinite(lat)) {
+    return { type: "FeatureCollection", features: [] };
+  }
+  if (lng < -180 || lng > 180 || lat < -90 || lat > 90) {
+    return { type: "FeatureCollection", features: [] };
+  }
+
+  return {
+    type: "FeatureCollection",
+    features: [
+      {
+        type: "Feature",
+        id: "visitor-location",
+        properties: { label: "Your location" },
+        geometry: { type: "Point", coordinates: [lng, lat] },
+      },
+    ],
+  };
 }

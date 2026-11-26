@@ -21,7 +21,7 @@
  * starts again instead of wedging the tool.
  */
 
-import type { GeoMap, VenueMapId } from "@/lib/maps/geo-types";
+import type { GeoMap, PhysicalVenueId } from "@/lib/maps/geo-types";
 
 /** The single storage key. Nothing else is stored for favourites. */
 export const FAVOURITES_STORAGE_KEY = "tml-map-favourites-v1";
@@ -29,8 +29,15 @@ export const FAVOURITES_STORAGE_KEY = "tml-map-favourites-v1";
 /** How many favourites a venue may hold. A cap keeps a hostile value bounded. */
 export const MAX_FAVOURITES_PER_VENUE = 64;
 
-/** The shape handed around inside React: a set of ids per venue. */
-export type FavouritesByVenue = Readonly<Record<VenueMapId, readonly string[]>>;
+/**
+ * The shape handed around inside React: a set of ids per venue.
+ *
+ * Keyed by the two physical venues only. The combined site view is a way of
+ * looking at the other two, not a third place to visit, so it gets no bucket of
+ * its own: a zone starred on the campsite is the same zone when both layouts are
+ * on screen.
+ */
+export type FavouritesByVenue = Readonly<Record<PhysicalVenueId, readonly string[]>>;
 
 /** No favourites, which is what a visitor with no saved value gets. */
 export const EMPTY_FAVOURITES: FavouritesByVenue = { "de-schorre": [], dreamville: [] };
@@ -96,7 +103,9 @@ function idsFor(parsed: unknown, map: GeoMap): readonly string[] {
  * that parses but holds unusable ids is kept: the visitor's other venue may still
  * be fine, and dropping only the bad ids is the least destructive repair.
  */
-export function readFavourites(maps: Readonly<Record<VenueMapId, GeoMap>>): FavouritesByVenue {
+export function readFavourites(
+  maps: Readonly<Record<PhysicalVenueId, GeoMap>>,
+): FavouritesByVenue {
   const store = storage();
   if (store === null) return EMPTY_FAVOURITES;
 
@@ -159,7 +168,7 @@ export function writeFavourites(favourites: FavouritesByVenue): boolean {
  */
 export function toggleFavourite(
   favourites: FavouritesByVenue,
-  venueId: VenueMapId,
+  venueId: PhysicalVenueId,
   nodeId: string,
 ): FavouritesByVenue {
   const current = favourites[venueId];

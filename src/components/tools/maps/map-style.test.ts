@@ -13,6 +13,14 @@ import {
 } from "./map-style";
 import { buildMapLayers, INTERACTIVE_NODE_LAYERS } from "./map-layer-specs";
 import { LAYER_IDS, SOURCE_IDS } from "./map-layers";
+import {
+  GROUND_COLOUR,
+  LOCATE_COLOUR,
+  LOCATE_CORE_COLOUR,
+} from "./map-layers";
+import { DE_SCHORRE_MAP } from "@/lib/maps/geo-data";
+import { haversineMiles, nodeById } from "@/lib/maps/geo-routing";
+import type { GeoMapNode } from "@/lib/maps/geo-types";
 
 /*
   The style and the layers are plain data, so they can be checked without a
@@ -166,6 +174,13 @@ describe("buildMapLayers", () => {
     }
   });
 
+  it("orders the badge after the place labels, so a name beats a letter", () => {
+    const ids = buildMapLayers().map((layer) => layer.id);
+    // MapLibre places symbols in layer order and reserves each placed box, so the
+    // later layer yields. Losing an "S" costs less than losing "Mainstage".
+    expect(ids.indexOf(LAYER_IDS.nodeBadge)).toBeGreaterThan(ids.indexOf(LAYER_IDS.nodeLabel));
+  });
+
   it("draws the overlay wash under its own outline, and the route over both", () => {
     const ids = buildMapLayers().map((layer) => layer.id);
     const at = (id: string) => ids.indexOf(id);
@@ -176,12 +191,161 @@ describe("buildMapLayers", () => {
     expect(at(LAYER_IDS.routeLine)).toBeLessThan(at(LAYER_IDS.nodeCircle));
   });
 
-  it("draws route ends above ordinary markers, and every label above both", () => {
+  it("draws route ends above ordinary markers, and place names above everything", () => {
     const ids = buildMapLayers().map((layer) => layer.id);
     const at = (id: string) => ids.indexOf(id);
     expect(at(LAYER_IDS.nodeCircle)).toBeLessThan(at(LAYER_IDS.endpointCircle));
     expect(at(LAYER_IDS.endpointCircle)).toBeLessThan(at(LAYER_IDS.nodeLabel));
     expect(at(LAYER_IDS.nodeLabel)).toBeLessThan(at(LAYER_IDS.endpointLabel));
+    // Badges come last so the place labels win any collision with a letter.
+    expect(at(LAYER_IDS.endpointLabel)).toBeLessThan(at(LAYER_IDS.nodeBadge));
+  });
+
+  it("prints a category letter inside each marker, as a second channel to colour", () => {
+    const layers = buildMapLayers();
+    const badge = layers.find((layer) => layer.id === LAYER_IDS.nodeBadge);
+    if (badge === undefined || badge.type !== "symbol") throw new Error("badge layer missing");
+
+    expect(badge.source).toBe(SOURCE_IDS.nodes);
+    expect(badge.layout?.["text-field"]).toEqual(["get", "badge"]);
+    expect(badge.layout?.["text-font"]).toEqual([MAP_FONT]);
+    // Two letters must never print over each other, so collision drops one.
+    expect(badge.layout?.["text-allow-overlap"]).toBe(false);
+    expect(badge.layout?.["text-anchor"]).toBe("center");
+    // Dark ink on every category colour, which is the only combination that
+    // stays legible on the pale cream and the pale green as well as the gold.
+    expect(badge.paint?.["text-color"]).toBe(GROUND_COLOUR);
+  });
+
+  it("leaves the route ends' own A and B letters as the only letter on those markers", () => {
+    const badge = buildMapLayers().find((layer) => layer.id === LAYER_IDS.nodeBadge);
+    if (badge === undefined || badge.type !== "symbol") throw new Error("badge layer missing");
+    // Route ends draw a larger circle with "A"/"B" on it; a second letter under
+    // it would be unreadable.
+    expect(badge.filter).toBeDefined();
+    const serialised = JSON.stringify(badge.filter);
+    expect(serialised).toContain("endpoint");
+    expect(serialised).toContain('""');
+  });
+
+  it("draws the visitor's own position only when they have asked for it", () => {
+    const layers = buildMapLayers();
+    const halo = layers.find((layer) => layer.id === LAYER_IDS.locateHalo);
+    const dot = layers.find((layer) => layer.id === LAYER_IDS.locateDot);
+    if (halo === undefined || halo.type !== "circle") throw new Error("locate halo missing");
+    if (dot === undefined || dot.type !== "circle") throw new Error("locate dot missing");
+
+    expect(halo.source).toBe(SOURCE_IDS.locate);
+    expect(dot.source).toBe(SOURCE_IDS.locate);
+    // A white core inside a saturated halo: unlike every category badge, so the
+    // reader's own position cannot be mistaken for a place in the guide.
+    expect(dot.paint?.["circle-color"]).toBe(LOCATE_CORE_COLOUR);
+    expect(halo.paint?.["circle-color"]).toBe(LOCATE_COLOUR);
+    expect(dot.paint?.["circle-stroke-color"]).toBe(LOCATE_COLOUR);
+  });
+
+  it("draws the visitor's marker above every zone, but below the labels", () => {
+    const ids = buildMapLayers().map((layer) => layer.id);
+    const at = (id: string) => ids.indexOf(id);
+    expect(at(LAYER_IDS.endpointCircle)).toBeLessThan(at(LAYER_IDS.locateHalo));
+    expect(at(LAYER_IDS.locateHalo)).toBeLessThan(at(LAYER_IDS.locateDot));
+    expect(at(LAYER_IDS.locateDot)).toBeLessThan(at(LAYER_IDS.nodeLabel));
+  });
+
+  it("keeps node labels clear of the badge they sit under", () => {
+    const layers = buildMapLayers();
+    const label = layers.find((layer) => layer.id === LAYER_IDS.nodeLabel);
+    const circle = layers.find((layer) => layer.id === LAYER_IDS.nodeCircle);
+    if (label === undefined || label.type !== "symbol") throw new Error("label layer missing");
+    if (circle === undefined || circle.type !== "circle") throw new Error("node circle missing");
+
+    /*
+      Recomputed rather than eyeballed. The offset is in ems of the label's own
+      size, so the pair has to be compared as pixels at each zoom where both are
+      drawn; a later tweak to either interpolation would otherwise put the label
+      on top of the badge with nothing to catch it.
+    */
+    const labelSize = label.layout?.["text-size"] as unknown as [
+      "interpolate",
+      unknown,
+      unknown,
+      number,
+      number,
+      number,
+      number,
+    ];
+    const radius = circle.paint?.["circle-radius"] as unknown as [
+      "interpolate",
+      unknown,
+      unknown,
+      number,
+      number,
+      number,
+      number,
+    ];
+    const [, , , zLow, labelLow, zHigh, labelHigh] = labelSize;
+    const [, , , rLow, radiusLow, rHigh, radiusHigh] = radius;
+
+    const [, vertical] = label.layout?.["text-offset"] as [number, number];
+    expect(vertical).toBeGreaterThan(0);
+
+    for (const zoom of [zLow, (zLow + zHigh) / 2, zHigh]) {
+      const size = labelLow + ((labelHigh - labelLow) * (zoom - zLow)) / (zHigh - zLow);
+      const disc = radiusLow + ((radiusHigh - radiusLow) * (zoom - rLow)) / (rHigh - rLow);
+      expect(vertical * size, `label at zoom ${zoom} touches its disc`).toBeGreaterThan(
+        disc + 2,
+      );
+    }
+  });
+
+  it("never lets two category letters print over each other", () => {
+    const badge = buildMapLayers().find((layer) => layer.id === LAYER_IDS.nodeBadge);
+    if (badge === undefined || badge.type !== "symbol") throw new Error("badge layer missing");
+
+    /*
+      The collision guarantee is MapLibre's, not a hand-tuned zoom floor: with
+      overlap disallowed, a letter that would touch one already placed is dropped
+      instead of overprinted. That is the same mechanism that keeps the place
+      labels apart, and it holds at every zoom rather than above a threshold.
+    */
+    expect(badge.layout?.["text-allow-overlap"]).toBe(false);
+    expect(badge.layout?.["text-ignore-placement"]).toBe(false);
+    expect(badge.minzoom).toBeDefined();
+
+    // The letter is a separate layer from the disc, so a dropped letter never
+    // costs the marker its category colour.
+    const circle = buildMapLayers().find((layer) => layer.id === LAYER_IDS.nodeCircle);
+    if (circle === undefined || circle.type !== "circle") throw new Error("node circle missing");
+    expect(circle.minzoom).toBeUndefined();
+  });
+
+  it("keeps the badges clear of the closest pair on the site at a readable zoom", () => {
+    const circle = buildMapLayers().find((layer) => layer.id === LAYER_IDS.nodeCircle);
+    if (circle === undefined || circle.type !== "circle") throw new Error("node circle missing");
+
+    // The nearest two zones are the DreamVille Gate and its lockers. This records
+    // the geometry the collision engine is working against, so a future change to
+    // those coordinates that made the pair overlap is visible here.
+    const gate = nodeById(DE_SCHORRE_MAP, "ds-dreamville-gate") as GeoMapNode;
+    const lockers = nodeById(DE_SCHORRE_MAP, "ds-lockers-dreamville") as GeoMapNode;
+    const metres = haversineMiles([gate.lng, gate.lat], [lockers.lng, lockers.lat]) * 1609.344;
+    expect(metres).toBeGreaterThan(20);
+
+    const radius = circle.paint?.["circle-radius"] as unknown as [
+      "interpolate",
+      unknown,
+      unknown,
+      number,
+      number,
+      number,
+      number,
+    ];
+    const [, , , zLow, radiusLow, zHigh, radiusHigh] = radius;
+    const discAtSeventeen = 2 * (radiusLow + ((radiusHigh - radiusLow) * (17 - zLow)) / (zHigh - zLow));
+    const metresPerPixel = (156543.03392 * Math.cos((gate.lat * Math.PI) / 180)) / Math.pow(2, 17);
+    // By zoom 17 the pair is comfortably wider apart than a disc, so both letters
+    // are placed and the collision engine has nothing to drop.
+    expect(metres / metresPerPixel).toBeGreaterThan(discAtSeventeen * 2);
   });
 
   it("stops node labels colliding rather than overprinting them", () => {

@@ -322,13 +322,39 @@
   gap: 0.45rem;
 }
 
-.tml-map-legend__dot {
-  display: inline-block;
-  width: 0.7rem;
-  height: 0.7rem;
+/*
+  The legend swatch is the marker badge, at legend size: same colour, same letter,
+  same dark text. That is what makes the key usable — a reader matches a letter,
+  not a shade.
+*/
+.tml-map-legend__badge {
+  display: inline-flex;
+  width: 1.05rem;
+  height: 1.05rem;
+  align-items: center;
+  justify-content: center;
   border-radius: 50%;
   border: 1px solid rgb(12 10 9 / 0.8);
   flex: none;
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0;
+}
+
+.tml-map-legend__badge--end {
+  border-color: var(--ea);
+  background-color: var(--ea);
+  color: #0d0b0a;
+}
+
+.tml-map-legend__note {
+  margin: 0.75rem 0 0;
+  max-width: 72ch;
+  color: var(--cream-mute);
+  font-size: 0.8125rem;
+  line-height: 1.5;
 }
 
 .tml-map-legend__swatch--route {
@@ -338,6 +364,90 @@
   border-radius: 999px;
   background-color: var(--ea);
 }
+
+/* The visitor's own marker: a white core inside a teal halo, unlike any badge. */
+.tml-map-legend__swatch--locate {
+  display: inline-block;
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 50%;
+  border: 2px solid var(--teal);
+  background-color: var(--cream);
+}
+
+/* ---------- Locate me ---------- */
+
+.tml-map-locate {
+  margin-top: 0.95rem;
+  padding: 0.95rem 1.1rem;
+  border: 1px solid var(--hair);
+  border-radius: 16px;
+  background-color: rgb(12 10 9 / 0.45);
+}
+
+.tml-map-locate__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.tml-map-locate__icon {
+  font-size: 0.95em;
+  line-height: 1;
+  color: var(--teal);
+}
+
+/* The pending state is marked, not disabled out of the tab order. */
+.tml-map-locate__button[aria-disabled="true"] {
+  cursor: progress;
+  color: var(--cream-mute);
+}
+
+.tml-map-locate__privacy {
+  margin: 0.65rem 0 0;
+  max-width: 72ch;
+  color: var(--cream-mute);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}
+
+/*
+  The status note is always in the flow, so it is never clipped out of the
+  accessibility tree, and it reserves no height while empty — an empty paragraph
+  collapses to nothing and the layout does not jump when a result arrives.
+*/
+.tml-map-locate__status {
+  margin: 0;
+  max-width: 72ch;
+  font-size: 0.875rem;
+  line-height: 1.55;
+}
+
+.tml-map-locate__status:not(:empty) {
+  margin-top: 0.7rem;
+  padding-top: 0.7rem;
+  border-top: 1px solid var(--hair);
+}
+
+.tml-map-locate__status[data-tone="inside"] {
+  color: var(--cream);
+}
+
+/* Outside, refused and unsupported are all reassurance, not alarms. */
+.tml-map-locate__status[data-tone="outside"],
+.tml-map-locate__status[data-tone="denied"],
+.tml-map-locate__status[data-tone="invalid"],
+.tml-map-locate__status[data-tone="unsupported"],
+.tml-map-locate__status[data-tone="blocked"],
+.tml-map-locate__status[data-tone="cleared"] {
+  color: var(--cream-mute);
+}
+
+.tml-map-cross-note {
+  margin-top: 1.25rem;
+}
+
 
 /* ---------- Route planner ---------- */
 

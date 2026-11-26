@@ -50,14 +50,30 @@ describe("SiteFooter", () => {
     expect(columnHrefs).toEqual([
       "/guides",
       "/guides/tickets",
+      "/guides/belgium",
+      "/guides/winter",
+      "/guides/brasil",
       "/tools",
+      "/tools/maps",
+      "/tools/budget",
+      "/tools/pearls",
+      "/tools/sale-timeline",
+      "/tools/journey",
+      "/tools/packing",
+      "/tools/my-trip",
+      "/tools/winter-timer",
       "/community",
+      "/community/news",
       "/radio",
+      "/ask",
       "/about",
+      "/accessibility",
+      "/more",
     ]);
 
     for (const [label, href] of [["Accessibility", "/accessibility"]] as const) {
-      expect(screen.getByRole("link", { name: label })).toHaveAttribute("href", href);
+      const matches = screen.getAllByRole("link", { name: label });
+      expect(matches.some((el) => el.getAttribute("href") === href)).toBe(true);
     }
   });
 

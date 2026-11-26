@@ -77,24 +77,41 @@ export const FOOTER_COLUMNS: readonly FooterColumn[] = [
     title: "Guides",
     links: [
       { href: "/guides", label: "All guides" },
-      { href: "/guides/tickets", label: "Tickets" },
+      { href: "/guides/tickets", label: "Tickets & prices" },
+      { href: "/guides/belgium", label: "Belgium" },
+      { href: "/guides/winter", label: "Winter" },
+      { href: "/guides/brasil", label: "Brasil" },
     ],
   },
   {
     title: "Tools",
-    links: [{ href: "/tools", label: "Tools" }],
+    links: [
+      { href: "/tools", label: "All tools" },
+      { href: "/tools/maps", label: "Venue maps" },
+      { href: "/tools/budget", label: "Budget calculator" },
+      { href: "/tools/pearls", label: "Pearl calculator" },
+      { href: "/tools/sale-timeline", label: "Sale timeline" },
+      { href: "/tools/journey", label: "Journey planner" },
+      { href: "/tools/packing", label: "Packing list" },
+      { href: "/tools/my-trip", label: "My Trip" },
+      { href: "/tools/winter-timer", label: "Winter stage timer" },
+    ],
   },
   {
     title: "Community",
     links: [
-      { href: "/community", label: "Community" },
-      { href: "/radio", label: "Radio" },
+      { href: "/community", label: "Community hub" },
+      { href: "/community/news", label: "News & updates" },
+      { href: "/radio", label: "One World Radio" },
+      { href: "/ask", label: "Ask the guide" },
     ],
   },
   {
     title: "About",
     links: [
-      { href: "/about", label: "About" },
+      { href: "/about", label: "About TMLGuide" },
+      { href: "/accessibility", label: "Accessibility" },
+      { href: "/more", label: "More" },
     ],
   },
 ];

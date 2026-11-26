@@ -1,33 +1,52 @@
 "use client";
 
 /**
- * The "Ask the guide" client.
+ * The "Ask the guide" client, as a chat surface rather than a form.
  *
- * A form, a cited answer panel, and honest failure states. Everything the reader
- * sees is either their own input, a refusal string the server chose, or a
- * citation the server assembled from its own records — never model output
- * rendered as HTML. The answer is set as text content with `white-space:
- * pre-wrap`, so a model that emits markup renders it as characters rather than
- * as structure.
+ * The API is unchanged: one `POST /api/ask` per question, the same request body and
+ * the same `AskResponseBody`. What changed is the shape of the interface — a fixed
+ * header, a scrolling thread and a composer pinned to the bottom of the card, which
+ * is how a reader expects an assistant to behave and which keeps the question box in
+ * one place instead of below a growing answer.
  *
- * Accessibility decisions, each of which has a reason:
+ * Everything the reader sees is either their own input, a refusal string the server
+ * chose, or a citation the server assembled from its own records — never model output
+ * rendered as HTML. An answer is split into paragraphs and each is set as text content
+ * with `white-space: pre-wrap`, so a model that emits markup renders it as characters
+ * rather than as structure.
  *
- * - One `<h2>`-labelled form region and one `role="status"` region. A screen
- *   reader hears "Thinking" once when the request starts and the answer once
- *   when it lands, rather than a stream of intermediate states.
- * - The submit button is disabled while a request is in flight, and the input
- *   stays editable, so a reader can rewrite the question while waiting instead of
- *   losing it.
- * - A field error is bound with `aria-describedby` and `aria-invalid`, and the
- *   error summary carries `role="alert"` so it is announced immediately.
- * - Focus moves to the answer heading after a successful response. Without it, a
- *   keyboard user is left at the bottom of the form with no signal that anything
- *   arrived.
- * - The character counter is `aria-live="off"`: announcing a count on every
- *   keystroke is noise. It is still readable on demand.
+ * ## What is deliberately *not* here
+ *
+ * No `localStorage`, no `sessionStorage`, no cookie, no request that writes the thread
+ * anywhere. The conversation is React state and dies with the tab. The page promises
+ * that questions are not kept as transcripts, and that promise is only true because
+ * there is nowhere in this file that could keep one.
+ *
+ * ## Accessibility decisions, each of which has a reason
+ *
+ * - **One announcement channel.** A single visually hidden `role="status"` region,
+ *   placed before the thread in the DOM, carries the outcome: "The guide has answered",
+ *   or the refusal reason. While a request is in flight it stays empty, because the
+ *   thinking bubble is itself a polite status and saying "Reading the guide" twice is
+ *   noise. Putting it first also means the visible thread can grow without moving the
+ *   live region, which some screen readers handle badly.
+ * - **Focus stays in the composer.** After an answer the reader is still in the text
+ *   field, so a follow-up is one keystroke away; the status region is what tells them
+ *   the answer arrived. Moving focus into the thread, as a one-shot answer panel would,
+ *   would fight the conversation.
+ * - **Send is disabled until the question is usable.** The field error is a fallback
+ *   for Enter on a question that is too short, not the primary way to find out.
+ * - **The thread is a list.** Count and position come from real list semantics rather
+ *   than from visual stacking.
+ * - **The character counter is `aria-live="off"`.** Announcing a count on every
+ *   keystroke is noise; it is still readable on demand and bound with
+ *   `aria-describedby`.
+ * - **A request in flight is cancelled** when the component unmounts or the reader
+ *   starts a new chat, so a closed tab does not leave a provider call running against
+ *   the monthly budget.
  */
 
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useId, useRef, useState } from "react";
 import Link from "next/link";
 import type { Edition } from "@/lib/ai/knowledge";
 import { TurnstileWidget } from "./turnstile-widget";
@@ -52,6 +71,9 @@ interface AskAnswer {
 
 export const MAX_QUESTION_LENGTH = 500;
 
+/** Matches `MIN_QUESTION_CHARS` in `src/lib/ai/prompt.ts`, which the route enforces. */
+const MIN_QUESTION_LENGTH = 3;
+
 interface EditionOption {
   readonly value: Edition;
   readonly label: string;
@@ -64,7 +86,7 @@ export const EDITION_OPTIONS: readonly EditionOption[] = [
   { value: "brasil", label: "Brasil" },
 ];
 
-/** The prompt chips, so a reader with no question in mind has somewhere to start. */
+/** The starter prompts, so a reader with no question in mind has somewhere to start. */
 export const STARTER_QUESTIONS: readonly string[] = [
   "How much is a Belgium 2027 day pass?",
   "What is the ticket limit per Tomorrowland Account?",
@@ -98,65 +120,194 @@ function isAskAnswer(value: unknown): value is AskAnswer {
   return typeof candidate.model === "string";
 }
 
-type Status = "idle" | "loading" | "answered" | "refused" | "error";
+/**
+ * Splits an answer on blank lines so each block is its own paragraph.
+ *
+ * A single newline is kept inside a paragraph (the stylesheet preserves it), because a
+ * model that lists two figures on consecutive lines means two lines, not one.
+ */
+function answerParagraphs(text: string): string[] {
+  return text
+    .split(/\n{2,}/)
+    .map((block) => block.trim())
+    .filter((block) => block.length > 0);
+}
+
+type TurnStatus = "loading" | "answered" | "refused" | "error";
+
+interface Turn {
+  readonly id: number;
+  readonly question: string;
+  readonly edition: Edition;
+  readonly status: TurnStatus;
+  readonly answer: AskAnswer | null;
+  readonly errorMessage: string | null;
+}
 
 interface AskGuideProps {
   /**
    * The Cloudflare Turnstile site key, when the deployment has one.
    *
-   * Passed as a prop rather than read from `process.env` here so the value is
-   * inlined at build time on the server and this component stays free of
-   * environment access, which a client bundle must not have.
+   * Passed as a prop rather than read from `process.env` here so the value is inlined
+   * at build time on the server and this component stays free of environment access,
+   * which a client bundle must not have.
    */
   readonly turnstileSiteKey?: string;
 }
 
+const DEFAULT_EDITION_LABEL = "All editions";
+
+/** The two composer errors, named once so the keyboard path and the button path agree. */
+const TOO_SHORT = "Please type a question of at least three characters.";
+const CHECK_PENDING = "The verification check has not finished. Please try again in a moment.";
+
 export function AskGuide({ turnstileSiteKey }: AskGuideProps) {
   const [question, setQuestion] = useState("");
   const [edition, setEdition] = useState<Edition>("all");
-  const [status, setStatus] = useState<Status>("idle");
-  const [answer, setAnswer] = useState<AskAnswer | null>(null);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [turns, setTurns] = useState<readonly Turn[]>([]);
   const [fieldError, setFieldError] = useState<string | null>(null);
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
 
+  /*
+    Bumped after every request. A Turnstile token is single use, and the widget only
+    issues one per mount, so remounting it is what gives the next question a fresh
+    token. Without this the second question in a conversation would always be refused.
+  */
+  const [turnstileRound, setTurnstileRound] = useState(0);
+
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
-  const answerHeadingRef = useRef<HTMLHeadingElement | null>(null);
+  const viewportRef = useRef<HTMLDivElement | null>(null);
   const requestRef = useRef<AbortController | null>(null);
+  const nextTurnId = useRef(0);
+  /*
+    A synchronous in-flight guard. `pending` is derived from state, so it is only correct
+    after React has re-rendered; two Enter presses in the same tick would both pass a
+    `pending` check, and the second request would abort the first and leave its turn
+    stuck on "Reading the guide" for ever. This ref is written before any await.
+  */
+  const busyRef = useRef(false);
 
   const fieldId = useId();
+  const headingId = useId();
   const hintId = useId();
   const errorId = useId();
   const counterId = useId();
+  const editionLabelId = useId();
 
-  const remaining = MAX_QUESTION_LENGTH - question.length;
-  const loading = status === "loading";
+  const pending = turns.some((turn) => turn.status === "loading");
+  const lastTurn = turns.length === 0 ? undefined : turns[turns.length - 1];
+  const verificationReady = turnstileSiteKey === undefined || turnstileToken !== null;
+  const trimmed = question.trim();
+  /*
+    Send is disabled only when there is nothing to send. A too-short question keeps the
+    button live so that pressing it produces the sentence that explains the problem,
+    rather than a control that refuses without saying why.
+  */
+  const canSend = !pending && trimmed.length > 0;
+  const nearLimit = MAX_QUESTION_LENGTH - question.length <= 50;
+  const editionLabel =
+    EDITION_OPTIONS.find((option) => option.value === edition)?.label ?? DEFAULT_EDITION_LABEL;
 
-  // A request in flight is cancelled if the reader navigates away, so a closed tab
-  // does not leave a provider call running against the monthly budget.
+  // A request in flight is cancelled if the reader navigates away.
   useEffect(() => {
     return () => {
       requestRef.current?.abort();
     };
   }, []);
 
-  const submit = useCallback(
-    async (event: React.FormEvent<HTMLFormElement>) => {
-      event.preventDefault();
+  /*
+    Grow the field with the question, up to a cap. A two-row box with an inner scrollbar
+    hides the start of a long question while the reader is still typing it, which is the
+    one moment they need to see all of it. Past the cap the box scrolls, so the composer
+    cannot swallow the thread.
+  */
+  useEffect(() => {
+    const node = inputRef.current;
+    if (node === null) return;
+    node.style.height = "auto";
+    node.style.height = `${Math.min(node.scrollHeight, 180)}px`;
+  }, [question]);
 
-      const trimmed = question.trim();
-      if (trimmed.length < 3) {
-        setFieldError("Please type a question of at least three characters.");
-        setErrorMessage(null);
-        setStatus("error");
-        inputRef.current?.focus();
+  /*
+    Follow the newest message. `turns` is a new array on every append and every settle,
+    so this runs when a question is asked and again when its answer lands — which is the
+    moment the thread actually grew. Reduced motion turns the glide into a jump.
+  */
+  useEffect(() => {
+    const node = viewportRef.current;
+    if (node === null) return;
+    const reduceMotion =
+      (typeof window.matchMedia === "function" &&
+        window.matchMedia("(prefers-reduced-motion: reduce)").matches) ||
+      document.documentElement.dataset.a11yMotion === "reduce";
+    const top = node.scrollHeight;
+    if (typeof node.scrollTo === "function") {
+      try {
+        node.scrollTo({ top, behavior: reduceMotion ? "auto" : "smooth" });
+        return;
+      } catch {
+        // Fall through to the property assignment below.
+      }
+    }
+    node.scrollTop = top;
+  }, [turns]);
+
+  /**
+   * Sends one question and settles the turn it belongs to.
+   *
+   * `existingId` is how a retry works: the same bubble is put back into its working
+   * state and updated in place, rather than being deleted and appended again. That
+   * matters because the guards below can refuse before a request is made, and a reader
+   * whose retry bounced would otherwise have watched their question disappear.
+   */
+  const ask = useCallback(
+    async (rawQuestion: string, scope: Edition, existingId?: number) => {
+      const asked = rawQuestion.trim();
+      const id = existingId ?? nextTurnId.current;
+
+      const refuse = (message: string) => {
+        if (existingId === undefined) {
+          setFieldError(message);
+          inputRef.current?.focus();
+          return;
+        }
+        setTurns((current) =>
+          current.map((turn) =>
+            turn.id === id ? { ...turn, status: "error", answer: null, errorMessage: message } : turn,
+          ),
+        );
+      };
+
+      if (asked.length < MIN_QUESTION_LENGTH) {
+        refuse(TOO_SHORT);
+        return;
+      }
+      if (turnstileSiteKey !== undefined && turnstileToken === null) {
+        refuse(CHECK_PENDING);
         return;
       }
 
+      if (existingId === undefined) nextTurnId.current += 1;
+      const token = turnstileToken;
+      busyRef.current = true;
       setFieldError(null);
-      setErrorMessage(null);
-      setAnswer(null);
-      setStatus("loading");
+      setTurns((current) =>
+        existingId === undefined
+          ? [
+              ...current,
+              { id, question: asked, edition: scope, status: "loading", answer: null, errorMessage: null },
+            ]
+          : current.map((turn) =>
+              turn.id === id ? { ...turn, status: "loading", answer: null, errorMessage: null } : turn,
+            ),
+      );
+      // A token is spent whether or not the request succeeds, so it is dropped now
+      // rather than being reused by the next attempt.
+      setTurnstileToken(null);
+
+      const settle = (patch: Partial<Pick<Turn, "status" | "answer" | "errorMessage">>) => {
+        setTurns((current) => current.map((turn) => (turn.id === id ? { ...turn, ...patch } : turn)));
+      };
 
       requestRef.current?.abort();
       const controller = new AbortController();
@@ -167,120 +318,241 @@ export function AskGuide({ turnstileSiteKey }: AskGuideProps) {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            question: trimmed,
-            edition,
-            ...(turnstileToken === null ? {} : { turnstileToken }),
+            question: asked,
+            edition: scope,
+            ...(token === null ? {} : { turnstileToken: token }),
           }),
           signal: controller.signal,
         });
 
         const payload: unknown = await response.json().catch(() => null);
 
+        /*
+          A well-formed body wins over the status code. The route answers a refusal with a
+          200, but it also uses `503` for the two cases where the service itself is missing
+          or broken — and those bodies are refusals too, with a reason and a message
+          written for a reader. Treating `!response.ok` first would throw that away and
+          replace "not configured on this deployment" with a generic apology.
+        */
+        if (isAskAnswer(payload)) {
+          settle({
+            status: payload.refusal === null ? "answered" : "refused",
+            answer: payload,
+            errorMessage: null,
+          });
+          return;
+        }
+
         if (!response.ok) {
-          // The route's own message is used when it has one, because it is written
-          // for a reader. A bare status code is not.
+          // No usable body, so the route's own message is the next best thing: it is
+          // still written for a reader. A bare status code is not.
           const message =
             typeof payload === "object" && payload !== null && typeof (payload as { error?: unknown }).error === "string"
               ? (payload as { error: string }).error
               : "The guide could not answer that just now. Please try again.";
-          setErrorMessage(message);
-          setStatus("error");
+          settle({ status: "error", answer: null, errorMessage: message });
           return;
         }
 
-        if (!isAskAnswer(payload)) {
-          setErrorMessage("The guide returned something unexpected. Please try again.");
-          setStatus("error");
-          return;
-        }
-
-        setAnswer(payload);
-        setStatus(payload.refusal === null ? "answered" : "refused");
-
-        // The Turnstile token is single-use; a second question needs a fresh one.
-        setTurnstileToken(null);
+        settle({
+          status: "error",
+          answer: null,
+          errorMessage: "The guide returned something unexpected. Please try again.",
+        });
       } catch (error) {
         if (error instanceof DOMException && error.name === "AbortError") return;
-        setErrorMessage("The guide could not be reached. Check your connection and try again.");
-        setStatus("error");
+        settle({
+          status: "error",
+          answer: null,
+          errorMessage: "The guide could not be reached. Check your connection and try again.",
+        });
+      } finally {
+        /*
+          The guard is released only by the request that still owns the slot. A request
+          superseded by New chat or by a newer question must not clear a guard that the
+          newer one has set, and must not reset the Turnstile widget the reader is now
+          looking at.
+        */
+        const isCurrent = requestRef.current === controller;
+        if (isCurrent) {
+          busyRef.current = false;
+          requestRef.current = null;
+          // The token was spent by the request that carried it, so a fresh widget is what
+          // gives the next question a token at all.
+          if (token !== null && turnstileSiteKey !== undefined) {
+            setTurnstileRound((round) => round + 1);
+          }
+        }
       }
     },
-    [question, edition, turnstileToken],
+    [turnstileSiteKey, turnstileToken],
   );
 
-  // Focus the answer heading once it exists, so a keyboard user is taken to the
-  // result rather than left at the submit button.
-  useEffect(() => {
-    if (status === "answered" || status === "refused") answerHeadingRef.current?.focus();
-  }, [status]);
-
-  const reset = useCallback(() => {
-    requestRef.current?.abort();
-    setQuestion("");
-    setAnswer(null);
-    setErrorMessage(null);
+  const send = useCallback(() => {
+    const asked = question.trim();
+    // The ref, not `pending`: see its declaration. Two fast Enter presses would otherwise
+    // both pass a state-derived check in the same tick.
+    if (busyRef.current || pending) return;
+    // Enter on an empty box does nothing. Telling a reader off for pressing Enter in an
+    // empty field is noise; the button is disabled in that state for the same reason.
+    if (asked.length === 0) return;
+    // The box is only cleared once the question is on its way, so a guard message below
+    // leaves the text where the reader can act on it.
+    if (asked.length < MIN_QUESTION_LENGTH) {
+      setFieldError(TOO_SHORT);
+      inputRef.current?.focus();
+      return;
+    }
+    if (turnstileSiteKey !== undefined && turnstileToken === null) {
+      setFieldError(CHECK_PENDING);
+      inputRef.current?.focus();
+      return;
+    }
     setFieldError(null);
-    setStatus("idle");
+    setQuestion("");
+    void ask(asked, edition);
     inputRef.current?.focus();
-  }, []);
+  }, [ask, edition, pending, question, turnstileSiteKey, turnstileToken]);
 
-  const checkedDate = formatCheckedDate(answer?.lastVerified ?? null);
+  /*
+    A starter is the reader saying "ask that". Where the deployment needs no challenge,
+    or has already produced a token, it is sent immediately — that is what a real chat
+    does. Otherwise it fills the box and takes focus, so the reader can finish the
+    thought or press Ask once the check completes.
+  */
+  const chooseStarter = useCallback(
+    (starter: string) => {
+      if (busyRef.current || pending) return;
+      if (verificationReady) {
+        setQuestion("");
+        void ask(starter, edition);
+        return;
+      }
+      setQuestion(starter);
+      setFieldError(null);
+      inputRef.current?.focus();
+    },
+    [ask, edition, pending, verificationReady],
+  );
+
+  const retry = useCallback(
+    (turn: Turn) => {
+      if (busyRef.current || pending) return;
+      void ask(turn.question, turn.edition, turn.id);
+    },
+    [ask, pending],
+  );
+
+  const startNewChat = useCallback(() => {
+    requestRef.current?.abort();
+    // Cleared so the aborted request's `finally` can see it is no longer current and
+    // leaves the fresh Turnstile widget and the in-flight guard alone. The guard is
+    // released here, because that `finally` will not release it.
+    requestRef.current = null;
+    busyRef.current = false;
+    setTurns([]);
+    setQuestion("");
+    setFieldError(null);
+    setTurnstileToken(null);
+    if (turnstileSiteKey !== undefined) setTurnstileRound((round) => round + 1);
+    inputRef.current?.focus();
+  }, [turnstileSiteKey]);
+
+  /*
+    The single announcement channel, and it covers the working state as well as the
+    outcome. It is a persistent node rather than something rendered with the bubble,
+    because a live region that arrives already containing text is not announced.
+  */
+  const announcement =
+    lastTurn === undefined
+      ? ""
+      : lastTurn.status === "loading"
+        ? "Reading the guide."
+        : lastTurn.status === "error" || lastTurn.answer === null
+          ? ""
+          : lastTurn.answer.refusal === null
+            ? "The guide has answered."
+            : `The guide could not answer this one: ${refusalLabel(lastTurn.answer.refusal.reason)}.`;
 
   return (
-    <div className="tml-ai-panel">
-      <form className="tml-ai-form" onSubmit={submit} noValidate aria-labelledby={`${fieldId}-form-heading`}>
-        <h2 id={`${fieldId}-form-heading`} className="tml-ai-label">
-          Ask a question
-        </h2>
-
-        <div className="tml-ai-field">
-          <label className="tml-ai-label" htmlFor={fieldId}>
-            Your question
-          </label>
-          <textarea
-            ref={inputRef}
-            id={fieldId}
-            className="tml-ai-input"
-            name="question"
-            rows={3}
-            maxLength={MAX_QUESTION_LENGTH}
-            value={question}
-            disabled={loading}
-            placeholder="How much is a Belgium 2027 Full Madness Pass?"
-            aria-describedby={`${hintId} ${counterId}${fieldError === null ? "" : ` ${errorId}`}`}
-            aria-invalid={fieldError === null ? undefined : true}
-            onChange={(event) => {
-              setQuestion(event.target.value);
-              if (fieldError !== null) setFieldError(null);
-            }}
-          />
-          <p id={hintId} className="tml-ai-hint">
-            One question at a time, and a specific one gets a better answer. The guide only covers
-            what its checked records contain.
-          </p>
-          <p id={counterId} className="tml-ai-hint" aria-live="off">
-            {question.length} of {MAX_QUESTION_LENGTH} characters
-            {remaining <= 50 && remaining >= 0 ? ` — ${remaining} left` : ""}
-          </p>
-          {fieldError === null ? null : (
-            <p id={errorId} className="tml-ai-error" role="alert">
-              {fieldError}
-            </p>
-          )}
+    <section className="tml-ai-chat" aria-labelledby={headingId}>
+      <header className="tml-ai-chat__head">
+        <div className="tml-ai-chat__identity">
+          <span className="tml-ai-chat__mark" aria-hidden="true" />
+          <h2 id={headingId} className="tml-ai-chat__name">
+            TMLGuide Assistant
+          </h2>
+          <span className="tml-ai-chat__badge">{editionLabel}</span>
         </div>
+        {turns.length === 0 ? null : (
+          <button type="button" className="tml-ai-chat__new" onClick={startNewChat}>
+            New chat
+          </button>
+        )}
+      </header>
 
-        <div className="tml-ai-field">
-          <span className="tml-ai-label" id={`${fieldId}-edition-label`}>
+      {/*
+        The one live region. It is empty until something is worth saying, so the first
+        change is what a screen reader hears.
+      */}
+      <p role="status" aria-live="polite" className="tml-ai-sr-only">
+        {announcement}
+      </p>
+
+      <div
+        className="tml-ai-chat__viewport"
+        ref={viewportRef}
+        role="group"
+        aria-label="Conversation"
+        /*
+          Focusable only once there is a thread. On an empty state the region holds four
+          buttons, all reachable on their own, so a tab stop on the container would be a
+          stop with nothing to do. With messages it is a scroll container, and a keyboard
+          user needs to be able to reach it to scroll.
+        */
+        tabIndex={turns.length === 0 ? undefined : 0}
+        data-empty={turns.length === 0 ? "true" : "false"}
+      >
+        {turns.length === 0 ? (
+          <ChatWelcome onChoose={chooseStarter} disabled={pending} />
+        ) : (
+          <ol className="tml-ai-thread" role="list">
+            {turns.map((turn) => (
+              <Fragment key={turn.id}>
+                <li className="tml-ai-msg tml-ai-msg--user">
+                  <p className="tml-ai-msg__bubble">
+                    <span className="tml-ai-sr-only">You asked: </span>
+                    {turn.question}
+                  </p>
+                </li>
+                <li className="tml-ai-msg tml-ai-msg--assistant">
+                  <AssistantMessage turn={turn} onRetry={retry} />
+                </li>
+              </Fragment>
+            ))}
+          </ol>
+        )}
+      </div>
+
+      <form
+        className="tml-ai-composer"
+        onSubmit={(event) => {
+          event.preventDefault();
+          send();
+        }}
+        noValidate
+      >
+        <div className="tml-ai-composer__toolbar">
+          <span id={editionLabelId} className="tml-ai-composer__scope-label">
             Edition
           </span>
-          <div className="tml-ai-chips" role="group" aria-labelledby={`${fieldId}-edition-label`}>
+          <div className="tml-ai-chips" role="group" aria-labelledby={editionLabelId}>
             {EDITION_OPTIONS.map((option) => (
               <button
                 key={option.value}
                 type="button"
                 className="tml-ai-chip"
                 aria-pressed={edition === option.value}
-                disabled={loading}
                 onClick={() => setEdition(option.value)}
               >
                 {option.label}
@@ -289,135 +561,244 @@ export function AskGuide({ turnstileSiteKey }: AskGuideProps) {
           </div>
         </div>
 
-        {turnstileSiteKey === undefined ? null : (
-          <TurnstileWidget siteKey={turnstileSiteKey} onToken={setTurnstileToken} />
-        )}
-
-        <div className="tml-ai-actions">
-          <button type="submit" className="tml-ai-submit" disabled={loading}>
-            {loading ? "Reading the guide…" : "Ask the guide"}
-          </button>
-          {question.length > 0 || answer !== null || errorMessage !== null ? (
-            <button type="button" className="tml-ai-clear" onClick={reset} disabled={loading}>
-              Clear
-            </button>
-          ) : null}
-        </div>
-
-        <div
-          className="tml-ai-hint"
-          style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "0.6rem 0.65rem" }}
-        >
-          <span>Not sure what to ask?</span>
-          {STARTER_QUESTIONS.map((starter) => (
-            <button
-              key={starter}
-              type="button"
-              className="tml-ai-chip"
-              style={{ minHeight: "2.25rem", padding: "0.45rem 0.85rem" }}
-              disabled={loading}
-              onClick={() => {
-                setQuestion(starter);
-                inputRef.current?.focus();
-              }}
+        <div className="tml-ai-composer__shell">
+          <label className="tml-ai-sr-only" htmlFor={fieldId}>
+            Your question
+          </label>
+          <textarea
+            ref={inputRef}
+            id={fieldId}
+            className="tml-ai-composer__input"
+            name="question"
+            rows={2}
+            maxLength={MAX_QUESTION_LENGTH}
+            value={question}
+            placeholder="Ask about Belgium, Winter or Brasil tickets, DreamVille, dates..."
+            aria-describedby={`${hintId} ${counterId}${fieldError === null ? "" : ` ${errorId}`}`}
+            aria-invalid={fieldError === null ? undefined : true}
+            onChange={(event) => {
+              setQuestion(event.target.value);
+              if (fieldError !== null) setFieldError(null);
+            }}
+            onKeyDown={(event) => {
+              // Enter sends; Shift+Enter is a new line. `isComposing` keeps Enter from
+              // submitting while an input method is still building a character.
+              if (event.key !== "Enter" || event.shiftKey || event.nativeEvent.isComposing) return;
+              event.preventDefault();
+              send();
+            }}
+          />
+          <button
+            type="submit"
+            className="tml-ai-send"
+            disabled={!canSend}
+            aria-label={pending ? "Reading the guide" : "Ask the guide"}
+          >
+            <span>{pending ? "Reading" : "Ask"}</span>
+            <svg
+              className="tml-ai-send__arrow"
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.4"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+              focusable="false"
             >
-              {starter}
-            </button>
-          ))}
+              <path d="M12 19V5M12 5l-6 6M12 5l6 6" />
+            </svg>
+          </button>
         </div>
-      </form>
 
-      {/*
-        One status region for the whole request lifecycle. A polite live region is
-        right here: the reader asked a question and is waiting, so an announcement
-        when the state changes is helpful rather than intrusive.
-      */}
-      <div role="status" aria-live="polite" className="tml-ai-sr-only">
-        {loading ? "Reading the guide." : status === "answered" ? "The guide has answered." : ""}
-      </div>
-
-      {errorMessage === null ? null : (
-        <div className="tml-ai-answer" role="alert">
-          <div className="tml-ai-answer__head">
-            <span className="tml-ai-answer__kicker">Could not answer</span>
-          </div>
-          <p className="tml-ai-refusal">{errorMessage}</p>
-          <p className="tml-ai-hint">
-            Nothing was stored. You can try again, or read the same facts in the{" "}
-            <Link href="/guides">guides</Link>.
+        <div className="tml-ai-composer__foot">
+          <p id={hintId} className="tml-ai-composer__hint">
+            Enter to send · Shift+Enter for new line
+          </p>
+          <p
+            id={counterId}
+            className="tml-ai-composer__count"
+            data-near={nearLimit ? "true" : "false"}
+            aria-live="off"
+          >
+            {question.length} / {MAX_QUESTION_LENGTH}
           </p>
         </div>
-      )}
 
-      {answer === null ? null : (
-        <section className="tml-ai-answer" aria-labelledby={`${fieldId}-answer-heading`}>
-          <div className="tml-ai-answer__head">
-            <h2
-              id={`${fieldId}-answer-heading`}
-              ref={answerHeadingRef}
-              tabIndex={-1}
-              className="tml-ai-answer__kicker"
-            >
-              {answer.refusal === null ? "From the guide's checked records" : "This one is not answerable"}
-            </h2>
-            {answer.refusal === null ? (
-              <span className="tml-ai-answer__model">Answered by {answer.model}</span>
-            ) : null}
+        {fieldError === null ? null : (
+          <p id={errorId} className="tml-ai-error" role="alert">
+            {fieldError}
+          </p>
+        )}
+
+        {turnstileSiteKey === undefined ? null : (
+          <div className="tml-ai-composer__verify">
+            <TurnstileWidget
+              key={turnstileRound}
+              siteKey={turnstileSiteKey}
+              onToken={setTurnstileToken}
+            />
           </div>
+        )}
+      </form>
+    </section>
+  );
+}
 
-          {answer.refusal === null ? (
-            <p className="tml-ai-answer__body">{answer.answer}</p>
-          ) : (
-            <p className="tml-ai-refusal">
-              <strong className="tml-ai-refusal__title">{refusalLabel(answer.refusal.reason)}</strong>
-              {answer.refusal.message}
-            </p>
-          )}
+/** The empty state: who the guide is, and four questions that are worth asking. */
+function ChatWelcome({
+  onChoose,
+  disabled,
+}: {
+  readonly onChoose: (starter: string) => void;
+  readonly disabled: boolean;
+}) {
+  return (
+    <div className="tml-ai-empty">
+      <p className="tml-ai-empty__greeting">Ask about tickets, dates or DreamVille</p>
+      <p className="tml-ai-empty__lede">
+        Verified answers from checked Tomorrowland records — with official sources beside every claim.
+      </p>
+      <ul className="tml-ai-starters" role="list">
+        {STARTER_QUESTIONS.map((starter) => (
+          <li key={starter}>
+            <button
+              type="button"
+              className="tml-ai-starter"
+              disabled={disabled}
+              onClick={() => onChoose(starter)}
+            >
+              <span className="tml-ai-starter__text">{starter}</span>
+              <svg
+                className="tml-ai-starter__arrow"
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+                focusable="false"
+              >
+                <path d="M5 12h14M13 6l6 6-6 6" />
+              </svg>
+            </button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
 
-          {answer.citations.length === 0 ? null : (
-            <ul className="tml-ai-citations">
-              {answer.citations.map((citation) => {
-                const date = formatCheckedDate(citation.lastVerified);
-                return (
-                  <li key={`${citation.index}-${citation.sourceUrl}`} className="tml-ai-citation">
-                    <span className="tml-ai-citation__index" aria-hidden="true">
-                      {citation.index}
-                    </span>
-                    <span>
-                      <a
-                        className="tml-ai-citation__link"
-                        href={citation.sourceUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        {citation.sourceTitle}
-                      </a>
-                      <span className="tml-ai-citation__meta">
-                        {date === null ? "Check date unavailable" : `Checked ${date}`}
-                        {citation.live ? <span className="tml-ai-citation__live">Read just now</span> : null}
-                      </span>
-                    </span>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
+/** One assistant bubble: thinking, answer, refusal or error. */
+function AssistantMessage({ turn, onRetry }: { readonly turn: Turn; readonly onRetry: (turn: Turn) => void }) {
+  // Per-instance, so two of these can never produce the same citation-label id.
+  const citesLabelId = useId();
 
-          {checkedDate === null ? null : (
-            <p className="tml-ai-freshness">
-              As fresh as <time dateTime={answer.lastVerified ?? undefined}>{checkedDate}</time>. Every
-              fact above is on the linked page, which is the source worth checking before you spend.
-            </p>
-          )}
+  if (turn.status === "loading") {
+    /*
+      Not a live region: the hidden status region above already says "Reading the guide",
+      and a polite region that appears with its text already inside is not announced.
+      The dots are decorative, so they are hidden and only the word is read.
+    */
+    return (
+      <div className="tml-ai-msg__bubble tml-ai-thinking-bubble">
+        <span className="tml-ai-thinking" aria-hidden="true">
+          <span className="tml-ai-thinking__dot" />
+          <span className="tml-ai-thinking__dot" />
+          <span className="tml-ai-thinking__dot" />
+        </span>
+        Reading the guide
+      </div>
+    );
+  }
 
-          {answer.refusal === null ? (
-            <p className="tml-ai-hint">
-              Answers come from this guide&rsquo;s verified records, not from Tomorrowland. Prices and dates
-              can change; confirm anything you are about to pay for on the official page.
-            </p>
-          ) : null}
-        </section>
+  if (turn.status === "error") {
+    return (
+      <div className="tml-ai-msg__bubble tml-ai-msg__bubble--error" role="alert">
+        <p className="tml-ai-errorcard__title">That question was not answered</p>
+        <p className="tml-ai-errorcard__body">{turn.errorMessage}</p>
+        <p className="tml-ai-errorcard__note">
+          Nothing was stored. You can try again, or read the same facts in the{" "}
+          <Link href="/guides">guides</Link>.
+        </p>
+        <button type="button" className="tml-ai-retry" onClick={() => onRetry(turn)}>
+          Try again
+        </button>
+      </div>
+    );
+  }
+
+  const answer = turn.answer;
+  if (answer === null) return null;
+
+  const refusal = answer.refusal;
+  const checkedDate = formatCheckedDate(answer.lastVerified);
+
+  return (
+    <div className="tml-ai-msg__bubble">
+      <span className="tml-ai-sr-only">The guide replied: </span>
+
+      {refusal === null ? (
+        answerParagraphs(answer.answer).map((paragraph, index) => (
+          <p key={index} className="tml-ai-msg__para">
+            {paragraph}
+          </p>
+        ))
+      ) : (
+        <div className="tml-ai-refusal">
+          <p className="tml-ai-refusal__title">{refusalLabel(refusal.reason)}</p>
+          <p className="tml-ai-refusal__message">{refusal.message}</p>
+        </div>
       )}
+
+      {answer.citations.length === 0 ? null : (
+        <div className="tml-ai-cites">
+          <p className="tml-ai-cites__label" id={citesLabelId}>
+            Citations
+          </p>
+          <ul className="tml-ai-cites__list" role="list" aria-labelledby={citesLabelId}>
+            {answer.citations.map((citation) => {
+              const date = formatCheckedDate(citation.lastVerified);
+              return (
+                <li key={`${citation.index}-${citation.sourceUrl}`} className="tml-ai-cite">
+                  <span className="tml-ai-cite__index" aria-hidden="true">
+                    {citation.index}
+                  </span>
+                  <span className="tml-ai-cite__text">
+                    <a
+                      className="tml-ai-cite__link"
+                      href={citation.sourceUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {citation.sourceTitle}
+                    </a>
+                    <span className="tml-ai-cite__meta">
+                      {date === null ? "Check date unavailable" : `Checked ${date}`}
+                      {citation.live ? <span className="tml-ai-cite__live">Read just now</span> : null}
+                    </span>
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
+
+      {checkedDate === null ? null : (
+        <p className="tml-ai-msg__verified">
+          Last verified <time dateTime={answer.lastVerified ?? undefined}>{checkedDate}</time>
+        </p>
+      )}
+
+      {refusal === null ? (
+        <p className="tml-ai-msg__model">Answered by {answer.model}</p>
+      ) : null}
     </div>
   );
 }

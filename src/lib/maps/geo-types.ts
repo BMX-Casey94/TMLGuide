@@ -12,11 +12,37 @@
  * swapped-axis bugs at the boundary between the data and the renderer.
  */
 
-/** The two mapped venues. */
-export type VenueMapId = "de-schorre" | "dreamville";
+/**
+ * The views the map can show.
+ *
+ * `"de-schorre"` and `"dreamville"` are the two real places. `"all"` is the
+ * combined view: one map holding both venues and the short bridge between the
+ * De Schorre DreamVille Gate and the DreamVille festival gate, which is what
+ * lets a visitor plan a single walk from a campsite field to a festival stage.
+ */
+export type VenueMapId = "de-schorre" | "dreamville" | "all";
 
-/** Every venue id, in the order the map switcher should list them. */
-export const VENUE_MAP_IDS = ["de-schorre", "dreamville"] as const satisfies readonly VenueMapId[];
+/**
+ * The two places themselves, without the combined view.
+ *
+ * Anything that belongs to one venue — a favourite, a stored list, an overlay —
+ * is keyed by this narrower type, so the combined view can never acquire a node
+ * that belongs to neither venue.
+ */
+export type PhysicalVenueId = Exclude<VenueMapId, "all">;
+
+/** Every view id, in the order the map switcher should list them. */
+export const VENUE_MAP_IDS = [
+  "de-schorre",
+  "dreamville",
+  "all",
+] as const satisfies readonly VenueMapId[];
+
+/** The two physical venues, in the order the switcher lists them. */
+export const PHYSICAL_VENUE_IDS = [
+  "de-schorre",
+  "dreamville",
+] as const satisfies readonly PhysicalVenueId[];
 
 /** What a map node represents on the ground. */
 export type MapNodeCategory = "stage" | "entrance" | "camp" | "facility" | "transport";
@@ -95,7 +121,10 @@ export type MapOverlayKind =
  * feature without knowing anything beyond GeoJSON.
  */
 export interface MapOverlayProperties {
-  /** The venue this overlay belongs to. */
+  /**
+   * The view this overlay is drawn in: one of the two venues, or `"all"` for a
+   * feature such as the Festival Walkway that only exists where the two meet.
+   */
   readonly mapId: VenueMapId;
   readonly kind: MapOverlayKind;
   /** Human-readable name for a tooltip or legend entry. */

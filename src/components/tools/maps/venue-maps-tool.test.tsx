@@ -42,6 +42,9 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
+  // A geolocation stub installed by one test must not leak into the next.
+  Object.defineProperty(navigator, "geolocation", { configurable: true, value: undefined });
+  Object.defineProperty(navigator, "permissions", { configurable: true, value: undefined });
 });
 
 describe("disclaimer and venue switcher", () => {
@@ -91,6 +94,463 @@ describe("disclaimer and venue switcher", () => {
     expect(
       screen.getByRole("heading", { name: "Core to Mainstage" }),
     ).toBeTruthy();
+  });
+});
+
+describe("the venue switcher", () => {
+  it("offers the combined site view alongside the two venues", () => {
+    render(<VenueMapsTool />);
+
+    expect(screen.getByRole("button", { name: "De Schorre (Festival Grounds)" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "DreamVille (Camping & Accommodation)" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Full site: De Schorre + DreamVille" })).toBeTruthy();
+  });
+
+  it("opens the combined view on a cross-venue walk, in miles", () => {
+    render(<VenueMapsTool />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Full site: De Schorre + DreamVille" }));
+
+    expect(
+      screen.getByRole("heading", { name: "Full site: De Schorre + DreamVille" }),
+    ).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Montagoe to Mainstage" })).toBeTruthy();
+
+    const section = screen
+      .getByRole("heading", { name: "Montagoe to Mainstage" })
+      .closest("section") as HTMLElement;
+    expect(section.textContent).toMatch(/\d+\.?\d* miles?/);
+    expect(section.textContent).not.toMatch(/\bkm\b|kilometre/i);
+  });
+
+  it("groups the combined view's zones by venue, so each select is readable", () => {
+    render(<VenueMapsTool />);
+    fireEvent.click(screen.getByRole("button", { name: "Full site: De Schorre + DreamVille" }));
+
+    const from = screen.getByLabelText("Starting zone (A)") as HTMLSelectElement;
+    const groups = [...from.querySelectorAll("optgroup")].map((group) => group.getAttribute("label"));
+    expect(groups).toEqual(["De Schorre (festival grounds)", "DreamVille (campsite)"]);
+  });
+
+  it("keeps each view's own route selection when switching between them", () => {
+    render(<VenueMapsTool />);
+
+    fireEvent.change(screen.getByLabelText("Starting zone (A)"), {
+      target: { value: "ds-core" },
+    });
+    expect(screen.getByRole("heading", { name: "Core to Mainstage" })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "Full site: De Schorre + DreamVille" }));
+    expect(screen.getByRole("heading", { name: "Montagoe to Mainstage" })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "De Schorre (Festival Grounds)" }));
+    expect(screen.getByRole("heading", { name: "Core to Mainstage" })).toBeTruthy();
+  });
+
+  it("points a reader at the combined view for a campsite-to-stage walk", () => {
+    render(<VenueMapsTool />);
+
+    // On a single-venue view the selects only hold that venue's zones, so the
+    // cross-venue walk is planned on the combined view instead. The panel says so
+    // rather than leaving the reader to discover it.
+    expect(
+      screen.getByText(/Switch to Full site above, where\s+both layouts are on one map/i),
+    ).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "Full site: De Schorre + DreamVille" }));
+    expect(
+      screen.queryByText(/Switch to Full site above, where\s+both layouts are on one map/i),
+    ).toBeNull();
+  });
+
+  it("lists zones from both venues on the combined view, and neither on its own", () => {
+    render(<VenueMapsTool />);
+
+    const deSchorreOptions = [...(screen.getByLabelText("Starting zone (A)") as HTMLSelectElement).options];
+    expect(deSchorreOptions.some((option) => option.value === "ds-mainstage")).toBe(true);
+    expect(deSchorreOptions.some((option) => option.value === "dv-montagoe")).toBe(false);
+
+    fireEvent.click(screen.getByRole("button", { name: "Full site: De Schorre + DreamVille" }));
+
+    const allOptions = [...(screen.getByLabelText("Starting zone (A)") as HTMLSelectElement).options];
+    expect(allOptions.some((option) => option.value === "ds-mainstage")).toBe(true);
+    expect(allOptions.some((option) => option.value === "dv-montagoe")).toBe(true);
+  });
+
+  it("routes from any camp to any stage on the combined view", () => {
+    render(<VenueMapsTool />);
+    fireEvent.click(screen.getByRole("button", { name: "Full site: De Schorre + DreamVille" }));
+
+    fireEvent.change(screen.getByLabelText("Starting zone (A)"), {
+      target: { value: "dv-magnificent-greens" },
+    });
+    fireEvent.change(screen.getByLabelText("Destination zone (B)"), {
+      target: { value: "ds-freedom" },
+    });
+
+    const section = screen
+      .getByRole("heading", { name: "Magnificent Greens to Freedom" })
+      .closest("section") as HTMLElement;
+
+    expect(section.textContent).toMatch(/\d+\.?\d* miles?/);
+    expect(section.textContent).not.toMatch(/\bkm\b|kilometre/i);
+    // The shared crossing is a waypoint, so the trail must name it.
+    expect(section.textContent).toMatch(/DreamVille Gate and Festival Walkway/);
+  });
+});
+
+describe("a view opened with an endpoint from the other venue", () => {
+  it("routes across both venues rather than showing 'choose two zones'", () => {
+    /*
+      The fallback path in `routeBetween`. `initialVenueId` is the supported way a
+      caller can arrive with a selection the starting view does not hold, which is
+      why the combined map is tried second rather than the pair being refused.
+    */
+    render(<VenueMapsTool initialVenueId="all" />);
+
+    fireEvent.change(screen.getByLabelText("Starting zone (A)"), {
+      target: { value: "dv-friendship-garden" },
+    });
+    fireEvent.change(screen.getByLabelText("Destination zone (B)"), {
+      target: { value: "ds-rose-garden" },
+    });
+
+    const section = screen
+      .getByRole("heading", { name: "Friendship Garden to Rose Garden" })
+      .closest("section") as HTMLElement;
+    expect(section.textContent).toMatch(/\d+\.?\d* miles?/);
+    expect(section.textContent).toMatch(/DreamVille Gate and Festival Walkway/);
+  });
+});
+
+describe("the locate button", () => {
+  it("is offered, and asks for nothing until it is pressed", () => {
+    const getCurrentPosition = vi.fn();
+    Object.defineProperty(navigator, "geolocation", {
+      configurable: true,
+      value: { getCurrentPosition },
+    });
+
+    render(<VenueMapsTool />);
+
+    // Nothing on load: no prompt, no request, no position.
+    expect(getCurrentPosition).not.toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: "Locate me" })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "Locate me" }));
+    expect(getCurrentPosition).toHaveBeenCalledTimes(1);
+  });
+
+  it("asks for a fresh, accurate fix rather than a cached one", () => {
+    const getCurrentPosition = vi.fn();
+    Object.defineProperty(navigator, "geolocation", {
+      configurable: true,
+      value: { getCurrentPosition },
+    });
+
+    render(<VenueMapsTool />);
+    fireEvent.click(screen.getByRole("button", { name: "Locate me" }));
+
+    const options = getCurrentPosition.mock.calls[0]?.[2] as PositionOptions;
+    expect(options.enableHighAccuracy).toBe(true);
+    expect(options.maximumAge).toBe(0);
+    expect(options.timeout).toBeGreaterThan(0);
+  });
+
+  it("announces the nearest zone in miles when the visitor is at the site", () => {
+    const getCurrentPosition = vi.fn((success: PositionCallback) => {
+      success({
+        coords: {
+          longitude: 4.3968,
+          latitude: 51.0897,
+          accuracy: 80,
+        },
+      } as GeolocationPosition);
+    });
+    Object.defineProperty(navigator, "geolocation", {
+      configurable: true,
+      value: { getCurrentPosition },
+    });
+
+    render(<VenueMapsTool />);
+    fireEvent.click(screen.getByRole("button", { name: "Locate me" }));
+
+    const status = document.querySelector(".tml-map-locate__status") as HTMLElement;
+    expect(status.getAttribute("aria-live")).toBe("polite");
+    expect(status.textContent).toMatch(/Montagoe/);
+    expect(status.textContent).toMatch(/miles?/);
+    expect(status.textContent).not.toMatch(/\bkm\b|kilometre/i);
+  });
+
+  it("says the visitor is outside the area, and marks nothing", () => {
+    const getCurrentPosition = vi.fn((success: PositionCallback) => {
+      success({
+        coords: { longitude: 4.3517, latitude: 50.8503, accuracy: 100 },
+      } as GeolocationPosition);
+    });
+    Object.defineProperty(navigator, "geolocation", {
+      configurable: true,
+      value: { getCurrentPosition },
+    });
+
+    render(<VenueMapsTool />);
+    fireEvent.click(screen.getByRole("button", { name: "Locate me" }));
+
+    const status = document.querySelector(".tml-map-locate__status") as HTMLElement;
+    expect(status.getAttribute("data-tone")).toBe("outside");
+    expect(status.textContent).toMatch(/outside the Boom\/Rumst festival area/i);
+    expect(status.textContent).toMatch(/showing the full map instead/i);
+    // No clear button, because there is nothing to clear.
+    expect(screen.queryByRole("button", { name: "Clear my location" })).toBeNull();
+  });
+
+  it("degrades gracefully when the prompt is refused", () => {
+    const getCurrentPosition = vi.fn((_success: PositionCallback, failure: PositionErrorCallback) => {
+      failure({ code: 1, message: "User denied Geolocation" } as GeolocationPositionError);
+    });
+    Object.defineProperty(navigator, "geolocation", {
+      configurable: true,
+      value: { getCurrentPosition },
+    });
+
+    render(<VenueMapsTool />);
+    fireEvent.click(screen.getByRole("button", { name: "Locate me" }));
+
+    const status = document.querySelector(".tml-map-locate__status") as HTMLElement;
+    expect(status.getAttribute("data-tone")).toBe("denied");
+    expect(status.textContent).toMatch(/refused/i);
+    // The jargon the browser returns must not reach the reader.
+    expect(status.textContent).not.toMatch(/User denied/i);
+  });
+
+  it("says so when the browser has no location services at all", () => {
+    Object.defineProperty(navigator, "geolocation", {
+      configurable: true,
+      value: undefined,
+    });
+
+    render(<VenueMapsTool />);
+    fireEvent.click(screen.getByRole("button", { name: "Locate me" }));
+
+    const status = document.querySelector(".tml-map-locate__status") as HTMLElement;
+    expect(status.getAttribute("data-tone")).toBe("unsupported");
+    expect(status.textContent).toMatch(/does not offer location services/i);
+  });
+
+  it("does not make a doomed request when the site is already blocked", () => {
+    const getCurrentPosition = vi.fn();
+    Object.defineProperty(navigator, "geolocation", {
+      configurable: true,
+      value: { getCurrentPosition },
+    });
+    Object.defineProperty(navigator, "permissions", {
+      configurable: true,
+      value: { query: () => Promise.resolve({ state: "denied" }) },
+    });
+
+    render(<VenueMapsTool />);
+    fireEvent.click(screen.getByRole("button", { name: "Locate me" }));
+
+    // No prompt can appear, so no request is started.
+    expect(getCurrentPosition).not.toHaveBeenCalled();
+  });
+
+  it("asks anyway when the Permissions API cannot answer", () => {
+    const getCurrentPosition = vi.fn();
+    Object.defineProperty(navigator, "geolocation", {
+      configurable: true,
+      value: { getCurrentPosition },
+    });
+    Object.defineProperty(navigator, "permissions", {
+      configurable: true,
+      value: {
+        query: () => {
+          throw new Error("NotSupportedError");
+        },
+      },
+    });
+
+    render(<VenueMapsTool />);
+    fireEvent.click(screen.getByRole("button", { name: "Locate me" }));
+
+    expect(getCurrentPosition).toHaveBeenCalledTimes(1);
+  });
+
+  it("asks anyway when the Permissions API rejects", async () => {
+    const getCurrentPosition = vi.fn();
+    Object.defineProperty(navigator, "geolocation", {
+      configurable: true,
+      value: { getCurrentPosition },
+    });
+    Object.defineProperty(navigator, "permissions", {
+      configurable: true,
+      value: { query: () => Promise.reject(new Error("NotSupportedError")) },
+    });
+
+    render(<VenueMapsTool />);
+    fireEvent.click(screen.getByRole("button", { name: "Locate me" }));
+
+    // The rejection is handled on the microtask queue, so the assertion waits.
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(getCurrentPosition).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not strand the button when the Permissions API never settles", async () => {
+    vi.useFakeTimers();
+    const getCurrentPosition = vi.fn();
+    Object.defineProperty(navigator, "geolocation", {
+      configurable: true,
+      value: { getCurrentPosition },
+    });
+    // A query that returns a promise which never resolves: a known browser bug,
+    // and the one shape a plain `.then` cannot recover from.
+    Object.defineProperty(navigator, "permissions", {
+      configurable: true,
+      value: { query: () => new Promise(() => {}) },
+    });
+
+    try {
+      render(<VenueMapsTool />);
+      fireEvent.click(screen.getByRole("button", { name: "Locate me" }));
+      expect(getCurrentPosition).not.toHaveBeenCalled();
+
+      // After the fall-through timer, the real request is made regardless.
+      vi.advanceTimersByTime(2_500);
+      expect(getCurrentPosition).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("clears the marker without touching the route or the camera", () => {
+    const getCurrentPosition = vi.fn((success: PositionCallback) => {
+      success({
+        coords: { longitude: 4.3968, latitude: 51.0897, accuracy: 80 },
+      } as GeolocationPosition);
+    });
+    Object.defineProperty(navigator, "geolocation", {
+      configurable: true,
+      value: { getCurrentPosition },
+    });
+
+    render(<VenueMapsTool />);
+    fireEvent.click(screen.getByRole("button", { name: "Locate me" }));
+
+    const clear = screen.getByRole("button", { name: "Clear my location" });
+    fireEvent.click(clear);
+
+    const status = document.querySelector(".tml-map-locate__status") as HTMLElement;
+    expect(status.getAttribute("data-tone")).toBe("cleared");
+    expect(status.textContent).toMatch(/cleared from the map/i);
+    expect(screen.queryByRole("button", { name: "Clear my location" })).toBeNull();
+    // The planned walk is untouched by the location feature.
+    expect(screen.getByRole("heading", { name: "Main Entrance to Mainstage" })).toBeTruthy();
+  });
+
+  it("ignores a second press while the first is still outstanding", () => {
+    const getCurrentPosition = vi.fn();
+    Object.defineProperty(navigator, "geolocation", {
+      configurable: true,
+      value: { getCurrentPosition },
+    });
+
+    render(<VenueMapsTool />);
+    const button = screen.getByRole("button", { name: "Locate me" });
+    fireEvent.click(button);
+    fireEvent.click(button);
+
+    expect(getCurrentPosition).toHaveBeenCalledTimes(1);
+    // `aria-disabled` keeps the button in the tab order; a real `disabled` would
+    // drop a keyboard reader's focus to the top of the document.
+    expect(button.getAttribute("aria-disabled")).toBe("true");
+    expect(button.hasAttribute("disabled")).toBe(false);
+  });
+
+  it("stays in the tab order while a fix is pending", () => {
+    const getCurrentPosition = vi.fn();
+    Object.defineProperty(navigator, "geolocation", {
+      configurable: true,
+      value: { getCurrentPosition },
+    });
+
+    render(<VenueMapsTool />);
+    const button = screen.getByRole("button", { name: /Locate me|Finding you/ });
+    fireEvent.click(button);
+
+    const pending = screen.getByRole("button", { name: /Finding you/ });
+    expect(pending.hasAttribute("disabled")).toBe(false);
+    expect(pending.getAttribute("aria-disabled")).toBe("true");
+  });
+
+  it("never writes the position to storage", () => {
+    const getCurrentPosition = vi.fn((success: PositionCallback) => {
+      success({
+        coords: { longitude: 4.3968, latitude: 51.0897, accuracy: 80 },
+      } as GeolocationPosition);
+    });
+    Object.defineProperty(navigator, "geolocation", {
+      configurable: true,
+      value: { getCurrentPosition },
+    });
+
+    render(<VenueMapsTool />);
+    fireEvent.click(screen.getByRole("button", { name: "Locate me" }));
+
+    // Nothing at all is stored, and certainly not a coordinate.
+    expect(window.localStorage.length).toBe(0);
+    expect(window.localStorage.getItem(FAVOURITES_STORAGE_KEY)).toBeNull();
+  });
+
+  it("explains the privacy position, and wires it to the button", () => {
+    render(<VenueMapsTool />);
+
+    const button = screen.getByRole("button", { name: "Locate me" });
+    const describedBy = button.getAttribute("aria-describedby") as string;
+    expect(describedBy).toBeTruthy();
+
+    const note = document.getElementById(describedBy) as HTMLElement;
+    expect(note.textContent).toMatch(/never sent to this guide/i);
+    expect(note.textContent).toMatch(/not saved/i);
+  });
+});
+
+describe("the legend", () => {
+  it("gives each category a letter as well as a colour", () => {
+    render(<VenueMapsTool />);
+
+    const legend = screen.getByRole("list", { name: "Map legend" });
+    for (const [category, letter] of [
+      ["Stages", "S"],
+      ["Entrances", "E"],
+      ["Camp zones", "C"],
+      ["Facilities", "F"],
+      ["Transport", "T"],
+    ] as const) {
+      const item = within(legend).getByText(category).closest("li") as HTMLElement;
+      expect(item.textContent).toContain(letter);
+    }
+  });
+
+  it("names the route ends and the visitor's own marker", () => {
+    render(<VenueMapsTool />);
+
+    const legend = screen.getByRole("list", { name: "Map legend" });
+    expect(within(legend).getByText("Start")).toBeTruthy();
+    expect(within(legend).getByText("Destination")).toBeTruthy();
+    expect(within(legend).getByText("Your location, when you ask for it")).toBeTruthy();
+  });
+
+  it("spells out the letter scheme in words", () => {
+    render(<VenueMapsTool />);
+
+    expect(
+      screen.getByText(/S stage, E entrance, C camp, F facility, T transport/i),
+    ).toBeTruthy();
+    // The one thing the map cannot promise: two letters for two markers that sit
+    // almost on top of each other. The note says so rather than overclaiming.
+    expect(screen.getByText(/one letter is\s+left off rather than printed twice/i)).toBeTruthy();
+    expect(screen.getByText(/still named in every row of the\s+zone list/i)).toBeTruthy();
   });
 });
 
@@ -350,19 +810,51 @@ describe("the accessible zone list", () => {
     // Main Gate is A; the destination is still unset for this press, so the action
     // offered is the one the current pick target names.
     const start = screen.getByRole("button", {
-      name: /^Main Gate A, set as the destination B, also known as Main Entrance$/,
+      name: /^Main Gate A, set as the destination B, also known as Main Entrance\./,
     });
     expect(start).toHaveAttribute("aria-pressed", "true");
-    // The badge itself is decorative once the name carries it.
+    // The badge is real text now, so it is part of the name rather than hidden.
     const row = start.closest("li") as HTMLElement;
-    expect(row.querySelector(".tml-map-list__badge")).toHaveAttribute("aria-hidden", "true");
+    expect(row.querySelector(".tml-map-list__badge")).not.toHaveAttribute("aria-hidden");
+  });
+
+  it("builds the accessible name from the printed content, not a parallel string", () => {
+    render(<VenueMapsTool />);
+
+    /*
+      WCAG 2.5.3 is satisfied by construction here: the name is the button's own
+      text. That is what stops the two drifting apart, which is the fault axe
+      reports as `label-content-name-mismatch`.
+    */
+    const start = screen.getByRole("button", {
+      name: /^Main Gate A, set as the destination B, also known as Main Entrance\./,
+    });
+    // The visible "Entrances · …" line is in the name as well.
+    expect(start).toHaveAccessibleName(/Entrances · The day-visitor entrance/);
+    // And no `aria-label` is used, so nothing can contradict the content.
+    expect(start).not.toHaveAttribute("aria-label");
+  });
+
+  it("keeps a word boundary where the action meets the category line", () => {
+    render(<VenueMapsTool />);
+
+    /*
+      The accessible name is joined from separate text nodes and each is trimmed,
+      so a joining space cannot exist. The full stop is the boundary instead: a
+      screen reader treats it as the end of a sentence, which is why "Main
+      Entrance" and "Entrances" are not run together into one phrase.
+    */
+    const start = screen.getByRole("button", {
+      name: /^Main Gate A, set as the destination B, also known as Main Entrance\./,
+    });
+    expect(start).toHaveAccessibleName(/Main Entrance\.Entrances ·/);
   });
 
   it("prints the destination badge on the other end, in words for a reader", () => {
     render(<VenueMapsTool />);
 
     const destination = screen.getByRole("button", {
-      name: /^Mainstage B, set as the destination B$/,
+      name: /^Mainstage B, set as the destination B\./,
     });
     expect(destination).toHaveAttribute("aria-pressed", "true");
   });
@@ -373,11 +865,10 @@ describe("the accessible zone list", () => {
     // The list prints "DV Gate"; the selects call it "DreamVille Gate".
     expect(
       screen.getByRole("button", {
-        name: /^DV Gate, set as the destination B, also known as DreamVille Gate$/,
+        name: /^DV Gate, set as the destination B, also known as DreamVille Gate\./,
       }),
     ).toBeTruthy();
   });
-
   it("shows the selected zone's detail", () => {
     render(<VenueMapsTool />);
 

@@ -9,13 +9,19 @@
   hairline rules, tracked mono labels, serif display type, one edition accent
   (`--ea`) that follows the visitor's edition without any per-page colour.
 
+  The surface is a chat, so the rules are built around three regions: a fixed
+  header bar, a scrolling thread and a composer. The card itself has no fixed
+  height — the viewport inside it does — which keeps the composer in the card
+  rather than floating over the page, and keeps a long answer from pushing the
+  question box off the bottom of a phone screen.
+
   Two constraints shape the details:
 
-  - Sizes are in `rem` and percentages, never fixed pixels, so the 100–150 per
-    cent text setting in the accessibility toolbar scales the page.
+  - Sizes are in `rem`, percentages and `dvh`, never fixed pixels, so the 100–150
+    per cent text setting in the accessibility toolbar scales the page.
   - No rule sets a text colour that would defeat the high-contrast palette, and
-    every control keeps a 44px minimum target. Reduced motion is honoured at the
-    end of the file.
+    every control keeps a 44px minimum target on touch. Reduced motion is honoured
+    at the end of the file, for the thinking dots in particular.
 */
 
 .tml-ai-main {
@@ -40,6 +46,14 @@
   }
 }
 
+/* At 320px the page gutter is what stands between the two starter columns and a
+   cramped measure, so it gives way first. */
+@media (max-width: 359px) {
+  .tml-ai-main {
+    --tml-ai-gutter: 0.85rem;
+  }
+}
+
 /* ---------- Breadcrumbs ---------- */
 
 .tml-ai-crumbs {
@@ -48,7 +62,7 @@
   align-items: center;
   gap: 0.5rem;
   margin: 0;
-  padding: 1.5rem var(--tml-ai-gutter) 0;
+  padding: 1rem var(--tml-ai-gutter) 0;
   list-style: none;
   font-family: var(--font-mono);
   font-size: 0.6875rem;
@@ -61,6 +75,7 @@
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
+  min-width: 0;
 }
 
 .tml-ai-crumbs__item a {
@@ -91,25 +106,27 @@
   opacity: 0.55;
 }
 
-/* ---------- Hero ---------- */
+/* ---------- Hero ----------
+   Deliberately short. The chatbox is the page, so the heading gives the reader
+   the subject in one line and the card follows immediately.
+*/
 
 .tml-ai-hero {
   display: flex;
   flex-direction: column;
-  gap: 0.85rem;
-  margin: 0.5rem var(--tml-ai-gutter) 0;
-  padding-bottom: 2rem;
-  border-bottom: 1px solid var(--hair);
+  gap: 0.5rem;
+  margin: 0.25rem var(--tml-ai-gutter) 0;
+  padding-bottom: 1.25rem;
 }
 
 .tml-ai-hero__title {
   margin: 0;
-  max-width: 22ch;
+  max-width: 30ch;
   font-family: var(--font-display);
   font-weight: 400;
-  font-size: clamp(2.1rem, 5.6vw, 3.4rem);
-  line-height: 1.02;
-  letter-spacing: -0.03em;
+  font-size: clamp(1.75rem, 4.2vw, 2.5rem);
+  line-height: 1.06;
+  letter-spacing: -0.025em;
   color: var(--cream);
   text-wrap: balance;
   font-variation-settings:
@@ -119,19 +136,975 @@
 
 .tml-ai-hero__lede {
   margin: 0;
-  max-width: 64ch;
+  max-width: 66ch;
   color: var(--cream-mute);
-  font-size: 1.0625rem;
-  line-height: 1.6;
+  font-size: 0.9375rem;
+  line-height: 1.55;
   text-wrap: pretty;
 }
 
-/* ---------- Notices ---------- */
+/* ---------- The chat card ---------- */
+
+.tml-ai-chat {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  margin: 0 var(--tml-ai-gutter);
+  border: 1px solid color-mix(in srgb, var(--cream) 11%, var(--hair));
+  border-radius: 24px;
+  background-image: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--surface-2) 96%, var(--ea) 4%),
+    var(--surface) 38%
+  );
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--ea) 20%, rgb(244 236 224 / 0.08)),
+    0 28px 70px -34px rgb(0 0 0 / 0.95),
+    0 2px 12px -4px rgb(0 0 0 / 0.6);
+  overflow: hidden;
+  /* The card is the focus of the page: a soft accent bloom at the top edge, the
+     same device the kit's cards use, at a lower opacity because this surface is
+     large. */
+  isolation: isolate;
+}
+
+.tml-ai-chat::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  top: -16rem;
+  left: 50%;
+  width: 38rem;
+  height: 24rem;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background-image: radial-gradient(circle, var(--ea) 0%, transparent 66%);
+  opacity: 0.11;
+  pointer-events: none;
+}
+
+.tml-ai-chat__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 0.75rem;
+  padding: 0.8rem 1rem 0.8rem 1.25rem;
+  border-bottom: 1px solid var(--hair);
+  background: color-mix(in srgb, var(--cream) 3.5%, transparent);
+  backdrop-filter: blur(10px);
+}
+
+.tml-ai-chat__identity {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.6rem;
+  min-width: 0;
+}
+
+/* The assistant mark: a small gold-lit ring, drawn in CSS so there is no asset to
+   load and it takes its colour from the edition accent. */
+.tml-ai-chat__mark {
+  position: relative;
+  flex: none;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  border: 1px solid color-mix(in srgb, var(--ea) 55%, transparent);
+  background:
+    radial-gradient(circle at 32% 28%, color-mix(in srgb, var(--ea) 70%, transparent), transparent 62%),
+    var(--surface-2);
+  box-shadow: 0 0 12px -2px color-mix(in srgb, var(--ea) 40%, transparent);
+}
+
+.tml-ai-chat__name {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 1rem;
+  letter-spacing: -0.01em;
+  color: var(--cream);
+  font-variation-settings:
+    "SOFT" 100,
+    "WONK" 1;
+}
+
+.tml-ai-chat__badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem 0.5rem;
+  border: 1px solid color-mix(in srgb, var(--ea) 38%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ea) 10%, transparent);
+  color: var(--cream);
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.tml-ai-chat__new {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.75rem;
+  border: 1px solid var(--hair-strong);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--cream-mute);
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+}
+
+@media (hover: hover) {
+  .tml-ai-chat__new:hover {
+    color: var(--cream);
+    border-color: color-mix(in srgb, var(--ea) 55%, transparent);
+    background: color-mix(in srgb, var(--ea) 8%, transparent);
+  }
+}
+
+/* ---------- Thread viewport ----------
+   The scroll container. `overscroll-behavior: contain` stops a flick past the end
+   of an answer from scrolling the page behind it, which on a phone reads as the
+   interface jumping. */
+
+.tml-ai-chat__viewport {
+  flex: 1 1 auto;
+  min-height: 15rem;
+  max-height: clamp(18rem, 52dvh, 30rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 1rem 0.85rem 1.15rem;
+  scrollbar-width: thin;
+  scrollbar-color: var(--hair-strong) transparent;
+}
+
+@media (min-width: 640px) {
+  .tml-ai-chat__viewport {
+    padding: 1.25rem 1.25rem 1.4rem;
+  }
+}
+
+/*
+  On a phone, the empty state is allowed its natural height: the welcome copy and the
+  2×2 starters are the page's content, and shrinking them into a scrolling box to bring
+  the composer up would trade real information for a control the reader has not needed
+  yet. Once a conversation exists, the thread is capped so the composer sits at a
+  predictable place on screen and the auto-scroll keeps the newest answer in view.
+*/
+@media (max-width: 639px) {
+  .tml-ai-chat__viewport[data-empty="true"] {
+    max-height: none;
+  }
+
+  .tml-ai-chat__viewport[data-empty="false"] {
+    max-height: clamp(11rem, 40dvh, 24rem);
+  }
+}
+
+.tml-ai-chat__viewport:focus-visible {
+  outline: 2px solid var(--ea);
+  outline-offset: -2px;
+}
+
+.tml-ai-chat__viewport::-webkit-scrollbar {
+  width: 8px;
+}
+
+.tml-ai-chat__viewport::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: var(--hair-strong);
+}
+
+/* ---------- Empty state ---------- */
+
+.tml-ai-empty {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 1rem 0.25rem 0.5rem;
+}
+
+.tml-ai-empty__greeting {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(1.25rem, 3.4vw, 1.625rem);
+  line-height: 1.18;
+  letter-spacing: -0.02em;
+  color: var(--cream);
+  text-wrap: balance;
+  font-variation-settings:
+    "SOFT" 100,
+    "WONK" 1;
+}
+
+.tml-ai-empty__lede {
+  margin: 0;
+  max-width: 56ch;
+  color: var(--cream-mute);
+  font-size: 0.9375rem;
+  line-height: 1.55;
+  text-wrap: pretty;
+}
+
+.tml-ai-starters {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+  margin: 1.1rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tml-ai-starters > li {
+  display: flex;
+  min-width: 0;
+}
+
+.tml-ai-starter {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.65rem;
+  padding: 0.95rem 1.1rem;
+  border: 1px solid color-mix(in srgb, var(--cream) 9%, var(--hair));
+  border-radius: 16px;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--cream) 5%, transparent),
+    color-mix(in srgb, var(--cream) 2.5%, transparent)
+  );
+  box-shadow: inset 0 1px 0 rgb(244 236 224 / 0.04);
+  color: var(--cream);
+  font-family: inherit;
+  font-size: 0.9375rem;
+  line-height: 1.42;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 0.22s ease,
+    background 0.22s ease,
+    box-shadow 0.22s ease,
+    transform 0.22s ease;
+}
+
+.tml-ai-starter__text {
+  min-width: 0;
+  overflow-wrap: break-word;
+  hyphens: auto;
+}
+
+.tml-ai-starter__arrow {
+  flex: none;
+  margin-top: 0.15rem;
+  color: var(--ea);
+  opacity: 0;
+  transform: translateX(-3px);
+  transition: opacity 0.22s ease, transform 0.22s ease;
+}
+
+.tml-ai-starter:disabled {
+  opacity: 0.55;
+  cursor: progress;
+}
+
+@media (hover: hover) {
+  .tml-ai-starter:not(:disabled):hover {
+    border-color: color-mix(in srgb, var(--ea) 52%, transparent);
+    background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--ea) 11%, transparent),
+      color-mix(in srgb, var(--ea) 5%, transparent)
+    );
+    box-shadow:
+      inset 0 1px 0 color-mix(in srgb, var(--ea) 22%, transparent),
+      0 10px 26px -18px color-mix(in srgb, var(--ea) 45%, rgb(0 0 0 / 0.8));
+    transform: translateY(-1px);
+  }
+
+  .tml-ai-starter:not(:disabled):hover .tml-ai-starter__arrow {
+    opacity: 1;
+    transform: translateX(1px);
+  }
+}
+
+.tml-ai-starter:not(:disabled):focus-visible .tml-ai-starter__arrow {
+  opacity: 1;
+}
+
+/* Below the two-column break of a comfortable sentence, the cards keep the 2×2
+   grid the brief asks for but tighten their padding and lose the decorative arrow,
+   which gives the question itself the space instead. */
+@media (max-width: 419px) {
+  .tml-ai-starter {
+    padding: 0.7rem 0.7rem;
+    font-size: 0.875rem;
+  }
+
+  .tml-ai-starter__arrow {
+    display: none;
+  }
+}
+
+/* ---------- Messages ---------- */
+
+.tml-ai-thread {
+  display: flex;
+  flex-direction: column;
+  gap: 1.05rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tml-ai-msg {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  animation: tml-ai-msg-in 0.22s ease-out both;
+}
+
+@keyframes tml-ai-msg-in {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.tml-ai-msg--user {
+  align-items: flex-end;
+}
+
+.tml-ai-msg--assistant {
+  align-items: flex-start;
+}
+
+.tml-ai-msg__bubble {
+  min-width: 0;
+  max-width: 46rem;
+  padding: 0.95rem 1.15rem;
+  border: 1px solid color-mix(in srgb, var(--cream) 9%, var(--hair));
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--surface-2) 76%, var(--cream) 4%);
+  box-shadow: inset 0 1px 0 rgb(244 236 224 / 0.04);
+  color: var(--cream);
+  font-size: 0.96875rem;
+  line-height: 1.62;
+  overflow-wrap: anywhere;
+}
+
+.tml-ai-msg--user .tml-ai-msg__bubble {
+  max-width: min(38rem, 88%);
+  border-color: color-mix(in srgb, var(--ea) 38%, transparent);
+  border-bottom-right-radius: 5px;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--ea) 16%, var(--surface-2)),
+    color-mix(in srgb, var(--ea) 9%, var(--surface-2))
+  );
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--ea) 20%, transparent);
+  font-weight: 500;
+  white-space: pre-wrap;
+}
+
+.tml-ai-msg--assistant .tml-ai-msg__bubble {
+  max-width: min(46rem, 94%);
+  border-bottom-left-radius: 5px;
+}
+
+.tml-ai-msg__bubble--error {
+  border-color: color-mix(in srgb, var(--rose) 46%, transparent);
+  background: color-mix(in srgb, var(--rose) 12%, transparent);
+}
+
+.tml-ai-msg__para {
+  margin: 0;
+  white-space: pre-wrap;
+  text-wrap: pretty;
+}
+
+.tml-ai-msg__para + .tml-ai-msg__para {
+  margin-top: 0.7rem;
+}
+
+.tml-ai-msg__verified {
+  margin: 0.8rem 0 0;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--cream-mute);
+}
+
+.tml-ai-msg__verified time {
+  color: var(--cream);
+}
+
+.tml-ai-msg__model {
+  margin: 0.35rem 0 0;
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.08em;
+  color: var(--cream-mute);
+  opacity: 0.85;
+  overflow-wrap: anywhere;
+}
+
+/* ---------- Thinking ----------
+   Three dots that fade in sequence. The word beside them is the readable status;
+   the dots are `aria-hidden` and only motion. */
+
+.tml-ai-thinking-bubble {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: var(--cream-mute);
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.tml-ai-thinking {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.tml-ai-thinking__dot {
+  width: 0.3rem;
+  height: 0.3rem;
+  border-radius: 50%;
+  background: var(--ea);
+  opacity: 0.35;
+  animation: tml-ai-think 1.25s ease-in-out infinite;
+}
+
+.tml-ai-thinking__dot:nth-child(2) {
+  animation-delay: 0.16s;
+}
+
+.tml-ai-thinking__dot:nth-child(3) {
+  animation-delay: 0.32s;
+}
+
+@keyframes tml-ai-think {
+  0%,
+  70%,
+  100% {
+    opacity: 0.3;
+    transform: translateY(0);
+  }
+  35% {
+    opacity: 1;
+    transform: translateY(-0.14rem);
+  }
+}
+
+/* ---------- Refusal ---------- */
+
+.tml-ai-refusal {
+  margin: 0;
+}
+
+.tml-ai-refusal__title {
+  margin: 0 0 0.25rem;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ea);
+}
+
+.tml-ai-refusal__message {
+  margin: 0;
+  color: var(--cream-mute);
+  white-space: pre-wrap;
+  text-wrap: pretty;
+}
+
+/* ---------- Citations ---------- */
+
+.tml-ai-cites {
+  margin-top: 0.9rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--hair);
+}
+
+.tml-ai-cites__label {
+  margin: 0 0 0.55rem;
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--cream-mute);
+}
+
+.tml-ai-cites__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tml-ai-cite {
+  display: inline-flex;
+  min-width: 0;
+  max-width: 100%;
+  align-items: baseline;
+  gap: 0.45rem;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--hair);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--ground) 45%, transparent);
+}
+
+.tml-ai-cite__index {
+  flex: none;
+  color: var(--ea);
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.04em;
+}
+
+.tml-ai-cite__text {
+  min-width: 0;
+}
+
+.tml-ai-cite__link {
+  color: var(--cream);
+  font-size: 0.875rem;
+  line-height: 1.4;
+  text-decoration: underline;
+  text-decoration-color: var(--hair-strong);
+  text-underline-offset: 0.2em;
+  overflow-wrap: anywhere;
+}
+
+@media (hover: hover) {
+  .tml-ai-cite__link:hover {
+    text-decoration-color: var(--ea);
+  }
+}
+
+.tml-ai-cite__meta {
+  display: block;
+  margin-top: 0.1rem;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--cream-mute);
+}
+
+.tml-ai-cite__live {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 0.35rem;
+  padding: 0.05rem 0.35rem;
+  border: 1px solid var(--rose);
+  border-radius: 999px;
+  color: var(--rose);
+  font-size: 0.625rem;
+  letter-spacing: 0.1em;
+}
+
+/* ---------- Error card ---------- */
+
+.tml-ai-errorcard__title {
+  margin: 0 0 0.3rem;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--cream);
+}
+
+.tml-ai-errorcard__body {
+  margin: 0;
+  color: var(--cream);
+  text-wrap: pretty;
+}
+
+.tml-ai-errorcard__note {
+  margin: 0.5rem 0 0;
+  color: var(--cream-mute);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.tml-ai-errorcard__note a {
+  color: var(--cream);
+  text-decoration: underline;
+  text-decoration-color: var(--hair-strong);
+  text-underline-offset: 0.2em;
+}
+
+.tml-ai-retry {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  margin-top: 0.6rem;
+  padding: 0.45rem 1rem;
+  border: 1px solid var(--hair-strong);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--cream);
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+@media (hover: hover) {
+  .tml-ai-retry:hover {
+    border-color: color-mix(in srgb, var(--ea) 55%, transparent);
+    background: color-mix(in srgb, var(--ea) 8%, transparent);
+  }
+}
+
+/* ---------- Composer ---------- */
+
+.tml-ai-composer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.7rem 0.75rem 0.65rem;
+  border-top: 1px solid var(--hair);
+  background: color-mix(in srgb, var(--ground) 55%, transparent);
+}
+
+@media (min-width: 640px) {
+  .tml-ai-composer {
+    padding: 0.85rem 1rem 0.8rem;
+  }
+}
+
+.tml-ai-composer__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.6rem;
+  min-width: 0;
+  /* The pills below switch to a grid by measuring *this* row rather than the viewport.
+     A viewport breakpoint cannot see the accessibility toolbar's 115–150 per cent text,
+     so it would leave a three-then-one wrap at a larger screen with larger type. */
+  container-type: inline-size;
+}
+
+.tml-ai-composer__scope-label {
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--cream-mute);
+}
+
+/* The scope pills are compact on a pointer device and grow to a touch target on a
+   narrow screen, where the same control is hit with a thumb. */
+.tml-ai-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.tml-ai-chip {
+  display: inline-flex;
+  min-height: 2rem;
+  align-items: center;
+  padding: 0.3rem 0.7rem;
+  border: 1px solid var(--hair-strong);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--cream-mute);
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+}
+
+.tml-ai-chip[aria-pressed="true"] {
+  border-color: var(--ea);
+  color: var(--cream);
+  background: color-mix(in srgb, var(--ea) 16%, transparent);
+}
+
+@media (hover: hover) {
+  .tml-ai-chip:hover {
+    color: var(--cream);
+    border-color: var(--cream-mute);
+  }
+}
+
+@media (max-width: 639px) {
+  .tml-ai-chip {
+    min-height: 44px;
+    justify-content: center;
+    padding-inline: 0.6rem;
+    letter-spacing: 0.05em;
+  }
+}
+
+/* Touch targets are a property of the input device, not of the window width: a tablet
+   held in portrait is 768px wide and is still hit with a thumb. */
+@media (pointer: coarse) {
+  .tml-ai-chip {
+    min-height: 44px;
+    justify-content: center;
+  }
+}
+
+/* When the row has less than 20rem to work with, four pills cannot sit on one line at a
+   comfortable size, and the greedy wrap (three then one) reads as a mistake. A deliberate
+   2×2 block reads as designed. The threshold is in `rem`, so it rises with the text size
+   setting exactly as the pills do. `minmax(0, 1fr)` stops the longest label from pushing
+   its column past the row at 320px.
+
+   The visible word "Edition" is dropped here as well: above four self-describing pills it
+   costs a whole row of the composer. It stays in the accessibility tree through
+   `aria-labelledby` on the group. */
+@container (max-width: 20rem) {
+  .tml-ai-chips {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.3rem;
+    width: 100%;
+  }
+
+  .tml-ai-composer__scope-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+
+/* The input shell: one rounded box that holds the field and the send button, and
+   that carries the focus state for both. */
+.tml-ai-composer__shell {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.55rem;
+  padding: 0.5rem 0.5rem 0.5rem 1rem;
+  border: 1px solid color-mix(in srgb, var(--cream) 14%, var(--hair-strong));
+  border-radius: 20px;
+  background: color-mix(in srgb, var(--surface-2) 94%, var(--ground));
+  box-shadow:
+    inset 0 1px 0 rgb(244 236 224 / 0.04),
+    0 10px 28px -18px rgb(0 0 0 / 0.85);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.tml-ai-composer__shell:focus-within {
+  border-color: var(--ea);
+  background: var(--surface-2);
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--ea) 20%, transparent),
+    0 10px 28px -16px rgb(0 0 0 / 0.9);
+}
+
+/*
+  The field draws nothing of its own. `globals.css` gives every `textarea` an accent
+  border and an inset ring on focus, which inside this shell would be a rectangle in
+  a rounded box — the same fault the search palette had to undo. The rule below is
+  more specific than the global one, so no `!important` is needed; the shell's
+  `:focus-within` above provides the visible focus state.
+*/
+.tml-ai-composer__input,
+.tml-ai-composer__input:focus,
+.tml-ai-composer__input:focus-visible {
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+  min-height: 2.75rem;
+  padding: 0.45rem 0;
+  border: 0;
+  outline: none;
+  box-shadow: none;
+  background: transparent;
+  color: var(--cream);
+  font-family: inherit;
+  font-size: 1rem;
+  line-height: 1.5;
+  resize: none;
+  overflow-y: auto;
+  max-height: 180px;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.tml-ai-composer__input::placeholder {
+  color: var(--cream-mute);
+  opacity: 0.82;
+}
+
+.tml-ai-send {
+  display: inline-flex;
+  flex: none;
+  min-width: 44px;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0 1.05rem;
+  border: 1px solid var(--ea);
+  border-radius: 999px;
+  background: var(--ea);
+  color: var(--on-accent);
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: opacity 0.18s ease, transform 0.18s ease, box-shadow 0.2s ease;
+}
+
+.tml-ai-send:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+@media (hover: hover) {
+  .tml-ai-send:not(:disabled):hover {
+    opacity: 0.95;
+    box-shadow: 0 6px 20px -6px color-mix(in srgb, var(--ea) 65%, transparent);
+  }
+}
+
+.tml-ai-send:not(:disabled):active {
+  transform: translateY(1px);
+}
+
+.tml-ai-send__arrow {
+  flex: none;
+}
+
+.tml-ai-composer__foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.25rem 0.75rem;
+  padding-inline: 0.2rem;
+}
+
+.tml-ai-composer__hint,
+.tml-ai-composer__count {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--cream-mute);
+}
+
+/*
+  "Enter to send · Shift+Enter for new line" is keyboard advice, and a phone has no such
+  keys. On a narrow screen the hint is hidden visually but kept in the accessibility tree,
+  because the textarea still points at it with `aria-describedby` — a described element
+  must exist, and a screen reader on a tablet with a keyboard still benefits from it.
+*/
+@media (max-width: 639px) {
+  .tml-ai-composer__hint {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .tml-ai-composer__foot {
+    justify-content: flex-end;
+  }
+}
+
+.tml-ai-composer__count {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.tml-ai-composer__count[data-near="true"] {
+  color: var(--cream);
+}
+
+/* A field error is a message about the composer, so it sits inside it rather than
+   below the whole card where it would be easy to miss. */
+.tml-ai-error {
+  margin: 0;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--rose);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--rose) 12%, transparent);
+  color: var(--cream);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+/* ---------- Turnstile slot ---------- */
+
+.tml-ai-composer__verify {
+  min-width: 0;
+  padding-top: 0.15rem;
+}
+
+.tml-ai-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.tml-ai-label {
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--cream-mute);
+}
+
+/* ---------- Info strip ----------
+   Two compact notices under the chat: the promise that this is independent, and the
+   promise about transcripts. Both are server-rendered prose, so a crawler and a
+   reader without JavaScript see them.
+*/
 
 .tml-ai-notices {
   display: grid;
-  gap: 0.75rem;
+  grid-template-columns: 1fr;
+  gap: 0 1.75rem;
   margin: 1.5rem var(--tml-ai-gutter) 0;
+  padding-top: 1.1rem;
+  border-top: 1px solid var(--hair);
 }
 
 @media (min-width: 760px) {
@@ -141,19 +1114,17 @@
 }
 
 .tml-ai-notice {
-  padding: 0.9rem 1rem;
-  border: 1px solid var(--hair);
-  border-left: 2px solid var(--ea);
-  border-radius: 14px;
-  background: var(--surface);
+  margin: 0;
+  padding: 0.55rem 0 0.55rem 0.8rem;
+  border-left: 2px solid color-mix(in srgb, var(--ea) 55%, transparent);
   color: var(--cream-mute);
-  font-size: 0.9375rem;
+  font-size: 0.8125rem;
   line-height: 1.55;
 }
 
 .tml-ai-notice__title {
   display: block;
-  margin-bottom: 0.3rem;
+  margin-bottom: 0.15rem;
   font-family: var(--font-mono);
   font-size: 0.625rem;
   letter-spacing: 0.18em;
@@ -174,342 +1145,6 @@
   }
 }
 
-/* ---------- Form ---------- */
-
-.tml-ai-panel {
-  margin: var(--tml-ai-gap) var(--tml-ai-gutter) 0;
-}
-
-.tml-ai-form {
-  display: flex;
-  flex-direction: column;
-  gap: 1.1rem;
-  padding: 1.25rem;
-  border: 1px solid var(--hair);
-  border-radius: 22px;
-  background: var(--surface);
-}
-
-@media (min-width: 640px) {
-  .tml-ai-form {
-    padding: 1.5rem;
-  }
-}
-
-.tml-ai-field {
-  display: flex;
-  flex-direction: column;
-  gap: 0.45rem;
-}
-
-.tml-ai-label {
-  font-family: var(--font-mono);
-  font-size: 0.625rem;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--cream-mute);
-}
-
-.tml-ai-input,
-.tml-ai-select {
-  width: 100%;
-  min-height: 48px;
-  padding: 0.7rem 0.85rem;
-  border: 1px solid var(--hair-strong);
-  border-radius: 12px;
-  background: var(--surface-2);
-  color: var(--cream);
-  font-family: inherit;
-  font-size: 1rem;
-  line-height: 1.5;
-}
-
-.tml-ai-input::placeholder {
-  color: var(--cream-mute);
-  opacity: 0.75;
-}
-
-.tml-ai-input:disabled,
-.tml-ai-select:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.tml-ai-hint {
-  margin: 0;
-  color: var(--cream-mute);
-  font-size: 0.8125rem;
-  line-height: 1.5;
-}
-
-.tml-ai-error {
-  margin: 0;
-  color: var(--cream);
-  font-size: 0.9375rem;
-  line-height: 1.55;
-  padding: 0.75rem 0.9rem;
-  border: 1px solid var(--rose);
-  border-radius: 12px;
-  background: color-mix(in srgb, var(--rose) 12%, transparent);
-}
-
-.tml-ai-actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.tml-ai-submit {
-  display: inline-flex;
-  min-height: 48px;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1.4rem;
-  border: 1px solid var(--ea);
-  border-radius: 999px;
-  background: var(--ea);
-  color: var(--on-accent);
-  font-family: var(--font-mono);
-  font-size: 0.6875rem;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  cursor: pointer;
-  transition: opacity 0.2s ease, transform 0.2s ease;
-}
-
-.tml-ai-submit:disabled {
-  opacity: 0.55;
-  cursor: progress;
-}
-
-@media (hover: hover) {
-  .tml-ai-submit:not(:disabled):hover {
-    opacity: 0.92;
-  }
-}
-
-.tml-ai-clear {
-  display: inline-flex;
-  min-height: 44px;
-  align-items: center;
-  padding: 0.5rem 0.9rem;
-  border: 1px solid var(--hair-strong);
-  border-radius: 999px;
-  background: transparent;
-  color: var(--cream-mute);
-  font-family: var(--font-mono);
-  font-size: 0.625rem;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  cursor: pointer;
-}
-
-@media (hover: hover) {
-  .tml-ai-clear:hover {
-    color: var(--cream);
-  }
-}
-
-/* ---------- Answer ---------- */
-
-.tml-ai-answer {
-  margin-top: 1.25rem;
-  padding: 1.25rem;
-  border: 1px solid var(--hair);
-  border-radius: 22px;
-  background: var(--surface);
-}
-
-@media (min-width: 640px) {
-  .tml-ai-answer {
-    padding: 1.5rem;
-  }
-}
-
-.tml-ai-answer__head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 0.5rem;
-  padding-bottom: 0.85rem;
-  border-bottom: 1px solid var(--hair);
-}
-
-.tml-ai-answer__kicker {
-  font-family: var(--font-mono);
-  font-size: 0.625rem;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--cream-mute);
-}
-
-.tml-ai-answer__model {
-  font-family: var(--font-mono);
-  font-size: 0.625rem;
-  letter-spacing: 0.1em;
-  color: var(--cream-mute);
-  opacity: 0.8;
-}
-
-.tml-ai-answer__body {
-  margin: 1rem 0 0;
-  max-width: 68ch;
-  color: var(--cream);
-  font-size: 1.0625rem;
-  line-height: 1.65;
-  text-wrap: pretty;
-  white-space: pre-wrap;
-}
-
-.tml-ai-refusal {
-  margin: 1rem 0 0;
-  max-width: 68ch;
-  color: var(--cream-mute);
-  font-size: 1.0625rem;
-  line-height: 1.65;
-}
-
-.tml-ai-refusal__title {
-  display: block;
-  margin-bottom: 0.35rem;
-  font-family: var(--font-mono);
-  font-size: 0.625rem;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--accent, var(--ea));
-}
-
-/* ---------- Citations ---------- */
-
-.tml-ai-citations {
-  margin: 1.25rem 0 0;
-  padding: 1rem 0 0;
-  border-top: 1px solid var(--hair);
-  list-style: none;
-  display: grid;
-  gap: 0.7rem;
-}
-
-.tml-ai-citation {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 0.6rem;
-  align-items: start;
-  font-size: 0.9375rem;
-  line-height: 1.5;
-}
-
-.tml-ai-citation__index {
-  display: inline-flex;
-  min-width: 1.6rem;
-  height: 1.6rem;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid var(--hair-strong);
-  border-radius: 8px;
-  font-family: var(--font-mono);
-  font-size: 0.6875rem;
-  color: var(--cream-mute);
-}
-
-.tml-ai-citation__link {
-  color: var(--cream);
-  text-decoration: underline;
-  text-decoration-color: var(--hair-strong);
-  text-underline-offset: 0.2em;
-  overflow-wrap: anywhere;
-}
-
-@media (hover: hover) {
-  .tml-ai-citation__link:hover {
-    text-decoration-color: var(--ea);
-  }
-}
-
-.tml-ai-citation__meta {
-  display: block;
-  margin-top: 0.15rem;
-  font-family: var(--font-mono);
-  font-size: 0.625rem;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--cream-mute);
-}
-
-.tml-ai-citation__live {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  margin-left: 0.4rem;
-  padding: 0.1rem 0.4rem;
-  border: 1px solid var(--rose);
-  border-radius: 999px;
-  color: var(--rose);
-  font-size: 0.5625rem;
-  letter-spacing: 0.12em;
-}
-
-/* ---------- Freshness line ---------- */
-
-.tml-ai-freshness {
-  margin: 1rem 0 0;
-  font-family: var(--font-mono);
-  font-size: 0.6875rem;
-  letter-spacing: 0.08em;
-  color: var(--cream-mute);
-}
-
-.tml-ai-freshness time {
-  color: var(--cream);
-}
-
-/* ---------- Edition chips ---------- */
-
-.tml-ai-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-
-.tml-ai-chip {
-  display: inline-flex;
-  min-height: 44px;
-  align-items: center;
-  padding: 0.5rem 1rem;
-  border: 1px solid var(--hair-strong);
-  border-radius: 999px;
-  background: transparent;
-  color: var(--cream-mute);
-  font-family: var(--font-mono);
-  font-size: 0.625rem;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  cursor: pointer;
-  transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease;
-}
-
-.tml-ai-chip[aria-pressed="true"] {
-  border-color: var(--ea);
-  color: var(--cream);
-  background: color-mix(in srgb, var(--ea) 14%, transparent);
-}
-
-@media (hover: hover) {
-  .tml-ai-chip:hover {
-    color: var(--cream);
-    border-color: var(--cream-mute);
-  }
-}
-
-/* ---------- Turnstile slot ---------- */
-
-.tml-ai-turnstile {
-  min-height: 0;
-}
-
 /* ---------- Footer note ---------- */
 
 .tml-ai-foot {
@@ -519,6 +1154,9 @@
   color: var(--cream-mute);
   font-size: 0.875rem;
   line-height: 1.6;
+}
+
+.tml-ai-foot > p {
   max-width: 68ch;
 }
 
@@ -547,15 +1185,41 @@
 /* ---------- Reduced motion ---------- */
 
 @media (prefers-reduced-motion: reduce) {
-  .tml-ai-submit,
+  .tml-ai-thinking__dot,
+  .tml-ai-msg {
+    animation: none;
+  }
+
+  .tml-ai-thinking__dot {
+    opacity: 0.7;
+  }
+
+  .tml-ai-send,
   .tml-ai-chip,
-  .tml-ai-crumbs__item a {
+  .tml-ai-starter,
+  .tml-ai-starter__arrow,
+  .tml-ai-chat__new,
+  .tml-ai-crumbs__item a,
+  .tml-ai-composer__shell {
     transition: none;
   }
 }
 
-html[data-a11y-motion="reduce"] .tml-ai-submit,
+html[data-a11y-motion="reduce"] .tml-ai-thinking__dot,
+html[data-a11y-motion="reduce"] .tml-ai-msg {
+  animation: none !important;
+}
+
+html[data-a11y-motion="reduce"] .tml-ai-thinking__dot {
+  opacity: 0.7;
+}
+
+html[data-a11y-motion="reduce"] .tml-ai-send,
 html[data-a11y-motion="reduce"] .tml-ai-chip,
-html[data-a11y-motion="reduce"] .tml-ai-crumbs__item a {
-  transition: none;
+html[data-a11y-motion="reduce"] .tml-ai-starter,
+html[data-a11y-motion="reduce"] .tml-ai-starter__arrow,
+html[data-a11y-motion="reduce"] .tml-ai-chat__new,
+html[data-a11y-motion="reduce"] .tml-ai-crumbs__item a,
+html[data-a11y-motion="reduce"] .tml-ai-composer__shell {
+  transition: none !important;
 }

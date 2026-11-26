@@ -12,6 +12,7 @@
  */
 
 import type {
+  GeoBounds,
   GeoJsonLineStringGeometry,
   GeoJsonPosition,
   GeoMap,
@@ -388,4 +389,100 @@ export function filterNodes(map: GeoMap, filter: GeoNodeFilter = {}): readonly G
  */
 export function nodeById(map: GeoMap, id: string): GeoMapNode | null {
   return map.nodes.find((node) => node.id === id) ?? null;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Cross-venue routing                                                         */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * The route between two ids, using the first candidate map that connects them.
+ *
+ * A visitor on the De Schorre view who names a DreamVille camp as the far end
+ * cannot be routed on that view: the node is not on it. Rather than refusing,
+ * the caller passes its own view first and the combined site map second, and this
+ * returns the first walk that exists.
+ *
+ * Order matters. The caller's own view comes first, so a single-venue walk is
+ * still routed on that venue's own graph and keeps exactly the figures that
+ * venue's own page has always quoted. The combined map is the fallback for a
+ * pair that spans both.
+ *
+ * @returns the route, or `null` when no candidate holds both ends or when the
+ *   two sit in different components of every candidate's graph. A `null` is
+ *   shown to the reader as "choose two zones", never as an error. Nothing here
+ *   throws for an unknown id; the caller's fallback chain is allowed to run dry.
+ */
+export function routeBetween(
+  candidates: readonly GeoMap[],
+  fromId: string,
+  toId: string,
+): GeoRoute | null {
+  for (const map of candidates) {
+    if (nodeById(map, fromId) === null) continue;
+    if (nodeById(map, toId) === null) continue;
+    const route = findShortestRoute(map, fromId, toId);
+    if (route !== null) return route;
+  }
+  return null;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Position helpers, used by the opt-in "locate me" marker                     */
+/* -------------------------------------------------------------------------- */
+
+/** A node and its straight-line distance from a given position. */
+export interface NearestNode {
+  readonly node: GeoMapNode;
+  /** Straight line in miles, unrounded: the caller formats it. */
+  readonly straightLineMiles: number;
+}
+
+/**
+ * The closest node of `map` to `position`, by straight line.
+ *
+ * Straight line rather than walking distance, because this answers "where am I
+ * in relation to the site", which a visitor reads at a glance. The walking
+ * planner answers the different question of how long a leg takes.
+ *
+ * @returns `null` for an empty map, rather than throwing: an empty map is a data
+ *   mistake, and the marker is an enhancement that must not break the page.
+ * @throws RangeError when `position` is not a valid `[lng, lat]` pair.
+ */
+export function nearestNode(map: GeoMap, position: GeoJsonPosition): NearestNode | null {
+  assertPosition(position, "position");
+
+  let best: NearestNode | null = null;
+  for (const node of map.nodes) {
+    const miles = haversineMiles(position, [node.lng, node.lat]);
+    if (best === null || miles < best.straightLineMiles) {
+      best = { node, straightLineMiles: miles };
+    }
+  }
+  return best;
+}
+
+/**
+ * Straight-line miles from `position` to the nearest edge of a bounding box.
+ *
+ * Zero when the position is inside the box. Outside it, the nearest point on the
+ * box is used, which is the honest answer to "how far outside the site am I":
+ * measuring to the centre of the site would tell a visitor standing beside the
+ * campsite fence that they were two miles away.
+ *
+ * The nearest point is found by clamping the longitude and latitude into the
+ * box, which is exact in degrees and, at this latitude, within a few metres over
+ * the short distances that matter here.
+ *
+ * @throws RangeError when `position` is not a valid `[lng, lat]` pair.
+ */
+export function distanceToBoundsMiles(position: GeoJsonPosition, bounds: GeoBounds): number {
+  assertPosition(position, "position");
+
+  const [lng, lat] = position;
+  const clampedLng = Math.min(Math.max(lng, bounds.west), bounds.east);
+  const clampedLat = Math.min(Math.max(lat, bounds.south), bounds.north);
+
+  if (clampedLng === lng && clampedLat === lat) return 0;
+  return haversineMiles(position, [clampedLng, clampedLat]);
 }

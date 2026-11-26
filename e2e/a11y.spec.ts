@@ -18,6 +18,7 @@ const STATIC_ROUTES = [
   "/radio",
   "/tools",
   "/tools/budget",
+  "/tools/maps",
   "/tools/pearls",
   "/tools/sale-timeline",
   "/tools/journey",
