@@ -46,6 +46,10 @@ export const metadata: Metadata = {
   },
   description:
     "An independent, fan-made guide to Tomorrowland: tickets, sale dates, DreamVille, travel, add-ons and Pearls, with every fact sourced and dated.",
+  icons: {
+    icon: [{ url: "/icons/icon.svg", type: "image/svg+xml" }],
+    apple: [{ url: "/brand/butterfly-mark-160.webp", type: "image/webp" }],
+  },
   /*
     No `alternates.languages` here.
 
