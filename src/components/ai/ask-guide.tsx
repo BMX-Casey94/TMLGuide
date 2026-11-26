@@ -174,8 +174,10 @@ export function AskGuide({ turnstileSiteKey }: AskGuideProps) {
     token. Without this the second question in a conversation would always be refused.
   */
   const [turnstileRound, setTurnstileRound] = useState(0);
+  const [editionMenuOpen, setEditionMenuOpen] = useState(false);
 
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
+  const editionMenuRef = useRef<HTMLDivElement | null>(null);
   const viewportRef = useRef<HTMLDivElement | null>(null);
   const requestRef = useRef<AbortController | null>(null);
   const nextTurnId = useRef(0);
@@ -214,6 +216,25 @@ export function AskGuide({ turnstileSiteKey }: AskGuideProps) {
       requestRef.current?.abort();
     };
   }, []);
+
+  // Close the custom edition menu on outside click or Escape.
+  useEffect(() => {
+    if (!editionMenuOpen) return;
+    const onPointerDown = (event: MouseEvent) => {
+      if (editionMenuRef.current && !editionMenuRef.current.contains(event.target as Node)) {
+        setEditionMenuOpen(false);
+      }
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setEditionMenuOpen(false);
+    };
+    document.addEventListener("mousedown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [editionMenuOpen]);
 
   /*
     Grow the field with the question, up to a cap. A two-row box with an inner scrollbar
@@ -570,22 +591,78 @@ export function AskGuide({ turnstileSiteKey }: AskGuideProps) {
             }}
           />
           <div className="tml-ai-composer__actions">
-            <label className="tml-ai-sr-only" htmlFor={editionLabelId}>
-              Edition
-            </label>
-            <select
-              id={editionLabelId}
-              className="tml-ai-edition-select"
-              aria-label="Edition"
-              value={edition}
-              onChange={(event) => setEdition(event.target.value as Edition)}
-            >
-              {EDITION_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
+            <div className="tml-ai-edition-picker" ref={editionMenuRef}>
+              <button
+                type="button"
+                id={editionLabelId}
+                className="tml-ai-edition-trigger"
+                aria-label={`Edition: ${editionLabel}`}
+                aria-haspopup="listbox"
+                aria-expanded={editionMenuOpen}
+                onClick={() => setEditionMenuOpen((open) => !open)}
+              >
+                <span>{editionLabel}</span>
+                <svg
+                  className="tml-ai-edition-chevron"
+                  data-open={editionMenuOpen ? "true" : "false"}
+                  width="12"
+                  height="12"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                  focusable="false"
+                >
+                  <path d="m6 9 6 6 6-6" />
+                </svg>
+              </button>
+              {editionMenuOpen ? (
+                <ul
+                  className="tml-ai-edition-menu"
+                  role="listbox"
+                  aria-label="Edition"
+                >
+                  {EDITION_OPTIONS.map((option) => {
+                    const selected = edition === option.value;
+                    return (
+                      <li key={option.value} role="none">
+                        <button
+                          type="button"
+                          role="option"
+                          aria-selected={selected}
+                          className="tml-ai-edition-option"
+                          onClick={() => {
+                            setEdition(option.value);
+                            setEditionMenuOpen(false);
+                          }}
+                        >
+                          <span>{option.label}</span>
+                          {selected ? (
+                            <svg
+                              width="13"
+                              height="13"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2.4"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              aria-hidden="true"
+                              focusable="false"
+                            >
+                              <path d="M20 6 9 17l-5-5" />
+                            </svg>
+                          ) : null}
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              ) : null}
+            </div>
             <button
               type="submit"
               className="tml-ai-send"
@@ -693,6 +770,30 @@ function ChatWelcome({
   );
 }
 
+/** Strip noisy inline `[1]`, `[1], [2], [3]` markers so answers read as clean prose. */
+function cleanInlineCitations(text: string): string {
+  return text
+    .replace(/\s*\[\d+\](?:\s*,\s*\[\d+\])*/g, "")
+    .replace(/\s+([.,;:!?])/g, "$1")
+    .replace(/[ \t]{2,}/g, " ")
+    .trim();
+}
+
+/** Deduplicate citations by official URL so the same source page is only shown once. */
+function dedupeCitations(citations: readonly AskCitation[]): AskCitation[] {
+  const seen = new Map<string, AskCitation>();
+  for (const cite of citations) {
+    const key = cite.sourceUrl.trim();
+    const existing = seen.get(key);
+    if (!existing) {
+      seen.set(key, cite);
+    } else if (cite.live && !existing.live) {
+      seen.set(key, { ...existing, live: true });
+    }
+  }
+  return Array.from(seen.values()).map((cite, idx) => ({ ...cite, index: idx + 1 }));
+}
+
 /** One assistant bubble: thinking, answer, refusal or error. */
 function AssistantMessage({ turn, onRetry }: { readonly turn: Turn; readonly onRetry: (turn: Turn) => void }) {
   // Per-instance, so two of these can never produce the same citation-label id.
@@ -737,13 +838,14 @@ function AssistantMessage({ turn, onRetry }: { readonly turn: Turn; readonly onR
 
   const refusal = answer.refusal;
   const checkedDate = formatCheckedDate(answer.lastVerified);
+  const uniqueCitations = dedupeCitations(answer.citations);
 
   return (
     <div className="tml-ai-msg__bubble">
       <span className="tml-ai-sr-only">The guide replied: </span>
 
       {refusal === null ? (
-        answerParagraphs(answer.answer).map((paragraph, index) => (
+        answerParagraphs(cleanInlineCitations(answer.answer)).map((paragraph, index) => (
           <p key={index} className="tml-ai-msg__para">
             {paragraph}
           </p>
@@ -755,13 +857,13 @@ function AssistantMessage({ turn, onRetry }: { readonly turn: Turn; readonly onR
         </div>
       )}
 
-      {answer.citations.length === 0 ? null : (
+      {uniqueCitations.length === 0 ? null : (
         <div className="tml-ai-cites">
           <p className="tml-ai-cites__label" id={citesLabelId}>
             Citations
           </p>
           <ul className="tml-ai-cites__list" role="list" aria-labelledby={citesLabelId}>
-            {answer.citations.map((citation) => {
+            {uniqueCitations.map((citation) => {
               const date = formatCheckedDate(citation.lastVerified);
               return (
                 <li key={`${citation.index}-${citation.sourceUrl}`} className="tml-ai-cite">

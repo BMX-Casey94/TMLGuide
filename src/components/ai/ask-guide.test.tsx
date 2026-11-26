@@ -76,6 +76,10 @@ describe("initial render", () => {
     expect(screen.getByRole("button", { name: /ask the guide/i })).toBeInTheDocument();
     expect(screen.getByText(`0 / ${MAX_QUESTION_LENGTH}`)).toBeInTheDocument();
 
+    const trigger = screen.getByRole("button", { name: /edition:/i });
+    expect(trigger).toHaveAttribute("aria-expanded", "false");
+    fireEvent.click(trigger);
+
     for (const option of EDITION_OPTIONS) {
       expect(screen.getByRole("option", { name: option.label })).toBeInTheDocument();
     }
@@ -102,11 +106,10 @@ describe("initial render", () => {
 
   it("selects the default edition and updates on change", () => {
     render(<AskGuide />);
-    const select = screen.getByRole("combobox", { name: /edition/i });
-    expect(select).toHaveValue("all");
-
-    fireEvent.change(select, { target: { value: "winter" } });
-    expect(select).toHaveValue("winter");
+    const trigger = screen.getByRole("button", { name: /edition: all editions/i });
+    fireEvent.click(trigger);
+    fireEvent.click(screen.getByRole("option", { name: "Winter" }));
+    expect(screen.getByRole("button", { name: /edition: winter/i })).toBeInTheDocument();
   });
 
   it("keeps the send button disabled until there is something to send", () => {
@@ -161,9 +164,8 @@ describe("asking a question", () => {
     render(<AskGuide />);
 
     typeQuestion("How much is a day pass?");
-    fireEvent.change(screen.getByRole("combobox", { name: /edition/i }), {
-      target: { value: "belgium" },
-    });
+    fireEvent.click(screen.getByRole("button", { name: /edition:/i }));
+    fireEvent.click(screen.getByRole("option", { name: "Belgium" }));
     fireEvent.click(screen.getByRole("button", { name: /ask the guide/i }));
 
     expect(await screen.findByText(/€144 in the pre-sale/)).toBeInTheDocument();
@@ -503,7 +505,7 @@ describe("accessibility", () => {
 
   it("labels the edition selector", () => {
     render(<AskGuide />);
-    expect(screen.getByRole("combobox", { name: /edition/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /edition:/i })).toHaveAttribute("aria-haspopup", "listbox");
   });
 
   it("groups the thread so it can be named and scrolled with a keyboard", async () => {
