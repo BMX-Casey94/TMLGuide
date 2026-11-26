@@ -54,15 +54,9 @@ describe("SiteFooter", () => {
       "/community",
       "/radio",
       "/about",
-      "/contact",
     ]);
 
-    for (const [label, href] of [
-      ["Privacy", "/privacy"],
-      ["Terms", "/terms"],
-      ["Accessibility", "/accessibility"],
-      ["Cookies", "/cookies"],
-    ] as const) {
+    for (const [label, href] of [["Accessibility", "/accessibility"]] as const) {
       expect(screen.getByRole("link", { name: label })).toHaveAttribute("href", href);
     }
   });

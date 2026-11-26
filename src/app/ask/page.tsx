@@ -88,8 +88,7 @@ export default function AskPage() {
           <strong className="tml-ai-notice__title">Questions are not stored as transcripts</strong>
           Your question is sent to the AI provider to be answered and is not saved by this site: no
           transcript, no account, no history. Operational logs record a timestamp, a hashed address
-          and a cost, never the words you typed. See the{" "}
-          <Link href="/privacy">privacy page</Link>.
+          and a cost, never the words you typed.
         </p>
       </div>
 

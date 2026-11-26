@@ -87,17 +87,19 @@ export const FOOTER_COLUMNS: readonly FooterColumn[] = [
     title: "About",
     links: [
       { href: "/about", label: "About" },
-      { href: "/contact", label: "Contact" },
     ],
   },
 ];
 
-/** Legal destinations in the footer's bottom row. */
+/**
+ * The footer's bottom row.
+ *
+ * Privacy, Terms, Cookies and Contact stay off this list until there is a public
+ * page for them. Those pages need an operator name and a contact address, and
+ * neither is published on the site at this stage.
+ */
 export const FOOTER_LEGAL: readonly FooterLink[] = [
-  { href: "/privacy", label: "Privacy" },
-  { href: "/terms", label: "Terms" },
   { href: "/accessibility", label: "Accessibility" },
-  { href: "/cookies", label: "Cookies" },
 ];
 
 /**
