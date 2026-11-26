@@ -209,12 +209,33 @@ export function PearlCalculator({ rateInformationUrl }: PearlCalculatorProps) {
         </div>
       </section>
 
-      <section className="tool-panel" aria-labelledby={field("result-heading")} aria-live="polite">
+      <section className="tool-panel" aria-labelledby={field("result-heading")}>
         <div className="tool-panel__head">
           <h2 className="tool-panel__title" id={field("result-heading")}>
             Result
           </h2>
         </div>
+
+        {/*
+          The announcement is scoped to the figure rather than made by a live
+          region on the whole panel. A live region on the panel re-read the
+          static "No 2027 rate has been announced" warning on every keystroke as
+          the reader typed a rate, which buried the one number they were waiting
+          for. This region speaks the result alone, and stays empty until there
+          is a result to speak.
+        */}
+        <p className="tool-announcer" role="status" aria-live="polite" aria-atomic="true">
+          {result === null
+            ? ""
+            : isMoneyInput
+              ? `${formatWholeNumber(result.pearls)} Pearls for ${formatMoney(
+                  amountForConversion,
+                  "EUR",
+                )}${result.hasRemainder ? `, with ${formatMoney(result.remainderMinor, "EUR")} left over` : ""}.`
+              : `${formatMoney(result.amountMinor, "EUR")} for ${formatWholeNumber(
+                  amountForConversion,
+                )} Pearls.`}
+        </p>
 
         {result === null ? (
           <p className="tool-panel__hint">

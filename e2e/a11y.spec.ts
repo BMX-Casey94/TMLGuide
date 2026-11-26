@@ -13,6 +13,7 @@ const STATIC_ROUTES = [
   "/",
   "/about",
   "/accessibility",
+  "/more",
   "/community",
   "/radio",
   "/tools",
@@ -30,6 +31,7 @@ const STATIC_ROUTES = [
   "/guides/winter",
   "/guides/brasil",
   "/guides/general",
+  "/ask",
 ];
 
 const ROUTES = [...STATIC_ROUTES, ...allChapters().map((chapter) => chapterPath(chapter))];

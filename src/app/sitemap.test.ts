@@ -37,9 +37,9 @@ describe("sitemap coverage", () => {
     expect(new Set(paths).size).toBe(paths.length);
   });
 
-  // The four routes called out in the hardening brief. Each is a page that was
-  // easy to forget because it was added after the sitemap was first written.
-  it.each(["/tools/maps", "/tools/winter-timer", "/ask", "/community/news"])(
+  // The four routes called out in the hardening brief, plus the two the tab bar
+  // needed: More is the phone's fifth tab, and Ask is reached from both.
+  it.each(["/tools/maps", "/tools/winter-timer", "/ask", "/community/news", "/more"])(
     "includes %s",
     (path) => {
       expect(paths).toContain(path);
@@ -62,6 +62,8 @@ describe("sitemap coverage", () => {
       "/radio",
       "/about",
       "/accessibility",
+      "/ask",
+      "/more",
     ]) {
       expect(paths, path).toContain(path);
     }

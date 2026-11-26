@@ -30,13 +30,21 @@ export function threeDIconSrc(name: ThreeDIconName): string {
  */
 export { TABBAR_BORDER_PX, TABBAR_HEIGHT_PX, TABBAR_TOTAL_HEIGHT_PX } from "./layout-metrics";
 
-/** Primary destinations, shown as tabs in the desktop header. */
+/**
+ * Primary destinations, shown as tabs in the desktop header.
+ *
+ * `Ask` sits last because it is a page beside the four browsing sections rather than one of them.
+ * Its label is the single word the other tabs use, because at 900px the six tracked labels need
+ * 312px of a 348px row and "Ask the guide" would cost another 72px it does not have. The page
+ * itself is titled "Ask the guide", so the shorter tab still names it.
+ */
 export const DESKTOP_NAV: readonly NavItem[] = [
   { href: "/guides", label: "Guides", icon: "notebook" },
   { href: "/guides/tickets", label: "Tickets", icon: "gift" },
   { href: "/tools", label: "Tools", icon: "tools" },
   { href: "/community", label: "Community", icon: "thumb-up" },
   { href: "/radio", label: "Radio", icon: "headphone" },
+  { href: "/ask", label: "Ask", icon: "puzzle" },
 ];
 
 /** Five thumb-reach destinations for the mobile bottom bar. */

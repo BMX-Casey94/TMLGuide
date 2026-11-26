@@ -43,13 +43,16 @@ describe("SiteHeader", () => {
     expect(logo).toHaveAttribute("height", "488");
   });
 
-  it("has a primary landmark with the five desktop tabs", () => {
+  it("has a primary landmark with the six desktop tabs", () => {
     renderHeader();
 
     const nav = screen.getByRole("navigation", { name: "Primary" });
-    expect(nav.querySelectorAll("a")).toHaveLength(5);
+    expect(nav.querySelectorAll("a")).toHaveLength(6);
     expect(screen.getByRole("link", { name: "Guides" })).toHaveAttribute("href", "/guides");
     expect(screen.getByRole("link", { name: "Radio" })).toHaveAttribute("href", "/radio");
+    // /ask is reachable from the header without typing the URL: this is the link
+    // that makes that true on every width from 900px up.
+    expect(screen.getByRole("link", { name: "Ask" })).toHaveAttribute("href", "/ask");
   });
 
   it("exposes search as a real text field that accepts typing", () => {

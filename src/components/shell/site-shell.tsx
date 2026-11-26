@@ -1,7 +1,9 @@
 import { Suspense, type ReactNode } from "react";
 import { A11yPanel } from "@/components/a11y/a11y-toolbar";
+import { SALE_BANNER } from "@/content/operations/sale-banner";
 import { EditionProvider } from "./edition-context";
 import { MobileTabBar, MobileTabBarLive } from "./mobile-tabbar";
+import { SaleBanner } from "./sale-banner";
 import { SiteFooter } from "./site-footer";
 import { SiteHeader } from "./site-header";
 
@@ -27,6 +29,17 @@ export function SiteShell({ children }: SiteShellProps) {
     <EditionProvider>
       <div id="content-start" className="flex min-h-dvh flex-col">
         <SiteHeader />
+        {/*
+          The sale notice, mounted once, directly under the header and above the content.
+
+          The gate is here as well as inside the component. It keeps a switched-off notice out of the
+          rendered HTML entirely, and it makes the component's own refusal a second line rather than
+          the only one. Note what it does not do: the module and its stylesheet are still imported, so
+          they remain in the bundle. That is the price of a toggle a content editor can flip without
+          touching code, and it is worth it - the alternative, a data-only switch that produced
+          unstyled markup the moment it were turned on, would be worse.
+        */}
+        {SALE_BANNER.enabled ? <SaleBanner record={SALE_BANNER} /> : null}
         <div className="flex min-w-0 flex-1 flex-col">{children}</div>
         <SiteFooter />
       </div>

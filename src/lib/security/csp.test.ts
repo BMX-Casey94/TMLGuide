@@ -19,6 +19,7 @@ import {
   isDevelopment,
   describeTurnstile,
   isTurnstileEnabled,
+  MAP_TILE_ORIGIN,
   NONCE_BYTE_LENGTH,
   normaliseConnectOrigin,
   ONE_WORLD_RADIO_STREAM_ORIGIN,
@@ -146,8 +147,8 @@ describe("buildCspHeader", () => {
   it("does not leak the Turnstile origin into any other directive", () => {
     const parsed = parse(buildCspHeader({ ...BASE, turnstile: true }));
     // The widget makes no same-document fetch of its own; the token goes in the
-    // form post to our own origin. connect-src must therefore stay narrow.
-    expect(parsed.get("connect-src")).toEqual(["'self'"]);
+    // form post to our own origin. connect-src must therefore not widen for it.
+    expect(parsed.get("connect-src")).not.toContain(TURNSTILE_ORIGIN);
     expect(parsed.get("img-src")).not.toContain(TURNSTILE_ORIGIN);
     expect(parsed.get("default-src")).toEqual(["'self'"]);
     expect(parsed.get("style-src")).not.toContain(TURNSTILE_ORIGIN);
@@ -177,13 +178,17 @@ describe("buildCspHeader", () => {
     expect(parse(buildCspHeader(BASE)).get("img-src")).toEqual(["'self'", "data:", "blob:"]);
   });
 
-  it("restricts connect-src to 'self' plus explicit origins", () => {
-    expect(parse(buildCspHeader(BASE)).get("connect-src")).toEqual(["'self'"]);
+  it("restricts connect-src to 'self', the map tiles and explicit origins", () => {
+    expect(parse(buildCspHeader(BASE)).get("connect-src")).toEqual(["'self'", MAP_TILE_ORIGIN]);
 
     const withEndpoint = parse(
       buildCspHeader({ ...BASE, connectSrc: ["https://analytics.example.com/collect"] }),
     );
-    expect(withEndpoint.get("connect-src")).toEqual(["'self'", "https://analytics.example.com"]);
+    expect(withEndpoint.get("connect-src")).toEqual([
+      "'self'",
+      MAP_TILE_ORIGIN,
+      "https://analytics.example.com",
+    ]);
   });
 
   it("rejects a plain-HTTP or malformed connect origin rather than relaxing the policy", () => {
@@ -193,7 +198,11 @@ describe("buildCspHeader", () => {
         connectSrc: ["http://insecure.example.com", "not a url", "https://ok.example.com"],
       }),
     );
-    expect(parsed.get("connect-src")).toEqual(["'self'", "https://ok.example.com"]);
+    expect(parsed.get("connect-src")).toEqual([
+      "'self'",
+      MAP_TILE_ORIGIN,
+      "https://ok.example.com",
+    ]);
   });
 
   it("allows the One World Radio stream in media-src only", () => {
@@ -207,6 +216,67 @@ describe("buildCspHeader", () => {
   it("permits the service worker script", () => {
     expect(parse(buildCspHeader(BASE)).get("worker-src")).toEqual(["'self'", "blob:"]);
     expect(parse(buildCspHeader(BASE)).get("manifest-src")).toEqual(["'self'"]);
+  });
+
+  describe("MapLibre GL and the venue map", () => {
+    it("admits the OpenFreeMap origin to connect-src, so tiles and glyphs can be fetched", () => {
+      /*
+        MapLibre fetches inside a Web Worker, so the requests carry the document's
+        policy. The TileJSON document, the `.pbf` tiles and the glyph ranges are all
+        served from this one host; without it the canvas stays blank and the reader
+        sees the fallback with no explanation of why.
+      */
+      const parsed = parse(buildCspHeader(BASE));
+      expect(parsed.get("connect-src")).toContain(MAP_TILE_ORIGIN);
+      expect(MAP_TILE_ORIGIN).toBe("https://tiles.openfreemap.org");
+    });
+
+    it("allows blob workers through both worker-src and its child-src fallback", () => {
+      const parsed = parse(buildCspHeader(BASE));
+      expect(parsed.get("worker-src")).toEqual(["'self'", "blob:"]);
+      // Browsers without `worker-src` consult `child-src`; the two must agree.
+      expect(parsed.get("child-src")).toEqual(["'self'", "blob:"]);
+    });
+
+    it("never lets blob: reach script-src, so a blob can only run as a worker", () => {
+      for (const isDev of [true, false]) {
+        const scriptSrc = parse(buildCspHeader({ ...BASE, isDev })).get("script-src") ?? [];
+        expect(scriptSrc).not.toContain("blob:");
+        expect(scriptSrc).not.toContain("data:");
+        expect(scriptSrc).not.toContain("'unsafe-inline'");
+        // `'unsafe-eval'` is a development-only exception for React's stack traces;
+        // neither map-related change is allowed to introduce it in production.
+        if (!isDev) expect(scriptSrc).not.toContain("'unsafe-eval'");
+      }
+    });
+
+    it("keeps blob: out of script-src even while admitting it to img-src", () => {
+      // MapLibre's canvas produces blob images for markers; that is an image
+      // source, not an executable one, and the two must not be conflated.
+      const parsed = parse(buildCspHeader(BASE));
+      expect(parsed.get("img-src")).toEqual(["'self'", "data:", "blob:"]);
+      expect(parsed.get("script-src") ?? []).not.toContain("blob:");
+    });
+
+    it("adds no wildcard and no third-party origin beyond the tile host", () => {
+      const parsed = parse(buildCspHeader(BASE));
+      expect(parsed.get("connect-src")).toEqual(["'self'", MAP_TILE_ORIGIN]);
+      for (const [directive, sources] of parsed) {
+        for (const source of sources) {
+          if (directive === "default-src") continue;
+          expect(source, `${directive} carries a bare wildcard`).not.toBe("*");
+        }
+      }
+      // A schema-relative wildcard would admit every subdomain of every host.
+      expect(buildCspHeader(BASE)).not.toMatch(/connect-src[^;]*\*/);
+    });
+
+    it("keeps the tile origin out of every directive that does not need it", () => {
+      const parsed = parse(buildCspHeader(BASE));
+      for (const directive of ["script-src", "style-src", "font-src", "media-src", "frame-src"]) {
+        expect(parsed.get(directive) ?? [], directive).not.toContain(MAP_TILE_ORIGIN);
+      }
+    });
   });
 
   it("upgrades insecure requests in production only", () => {

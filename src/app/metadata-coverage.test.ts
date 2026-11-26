@@ -51,6 +51,7 @@ const PUBLIC_PAGES = async (): Promise<readonly PageUnderTest[]> =>
     metadataFor("/radio", () => import("@/app/radio/page")),
     metadataFor("/about", () => import("@/app/about/page")),
     metadataFor("/accessibility", () => import("@/app/accessibility/page")),
+    metadataFor("/more", () => import("@/app/more/page")),
   ]);
 
 /** Pages that must never be indexed, with the metadata each one declares. */

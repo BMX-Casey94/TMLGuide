@@ -22,15 +22,18 @@ export const HEADER_HEIGHT_MOBILE_PX = 60;
  * node_modules/next/dist/docs/01-app/03-api-reference/04-functions/use-pathname.md). The fallback
  * renders the same list with nothing marked current, so nothing shifts when the pathname arrives.
  *
- * Space at 900px is tight: five tracked labels and the search pill (with the edition switcher
- * inside it) must fit on one row beside the logo. The sizes below are the ones at which that
- * fits, and they relax from 1100px where there is room.
+ * Space at 900px is tight: six tracked labels and the search pill (with the edition switcher inside
+ * it) must fit on one row beside the logo. Every value below was measured in a browser at 900,
+ * 1000, 1024, 1099, 1100, 1200, 1280 and 1920px, at the four text sizes the display toolbar offers
+ * (100, 115, 130 and 150%). Six labels need 312px of the row at 900px, in a 348px nav. The tightest
+ * point is 900px at 150% text size, where the accessibility trigger grows and the labels keep 7px
+ * of their own box. Nothing overlaps the pill at any of those sizes.
  */
 export function SiteHeader() {
   return (
     <header className="sticky top-0 z-40">
       <div className="border-b border-hair bg-ground/85 backdrop-blur-xl">
-        <div className="mx-auto flex h-[60px] max-w-[1240px] items-center gap-4 pl-5 pr-3 min-[390px]:pl-6 min-[900px]:h-[68px] min-[900px]:gap-4 min-[900px]:pr-3 min-[1100px]:gap-5 min-[1100px]:pr-4">
+        <div className="mx-auto flex h-[60px] max-w-[1240px] items-center gap-[16px] pl-[20px] pr-[12px] min-[390px]:pl-[24px] min-[900px]:h-[68px] min-[900px]:gap-[16px] min-[900px]:pr-[12px] min-[1200px]:gap-[20px] min-[1200px]:pr-[16px]">
           <Link href="/" className="block shrink-0">
             {/* The image's alt text is the link's accessible name. */}
             <Image
@@ -38,16 +41,16 @@ export function SiteHeader() {
               alt="TMLGuide home"
               width={1682}
               height={488}
-              sizes="(min-width: 1100px) 188px, (min-width: 900px) 160px, 120px"
+              sizes="(min-width: 1200px) 188px, (min-width: 900px) 160px, 120px"
               loading="eager"
               fetchPriority="high"
-              className="h-auto w-[120px] min-[900px]:w-[160px] min-[1100px]:w-[188px]"
+              className="h-auto w-[120px] min-[900px]:w-[160px] min-[1200px]:w-[188px]"
             />
           </Link>
 
           <nav
             aria-label="Primary"
-            className="hidden min-w-0 flex-1 items-center justify-center gap-5 min-[900px]:flex min-[1100px]:gap-8"
+            className="hidden min-w-0 flex-1 items-center justify-center gap-[12px] min-[900px]:flex min-[1100px]:gap-[16px] min-[1200px]:gap-[20px]"
           >
             <Suspense fallback={<HeaderTabs pathname={null} />}>
               <HeaderTabsLive />
@@ -59,11 +62,17 @@ export function SiteHeader() {
             end. They are siblings, because a button cannot contain a radio group.
 
             The widths below pay for the accessibility trigger that follows. At 900px the row is
-            logo, five tab labels, pill and button; the pill keeps its original 280px because the
-            tabs have just enough slack to give it (they need 310px of the 332px left over), and it
-            grows at 1100px and again from 1200px, where the 1280px column has room to spare.
+            logo, six tab labels, pill and button, and the labels need 312px of it; the pill keeps
+            264px so the labels are never squeezed, and the field still keeps 106px of its own. From
+            1100px the labels take larger tracking and the pill returns to the 340px it has always
+            had; from 1200px both the logo and the pill grow in the 1240px column.
+
+            Every gap in this row is a pixel value, not a spacing scale step, and the tab labels are
+            set in pixels for the same reason. A rem-based gap grew with the reader's text-size
+            preference while the labels beside it did not, which pushed the labels out of their own
+            box at 130% and 150%.
           */}
-          <div className="group ml-auto flex h-11 min-w-0 max-w-[208px] flex-1 items-center rounded-full border border-hair-strong bg-surface/60 pr-1 transition-[border-color,box-shadow] duration-200 hover:border-accent/60 has-[input:focus]:border-accent has-[input:focus]:shadow-[0_0_0_3px_rgb(255_200_61/0.14)] min-[900px]:w-[280px] min-[900px]:max-w-none min-[900px]:flex-none min-[1100px]:w-[340px] min-[1200px]:w-[420px]">
+          <div className="group ml-auto flex h-11 min-w-0 max-w-[208px] flex-1 items-center rounded-full border border-hair-strong bg-surface/60 pr-1 transition-[border-color,box-shadow] duration-200 hover:border-accent/60 has-[input:focus]:border-accent has-[input:focus]:shadow-[0_0_0_3px_rgb(255_200_61/0.14)] min-[900px]:w-[264px] min-[900px]:max-w-none min-[900px]:flex-none min-[1100px]:w-[340px] min-[1200px]:w-[420px]">
             {/*
               A real text field. The results overlay and index come with the search workstream,
               which attaches to the data-search-trigger attribute; until then the field accepts

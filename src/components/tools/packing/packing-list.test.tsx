@@ -142,6 +142,71 @@ describe("PackingList: first render", () => {
     }
   });
 
+  it("names each item by its item text alone, not by its citation and rule", async () => {
+    /*
+      Named by the whole <label>, each checkbox announced about forty words before
+      its own state: the item, the tag, the citation, the check date, the rule and
+      the caveat. A reader tabbing the list heard the source twice per row. The
+      item text is now the name and the rest is the description, so the state
+      comes straight after the item.
+    */
+    renderList();
+
+    const box = checkboxFor(/^Photo ID in the name on the bracelet$/i);
+    expect(box).toHaveAccessibleName("Photo ID in the name on the bracelet");
+
+    // The citation and the rule are still available, as the description.
+    const described = box.getAttribute("aria-describedby");
+    expect(described).not.toBeNull();
+    const description = document.getElementById(described ?? "");
+    expect(description?.textContent).toMatch(/A valid identity card, passport or driving licence/);
+    expect(description?.textContent).toMatch(/Can I enter if the registered name/i);
+  });
+
+  it("keeps the citation link out of the checkbox's name", async () => {
+    /*
+      A link inside a <label> is both a hazard and a naming bug: clicking it can
+      toggle the box, and its text lands in the box's name. The link is now a
+      sibling of the label, so it stays a link and the name stays the item.
+    */
+    renderList();
+
+    const box = checkboxFor(/^Photo ID in the name on the bracelet$/i);
+    const link = screen.getByRole("link", {
+      name: /Can I enter if the registered name on the Bracelet is not my own/i,
+    });
+    expect(box).not.toContainElement(link);
+    expect(box).toHaveAccessibleName("Photo ID in the name on the bracelet");
+    expect(link).toHaveAttribute("target", "_blank");
+
+    // The link carries the citation, so it is the box's description, not its name.
+    const described = box.getAttribute("aria-describedby");
+    expect(document.getElementById(described ?? "")).toContainElement(link);
+  });
+
+  it("does not tick the item when the reader follows the citation", () => {
+    /*
+      This is the reason the citation left the <label>: inside it, a click on the
+      source was also a click on the label, so reading the citation could silently
+      change the checklist and the saved record.
+    */
+    renderList();
+
+    const box = checkboxFor(/^Photo ID in the name on the bracelet$/i);
+    const link = screen.getByRole("link", {
+      name: /Can I enter if the registered name on the Bracelet is not my own/i,
+    });
+
+    fireEvent.click(link);
+    expect(box).not.toBeChecked();
+
+    // And the label itself still works as a target.
+    const label = document.querySelector(`label[for="${box.id}"]`);
+    expect(label).not.toBeNull();
+    fireEvent.click(label as HTMLLabelElement);
+    expect(box).toBeChecked();
+  });
+
   it("shows only Belgium stays until the edition changes", () => {
     renderList();
     const group = screen.getByRole("group", { name: /Where you are staying/i });

@@ -54,6 +54,7 @@ describe("structure", () => {
       /^What has been tested automatically$/,
       /^What has not yet been tested by hand$/,
       /^Changing how the site looks$/,
+      /^What has been checked in the tools$/,
       /^Known limitations$/,
       /^Reporting a problem$/,
     ]) {
@@ -220,13 +221,61 @@ describe("reporting a problem", () => {
 });
 
 describe("the review date", () => {
-  it("states 19 November 2026, in a machine-readable time element", () => {
+  it("states 26 November 2026, in a machine-readable time element", () => {
     const { container } = render(<AccessibilityPage />);
 
     const time = container.querySelector("time");
-    expect(time).toHaveAttribute("datetime", "2026-11-19");
-    expect(time).toHaveTextContent("19 November 2026");
-    expect(visibleText(container)).toMatch(/Last reviewed\s+19 November 2026/);
+    expect(time).toHaveAttribute("datetime", "2026-11-26");
+    expect(time).toHaveTextContent("26 November 2026");
+    expect(visibleText(container)).toMatch(/Last reviewed\s+26 November 2026/);
+  });
+});
+
+describe("what was checked in the tools", () => {
+  it("reports the checks actually done, naming the method rather than claiming a screen reader", () => {
+    const { container } = render(<AccessibilityPage />);
+    const section = screen.getByRole("region", { name: /checked in the tools/i });
+    const text = visibleText(section as HTMLElement);
+
+    // The methods that were used are named.
+    expect(text).toMatch(/accessibility tree/i);
+    expect(text).toMatch(/keyboard/i);
+    expect(text).toMatch(/320/i);
+    expect(text).toMatch(/200 percent zoom/i);
+
+    // The section is not presented as a screen-reader pass.
+    expect(text).toMatch(/No screen reader was run/i);
+    expect(text).not.toMatch(/tested with (a |the )?screen reader/i);
+    expect(text).not.toMatch(/verified with (a |the )?screen reader/i);
+    // And the page's own text keeps to the same limit.
+    expect(visibleText(container)).not.toMatch(/tested with (a |the )?screen reader/i);
+  });
+
+  it("says the tools were measured for sideways scrolling rather than left unmentioned", () => {
+    render(<AccessibilityPage />);
+    const section = screen.getByRole("region", { name: /checked in the tools/i });
+    expect(visibleText(section as HTMLElement)).toMatch(/does not scroll\s+sideways|scrolls\s+sideways/i);
+  });
+
+  it("admits what the accessibility-tree check cannot show", () => {
+    render(<AccessibilityPage />);
+    const section = screen.getByRole("region", { name: /checked in the tools/i });
+    const text = visibleText(section as HTMLElement);
+    // The distinction between "has a name" and "is announced usefully" is the point.
+    expect(text).toMatch(/not the same thing|not by listening|unverified|not verified/i);
+  });
+
+  it("no longer lists the sale timeline and the calculators as untested here", () => {
+    render(<AccessibilityPage />);
+    const untested = screen.getByRole("region", { name: /not yet been tested by hand/i });
+    const text = visibleText(untested as HTMLElement);
+
+    // The screen-reader gap stays outstanding and is still stated.
+    expect(text).toMatch(/Screen reader testing/i);
+    expect(text).toMatch(/NVDA/);
+    // But the keyboard and zoom checks now say what was done.
+    expect(text).toMatch(/tools pages have been walked end to end with the keyboard alone/i);
+    expect(text).toMatch(/320 CSS pixels/i);
   });
 });
 
@@ -239,7 +288,9 @@ describe("the review date", () => {
 describe("presentation conventions", () => {
   it("uses one GoldDivider per boundary that wants an ornament, and no more", () => {
     const { container } = render(<AccessibilityPage />);
-    expectDividerCount(container, 2);
+    // Three boundaries: after the target, after the untested list, and before the
+    // tools section, which is a new block of claims rather than more of the toolbar copy.
+    expectDividerCount(container, 3);
   });
 
   it("never puts two rules side by side in the page flow", () => {
@@ -273,7 +324,7 @@ describe("presentation conventions", () => {
     const { container } = render(<AccessibilityPage />);
     const sections = Array.from(container.querySelectorAll("main > section"));
 
-    expect(sections).toHaveLength(6);
+    expect(sections).toHaveLength(7);
     for (const section of sections) expect(section.className).toContain("a11y-page-section");
   });
 });

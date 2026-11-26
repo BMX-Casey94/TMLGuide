@@ -1,7 +1,8 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, screen } from "@testing-library/react";
 
-import { NextSaleStrip } from "./next-sale-strip";import { nextSaleFrom } from "./next-sale";
+import { NextSaleStrip } from "./next-sale-strip";
+import { nextSaleFrom } from "./next-sale";
 import { isInternalLink, renderAsRouter } from "./test-support";
 
 vi.mock("next/image", () => ({
@@ -15,7 +16,15 @@ const CHECKED_ON = "2026-11-18";
 const CHECKED_LABEL = "18 November 2026";
 const SERVER_NOW = "2026-11-18T12:00:00Z";
 
-afterEach(cleanup);
+beforeEach(() => {
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date(SERVER_NOW));
+});
+
+afterEach(() => {
+  cleanup();
+  vi.useRealTimers();
+});
 
 /** The real next sale as of the day the data was checked. */
 function realNext() {

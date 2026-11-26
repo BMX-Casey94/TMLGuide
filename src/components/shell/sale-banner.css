@@ -1,0 +1,104 @@
+/*
+  Sale notice (Dusk Programme).
+
+  Plain CSS with a `tml-sale-` prefix on every class. Deliberately not a CSS Module: Turbopack
+  empties module files in this setup, so the notice would ship unstyled.
+
+  Colours come from the tokens in `globals.css`: the warm-black surfaces, cream text and the edition
+  accent. Nothing here defines a new palette, and nothing here sets `overflow-x`: the header is sticky
+  and both the shell column and the content wrapper need their own scroll behaviour left alone.
+*/
+
+.tml-sale {
+  /* Full width of the shell column, in normal flow beneath the header. */
+  width: 100%;
+  border-top: 2px solid var(--ea);
+  border-bottom: 1px solid var(--hair);
+  background-color: var(--surface);
+}
+
+/*
+  The sentence grows and wraps; the dismiss control keeps its 44px target. `min-width: 0` on the
+  sentence is what lets a long word wrap inside the flex row instead of widening the page at 320px.
+  The control sits at the top on a phone, where the sentence is several lines, and centred from
+  700px, where it is one or two.
+*/
+.tml-sale__inner {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  max-width: 1240px;
+  margin-inline: auto;
+  padding: 0.75rem 1rem;
+}
+
+.tml-sale__message {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  max-width: 72ch;
+  color: var(--cream);
+  font-size: 0.9375rem;
+  line-height: 1.55;
+  /* A long unbroken word or URL wraps rather than widening the page. */
+  overflow-wrap: break-word;
+}
+
+.tml-sale__link {
+  color: var(--ea);
+  font-weight: 600;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+.tml-sale__link-hint {
+  color: var(--cream-mute);
+  font-weight: 400;
+}
+
+@media (hover: hover) {
+  .tml-sale__link:hover {
+    color: var(--cream);
+  }
+}
+
+.tml-sale__dismiss {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  /*
+    Pinned to the far end of the row. The message is capped at 72ch for a readable measure, which
+    leaves free space before the control; without this the button would sit beside the text instead
+    of at the edge of the shell.
+  */
+  margin-inline-start: auto;
+  /* The same 44px target the rest of the shell's controls use. */
+  width: 44px;
+  height: 44px;
+  margin-block: 0;
+  padding: 0;
+  border: 1px solid var(--hair);
+  border-radius: 999px;
+  background-color: transparent;
+  color: var(--cream-mute);
+  cursor: pointer;
+}
+
+@media (hover: hover) {
+  .tml-sale__dismiss:hover {
+    border-color: var(--hair-strong);
+    color: var(--cream);
+  }
+}
+
+/* The global `:focus-visible` outline is deliberately not suppressed, so keyboard focus stays visible. */
+
+@media (min-width: 700px) {
+  .tml-sale__inner {
+    align-items: center;
+    gap: 1.5rem;
+    padding: 0.85rem 1.75rem;
+  }
+}

@@ -1,6 +1,7 @@
 import { formatMoney } from "./format";
 import type { ToolCurrency } from "./editions";
 import type { CategoryShare } from "./budget-state";
+import { TableScrollRegion } from "./table-scroll";
 
 export interface CategoryChartProps {
   /** The categories to draw, already sorted largest first. */
@@ -8,21 +9,19 @@ export interface CategoryChartProps {
   readonly currency: ToolCurrency;
 }
 
-/* Fixed geometry in the SVG's own coordinate space, scaled by the viewBox. */
-const ROW_HEIGHT = 42;
-const BAR_HEIGHT = 14;
-const LABEL_WIDTH = 132;
-const VALUE_WIDTH = 96;
-const GAP = 10;
-const CHART_WIDTH = 620;
-
 /**
  * A horizontal bar chart of the category breakdown.
  *
- * An SVG rather than styled divs because the bars are a picture of numbers: the
- * proportions have to stay exact at any width, and the print stylesheet can
- * recolour them without touching layout. Each row carries its own visible label
- * and value inside the drawing, so the chart reads on its own.
+ * Drawn in HTML rather than as an SVG with a fixed viewBox. A viewBox scales
+ * its own text with the drawing, so in a 238px-wide panel on a 320px screen the
+ * 13px labels came out about 5px tall, and at 200 percent zoom the same thing
+ * happened again. Here the label and the value are ordinary text at their
+ * declared size, and only the bar's length changes, so the chart stays legible
+ * at any width and reflows instead of needing a sideways scroll.
+ *
+ * The bar is a proportion of the largest category rather than of the total,
+ * which is what makes the comparison readable on one screen. The exact shares
+ * are in the table beside it.
  *
  * The chart is `aria-hidden`. It is a second copy of figures that the table
  * beside it already gives in full, and exposing both would make a screen reader
@@ -34,66 +33,35 @@ export function CategoryChart({ categories, currency }: CategoryChartProps) {
   if (categories.length === 0) return null;
 
   const max = Math.max(...categories.map((entry) => entry.totalMinor), 1);
-  const plotWidth = CHART_WIDTH - LABEL_WIDTH - VALUE_WIDTH - GAP * 2;
-  const height = categories.length * ROW_HEIGHT + 8;
 
   return (
-    <figure className="tool-chart">
-      <svg
-        className="tool-chart__svg"
-        viewBox={`0 0 ${CHART_WIDTH} ${height}`}
-        preserveAspectRatio="xMinYMin meet"
-        aria-hidden="true"
-        focusable="false"
-      >
-        {categories.map((entry, index) => {
-          const y = index * ROW_HEIGHT + 6;
-          const barY = y + (ROW_HEIGHT - BAR_HEIGHT) / 2 - 6;
-          const ratio = entry.totalMinor / max;
-          // A non-zero category always draws something visible, so a tiny slice
-          // is not rendered as an empty bar.
-          const barWidth =
-            entry.totalMinor === 0 ? 0 : Math.max(4, Math.round(plotWidth * ratio));
+    <figure className="tool-chart" aria-hidden="true">
+      <ul className="tool-chart__rows">
+        {categories.map((entry) => {
+          /*
+            A non-zero category always draws something visible, so a tiny slice
+            is not rendered as an empty bar. Zero is drawn as nothing at all,
+            because a visible bar for nothing would be a lie.
+          */
+          const share = entry.totalMinor === 0 ? 0 : Math.max(2, (entry.totalMinor / max) * 100);
 
           return (
-            <g key={entry.category}>
-              <text
-                className="tool-chart__row-label"
-                x={0}
-                y={y + ROW_HEIGHT / 2 - 6}
-                dominantBaseline="middle"
-              >
-                {entry.category}
-              </text>
-              <rect
-                className="tool-chart__track"
-                x={LABEL_WIDTH}
-                y={barY}
-                width={plotWidth}
-                height={BAR_HEIGHT}
-                rx={BAR_HEIGHT / 2}
-              />
-              <rect
-                className="tool-chart__bar"
-                x={LABEL_WIDTH}
-                y={barY}
-                width={barWidth}
-                height={BAR_HEIGHT}
-                rx={BAR_HEIGHT / 2}
-              />
-              <text
-                className="tool-chart__row-value"
-                x={CHART_WIDTH}
-                y={y + ROW_HEIGHT / 2 - 6}
-                textAnchor="end"
-                dominantBaseline="middle"
-              >
+            <li className="tool-chart__row" key={entry.category}>
+              <span className="tool-chart__row-label">{entry.category}</span>
+              <span className="tool-chart__track">
+                <span
+                  className="tool-chart__bar"
+                  style={{ width: `${share.toFixed(1)}%` }}
+                  data-value={entry.totalMinor}
+                />
+              </span>
+              <span className="tool-chart__row-value">
                 {formatMoney(entry.totalMinor, currency)}
-              </text>
-            </g>
+              </span>
+            </li>
           );
         })}
-      </svg>
+      </ul>
     </figure>
   );
 }
@@ -114,6 +82,12 @@ export interface CategoryTableProps {
  *
  * A `<caption>` rather than a heading, so it names the table for assistive
  * technology without competing with the page's heading order.
+ *
+ * The wrapper scrolls sideways on a narrow screen, because four columns of
+ * money do not fit in a 238px panel. A scroll container with no focusable
+ * content cannot be scrolled from the keyboard, so {@link TableScrollRegion}
+ * gives it a tab stop and a name: a keyboard user can then reach it and use the
+ * arrow keys.
  */
 export function CategoryTable({ categories, currency, id, caption, people }: CategoryTableProps) {
   if (categories.length === 0) return null;
@@ -121,7 +95,7 @@ export function CategoryTable({ categories, currency, id, caption, people }: Cat
   const grandTotal = categories.reduce((total, entry) => total + entry.totalMinor, 0);
 
   return (
-    <div className="tool-table-wrap">
+    <TableScrollRegion label={`${caption}. The table scrolls sideways on a narrow screen.`}>
       <table className="tool-table" id={id}>
         <caption>{caption}</caption>
         <thead>
@@ -161,6 +135,6 @@ export function CategoryTable({ categories, currency, id, caption, people }: Cat
           </tr>
         </tfoot>
       </table>
-    </div>
+    </TableScrollRegion>
   );
 }

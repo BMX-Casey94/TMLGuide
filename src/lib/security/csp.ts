@@ -69,6 +69,22 @@ export const ONE_WORLD_RADIO_STREAM_ORIGIN = "https://*.streamtheworld.com";
  */
 export const TURNSTILE_ORIGIN = "https://challenges.cloudflare.com";
 
+/**
+ * The map tile origin: OpenFreeMap, which serves OpenStreetMap data as vector
+ * tiles, the TileJSON document that lists them, and the glyph ranges used for
+ * map labels.
+ *
+ * The venue map on `/tools/maps` is a MapLibre GL canvas. MapLibre fetches its
+ * style resources from inside a Web Worker, so the requests are governed by the
+ * document's `connect-src`; the TileJSON document, the `.pbf` tiles and the
+ * glyph ranges all arrive from this one host over HTTPS with
+ * `access-control-allow-origin: *`. Verified on 26 November 2026.
+ *
+ * One host, no wildcard: `tiles.openfreemap.org` serves every one of those three
+ * resource types, so nothing else on `openfreemap.org` becomes reachable.
+ */
+export const MAP_TILE_ORIGIN = "https://tiles.openfreemap.org";
+
 export interface CspOptions {
   /** Base64 nonce, as produced by `generateNonce`. */
   readonly nonce: string;
@@ -266,9 +282,14 @@ export function normaliseReportUrl(value: string): string | null {
  *   layout. Script execution is the dangerous surface, and that stays nonce- and
  *   hash-only.
  * - `img-src` admits `data:` and `blob:` because `next/image` emits small
- *   placeholders and the 3D icons use inline SVG data URLs.
+ *   placeholders, the 3D icons use inline SVG data URLs, and MapLibre's canvas
+ *   produces `blob:` images for its own markers.
  * - `connect-src` admits the configured analytics endpoint, so the consent-gated
- *   scaffold keeps working without a second policy edit.
+ *   scaffold keeps working without a second policy edit, and
+ *   {@link MAP_TILE_ORIGIN} for the venue map's tiles, glyphs and TileJSON.
+ * - `worker-src` and `child-src` admit `blob:` because MapLibre GL JS builds its
+ *   tile worker from a blob URL. `script-src` deliberately does not, so a blob
+ *   can be executed only as a worker and never as a page script.
  * - `upgrade-insecure-requests` is production-only: on a plain-HTTP dev server it
  *   would rewrite the websocket and break hot reload.
  */
@@ -312,10 +333,31 @@ export function buildCspHeader({
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob:",
     "font-src 'self'",
-    `connect-src ${["'self'", ...connectOrigins].join(" ")}`,
+    /*
+      MapLibre fetches the TileJSON document and the glyph ranges with `fetch`,
+      and its worker fetches the tiles. All three come from {@link MAP_TILE_ORIGIN}.
+      The origin is added unconditionally rather than behind a flag: the venue map
+      is part of the guide, not an optional integration, and an origin in
+      `connect-src` grants nothing beyond reading that public tile set.
+    */
+    `connect-src ${["'self'", MAP_TILE_ORIGIN, ...connectOrigins].join(" ")}`,
     `media-src 'self' ${ONE_WORLD_RADIO_STREAM_ORIGIN}`,
     "manifest-src 'self'",
+    /*
+      `worker-src` and `child-src` both carry `blob:`. MapLibre GL JS builds its
+      tile worker from a blob URL, and the cross-origin worker URL it would
+      otherwise load is refused by a same-origin policy. `worker-src` is the
+      modern directive; `child-src` is the fallback that browsers without
+      `worker-src` support consult, and the two must agree or the worker loads in
+      one engine and silently fails in another.
+
+      `blob:` here is not a script-execution hole: `script-src` still has no
+      `blob:` source, so a blob cannot be loaded as a page script — only as a
+      worker, whose own `importScripts`/`fetch` calls are subject to
+      `connect-src` above.
+    */
     "worker-src 'self' blob:",
+    "child-src 'self' blob:",
     turnstile ? `frame-src ${TURNSTILE_ORIGIN}` : "frame-src 'none'",
     "object-src 'none'",
     "base-uri 'self'",

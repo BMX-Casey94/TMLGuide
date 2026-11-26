@@ -13,12 +13,13 @@ export interface HeaderTabsProps {
 }
 
 /**
- * Tab sizing. At 900px five tracked labels, the edition group and the search button share one row
- * with a 190px logo, so the labels start smaller and tighten their tracking, then grow from 1100px
- * where there is room. These are the sizes at which the row stays inside a 900px viewport.
+ * Tab sizing. From 900px six tracked labels, the edition group and the search pill share one row
+ * with a 160px logo, so the labels start smaller and tighten their tracking, then grow from 1200px
+ * where the row has room. These are the sizes at which the row stays inside a 900px viewport at
+ * every text size the display toolbar offers.
  */
 const TAB_BASE =
-  "relative flex h-[68px] items-center whitespace-nowrap font-mono text-[10px] uppercase tracking-[0.12em] transition-colors min-[1100px]:text-[12px] min-[1100px]:tracking-[0.14em]";
+  "relative flex h-[68px] items-center whitespace-nowrap font-mono text-[10px] uppercase tracking-[0.12em] transition-colors min-[1200px]:text-[12px] min-[1200px]:tracking-[0.14em]";
 
 /**
  * Desktop tab links. Nested paths keep the covering tab active: /guides/tickets lights the Tickets

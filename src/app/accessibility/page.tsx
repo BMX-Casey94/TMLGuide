@@ -11,8 +11,8 @@ const DESCRIPTION =
 const PATH = "/accessibility";
 
 /** The date this statement was last reviewed. Update it whenever any claim below changes. */
-const LAST_REVIEWED = "19 November 2026";
-const LAST_REVIEWED_ISO = "2026-11-19";
+const LAST_REVIEWED = "26 November 2026";
+const LAST_REVIEWED_ISO = "2026-11-26";
 
 /** The WCAG version this site is aiming at. Not a conformance claim: see the page's own wording. */
 const TARGET = "WCAG 2.2 Level AA";
@@ -29,9 +29,14 @@ export const metadata: Metadata = {
  *
  * A Server Component: static prose, no state and no data beyond the review date and the contact
  * constant. The point of the page is that it does not overclaim. It names the target, the single
- * automated check that has actually been run, the manual checks that have not been run, the known
- * limitations, and the fact that there is no published contact address yet rather than inventing
- * one. Nothing here says "conforms" or "compliant".
+ * automated check that has actually been run, the checks in the tools that have been done by hand
+ * and the ones that have not, the known limitations, and the fact that there is no published
+ * contact address yet rather than inventing one. Nothing here says "conforms" or "compliant".
+ *
+ * The tools section is deliberately precise about method. The sale timeline and the calculators
+ * were checked in the browser's accessibility tree, from the keyboard, and by measurement at 320
+ * CSS pixels and at a 640-pixel stand-in for 200 percent zoom. None of that is a screen-reader
+ * test, and the page says so rather than letting a clean scan imply otherwise.
  *
  * Presentation only, never the wording: the page now uses the same reading grammar as /about and
  * the guides. One 1240px column on the footer's inset, a hero that ends on a hairline, sections
@@ -133,18 +138,25 @@ export default function AccessibilityPage() {
           <ul className="a11y-page-list">
             <li>
               <strong>Screen reader testing.</strong> No page has yet been read through with NVDA,
-              JAWS, VoiceOver or TalkBack. How the landmarks, the live regions and the accessibility
-              panel are announced is therefore unverified.
+              JAWS, VoiceOver or TalkBack. The tools pages have been checked in the browser&apos;s
+              accessibility tree and with keyboard tests, which is not the same thing: it shows a
+              control has a name and can be reached, not that the name is announced usefully. How
+              the landmarks, the live regions and the accessibility panel are announced is
+              therefore unverified.
             </li>
             <li>
-              <strong>A full keyboard audit.</strong> The panel, the search dialog and the radio
-              player are built for keyboard use and have unit tests for focus order, but the whole
-              site has not been walked end to end with the keyboard alone.
+              <strong>A full keyboard audit.</strong> The tools pages have been walked end to end
+              with the keyboard alone: tab order, visible focus, the edition tabs, the map diagram
+              and the My Trip confirmation. The panel, the search dialog and the radio player have
+              unit tests for focus order. The rest of the site has not been walked end to end.
             </li>
             <li>
-              <strong>A review at 200 percent zoom and at 400 percent reflow.</strong> Layouts are
-              written to reflow rather than scroll sideways, but that has not been checked page by
-              page at those zoom levels.
+              <strong>A review at 200 percent zoom and at 400 percent reflow.</strong> The tools
+              pages and this page have been measured at 320 CSS pixels wide and at a 640-pixel
+              layout standing in for 200 percent zoom of a 1280-pixel window: the document does not
+              scroll sideways at either width, and wide tables scroll inside their own box. The 400
+              percent reflow check has not been run, and the rest of the site has not been checked
+              page by page at either zoom level.
             </li>
             <li>
               <strong>Contrast over imagery and gradients.</strong> The measured contrast figures
@@ -152,9 +164,10 @@ export default function AccessibilityPage() {
               been measured at every scroll position.
             </li>
             <li>
-              <strong>Touch target sizes on a real device.</strong> Controls are built at 44 by 44
-              CSS pixels or larger, but that has not been verified on physical hardware, where
-              spacing and reach matter as much as the box.
+              <strong>Touch target sizes on a real device.</strong> Controls in the tools have been
+              measured in the browser at a 320-pixel viewport and meet 44 by 44 CSS pixels. That has
+              not been verified on physical hardware, where spacing and reach matter as much as the
+              box.
             </li>
           </ul>
         </div>
@@ -225,6 +238,66 @@ export default function AccessibilityPage() {
         </div>
       </section>
 
+      <GoldDivider butterfly="left" />
+
+      <section className="a11y-page-section" aria-labelledby="tools-heading">
+        <h2 id="tools-heading" className="a11y-page-section__title">
+          What has been checked in the tools
+        </h2>
+        <div className="a11y-page-prose">
+          <p>
+            The sale timeline and the calculators were listed here as unchecked. They have now been
+            worked through by hand at a desk, without a screen reader, using the browser&apos;s own
+            accessibility tree, the keyboard alone, and measurements taken in the browser at a
+            320-pixel viewport. That is a real improvement and it is not a screen-reader test.
+          </p>
+          <ul className="a11y-page-list">
+            <li>
+              <strong>Names.</strong> Every control on the tools pages was read from the
+              accessibility tree and compared with its visible label. Where a control printed text
+              that was missing from its name, the name was corrected: the map diagram&apos;s zones,
+              the two swap buttons, and the badges on the map&apos;s zone buttons. The packing
+              list&apos;s checkboxes had been named by their whole label — the item, the tag, the
+              citation, the check date and the rule, about forty words before the state — so the
+              item text is now the name and the rest is the description.
+            </li>
+            <li>
+              <strong>The keyboard.</strong> Focus order, the tab patterns, Escape in the My Trip
+              confirmation, and the focus that comes back to the button which opened it were all
+              driven from the keyboard. Focus is drawn on every stop, including the two wide panels
+              that now scroll inside themselves.
+            </li>
+            <li>
+              <strong>Layout at a phone width and at 200 percent zoom.</strong> Measured in the
+              browser rather than by eye: at 320 CSS pixels, and at a 640-pixel layout standing in
+              for 200 percent zoom of a 1280-pixel window, no tools page or this page scrolls
+              sideways. Two things were fixed to get there. The budget&apos;s category chart was an
+              SVG that scaled its own text, so its 13-pixel labels rendered about five pixels tall
+              in a 238-pixel panel; it is now ordinary text beside a bar, and the labels stay at
+              their declared size. The venue diagram kept a fixed 800 by 500 canvas at any width, so
+              its labels and its tap targets shrank with it; it now keeps a floor width and scrolls
+              inside its own framed box, and focusing a zone scrolls it into view.
+            </li>
+            <li>
+              <strong>Announcements.</strong> The Pearl calculator&apos;s live region covered its
+              whole result panel, so every keystroke re-read the standing warning about the 2027
+              rate. It now speaks the figure alone. The budget calculator had no live region at all,
+              so its total changed in silence; it now announces the new total once the reader stops
+              typing, rather than on every keystroke.
+            </li>
+            <li>
+              <strong>What was not verified.</strong> No screen reader was run. Nothing here says
+              how any of these controls sound in NVDA, JAWS, VoiceOver or TalkBack, and the
+              announcements above were checked as text in a live region, not by listening.
+            </li>
+          </ul>
+          <p className="a11y-page-note">
+            The automated scans were also re-run at a 320-pixel viewport as well as a desktop one.
+            They report no violations on the tools pages or on this page. As above, that is a floor.
+          </p>
+        </div>
+      </section>
+
       <section className="a11y-page-section" aria-labelledby="limits-heading">
         <h2 id="limits-heading" className="a11y-page-section__title">
           Known limitations
@@ -238,8 +311,10 @@ export default function AccessibilityPage() {
             </li>
             <li>
               <strong>Some data lives in tables and charts.</strong> The ticket comparison tables are
-              marked up with row and column headers and a caption, but the sale timeline and the
-              calculators have not been tested with a screen reader.
+              marked up with row and column headers and a caption. In the tools, the budget
+              calculator&apos;s category breakdown is a decorative bar chart beside a real table,
+              and the table is given a tab stop so it can be scrolled from the keyboard on a narrow
+              screen. None of these has been read with a screen reader.
             </li>
             <li>
               <strong>Headings are sometimes set tight.</strong> Display type is set with tight

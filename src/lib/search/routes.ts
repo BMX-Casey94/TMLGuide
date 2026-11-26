@@ -50,10 +50,12 @@ export const KNOWN_ROUTES = [
   "/tools/my-trip",
   "/tools/maps",
   "/tools/winter-timer",
+  "/ask",
   "/community",
   "/radio",
   "/about",
   "/accessibility",
+  "/more",
 ] as const;
 
 export type KnownRoute = (typeof KNOWN_ROUTES)[number];

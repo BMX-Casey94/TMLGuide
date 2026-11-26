@@ -1,9 +1,29 @@
 /*
   TMLGUIDE Interactive Venue & DreamVille Maps styles.
 
-  Plain namespaced CSS (`.tml-map-` prefix) — never CSS Modules.
-  Follows the Dusk Programme design tokens from globals.css.
+  Plain namespaced CSS (`.tml-map-` prefix) — never CSS Modules, so a class name
+  here can never collide with another tool's.
+
+  The map itself is a MapLibre GL canvas. Its own chrome — the zoom buttons, the
+  attribution pill — ships in `maplibre-gl/dist/maplibre-gl.css`, which the
+  component imports alongside this file; the rules below restyle that chrome to
+  the Dusk Programme palette so it does not arrive as default MapLibre teal.
+
+  Layout rules that matter:
+  - Nothing here sets a width beyond 100%, so the page cannot overflow at 320px.
+  - Every control is at least 44px tall (WCAG 2.5.5 target size).
+  - The map stage has a fixed aspect ratio rather than an intrinsic height, so the
+    canvas cannot collapse to nothing before MapLibre measures it.
 */
+
+.tml-map-tool {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  min-width: 0;
+}
+
+/* ---------- Disclaimer ---------- */
 
 .tml-map-disclaimer {
   display: flex;
@@ -22,7 +42,7 @@
 
 .tml-map-disclaimer__label {
   font-family: var(--font-mono);
-  font-size: 0.625rem;
+  font-size: 0.6875rem;
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--ea);
@@ -33,14 +53,293 @@
   max-width: 72ch;
 }
 
+/* ---------- Venue switcher and search ---------- */
+
 .tml-map-toolbar {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
   gap: 0.85rem;
   margin-top: 1.5rem;
 }
+
+.tml-map-search {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+
+@media (min-width: 620px) {
+  .tml-map-search {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+  }
+}
+
+.tml-map-search__field {
+  min-width: 0;
+}
+
+.tml-map-search__submit {
+  min-height: 48px;
+}
+
+/* ---------- Category and favourite chips ---------- */
+
+.tml-map-filters {
+  margin-top: 1.35rem;
+}
+
+.tml-map-filters__label {
+  margin: 0 0 0.6rem;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--cream-mute);
+}
+
+.tml-map-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.tml-map-chip {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.5rem 0.95rem;
+  border: 1px solid var(--hair-strong);
+  border-radius: 999px;
+  background-color: rgb(12 10 9 / 0.55);
+  color: var(--cream-mute);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  transition:
+    border-color 0.18s ease,
+    background-color 0.18s ease,
+    color 0.18s ease;
+}
+
+@media (hover: hover) {
+  .tml-map-chip:hover {
+    border-color: var(--cream-mute);
+    color: var(--cream);
+  }
+}
+
+/* Selection is carried by fill, weight and the dot's ring, never by colour alone. */
+.tml-map-chip[aria-pressed="true"] {
+  border-color: var(--ea);
+  background-color: rgb(255 200 61 / 0.16);
+  color: var(--cream);
+  font-weight: 700;
+}
+
+.tml-map-chip[aria-pressed="false"] .tml-map-chip__dot {
+  opacity: 0.45;
+}
+
+.tml-map-chip__dot {
+  display: inline-block;
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 50%;
+  border: 1px solid rgb(12 10 9 / 0.7);
+  flex: none;
+}
+
+.tml-map-chip__star {
+  font-size: 0.9em;
+  color: var(--ea);
+}
+
+/* ---------- Map stage ---------- */
+
+.tml-map-pick-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.9rem;
+  border-bottom: 1px solid var(--hair);
+}
+
+.tml-map-pick-bar__hint {
+  margin: 0;
+  max-width: 60ch;
+  color: var(--cream-mute);
+  font-size: 0.875rem;
+  line-height: 1.45;
+}
+
+.tml-map-stage {
+  position: relative;
+  width: 100%;
+  /*
+    An aspect ratio rather than a fixed height: the stage keeps its shape at every
+    width, and the canvas has a measurable box the instant MapLibre looks for one.
+    4:3 is tall enough to see the whole of De Schorre on a phone without scrolling,
+    and it stops the map dominating a desktop column.
+  */
+  aspect-ratio: 4 / 3;
+  min-height: 240px;
+  overflow: hidden;
+  border: 1px solid var(--hair);
+  border-radius: 18px;
+  background-color: #0d0b0a;
+}
+
+.tml-map-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* While the map has not taken over, the box is only a backdrop. */
+.tml-map-canvas[data-map-ready="false"] {
+  display: none;
+}
+
+.tml-map-placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 1.25rem;
+  text-align: center;
+  background:
+    radial-gradient(60% 55% at 50% 45%, rgb(255 200 61 / 0.06), transparent 72%),
+    linear-gradient(180deg, rgb(12 10 9 / 0.94), rgb(21 17 15 / 0.97));
+}
+
+.tml-map-placeholder__title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.125rem;
+  color: var(--cream);
+}
+
+.tml-map-placeholder p {
+  margin: 0;
+  max-width: 46ch;
+  color: var(--cream-mute);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.tml-map-stage-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem 1.25rem;
+  margin-top: 0.95rem;
+}
+
+.tml-map-attribution {
+  margin: 0;
+  flex: 1 1 16rem;
+  min-width: 0;
+  color: var(--cream-mute);
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+
+.tml-map-attribution a {
+  color: var(--cream);
+  text-decoration-color: var(--hair-strong);
+  text-underline-offset: 0.15em;
+}
+
+@media (hover: hover) {
+  .tml-map-attribution a:hover {
+    color: var(--ea);
+  }
+}
+
+/* ---------- MapLibre's own chrome, repainted ---------- */
+
+.tml-map-stage .maplibregl-ctrl-group {
+  border-radius: 12px;
+  background-color: rgb(21 17 15 / 0.92);
+  box-shadow: 0 2px 10px rgb(0 0 0 / 0.5);
+}
+
+.tml-map-stage .maplibregl-ctrl-group button {
+  width: 44px;
+  height: 44px;
+  background-color: transparent;
+}
+
+.tml-map-stage .maplibregl-ctrl-group button + button {
+  border-top: 1px solid var(--hair);
+}
+
+.tml-map-stage .maplibregl-ctrl-group button .maplibregl-ctrl-icon {
+  filter: invert(0.92) sepia(0.06) saturate(2.4) hue-rotate(340deg);
+}
+
+.tml-map-stage .maplibregl-ctrl-group button:focus-visible {
+  outline: 2px solid var(--ea);
+  outline-offset: -2px;
+}
+
+.tml-map-stage .maplibregl-canvas:focus-visible {
+  outline: 2px solid var(--ea);
+  outline-offset: -2px;
+}
+
+/* ---------- Legend ---------- */
+
+.tml-map-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem 1.15rem;
+  margin: 1rem 0 0;
+  padding: 0;
+  list-style: none;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--cream-mute);
+}
+
+.tml-map-legend__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.tml-map-legend__dot {
+  display: inline-block;
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 50%;
+  border: 1px solid rgb(12 10 9 / 0.8);
+  flex: none;
+}
+
+.tml-map-legend__swatch--route {
+  display: inline-block;
+  width: 1.3rem;
+  height: 0.25rem;
+  border-radius: 999px;
+  background-color: var(--ea);
+}
+
+/* ---------- Route planner ---------- */
 
 .tml-map-controls {
   display: grid;
@@ -66,265 +365,6 @@
   }
 }
 
-.tml-map-pick-bar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  margin-bottom: 1rem;
-  padding-bottom: 0.9rem;
-  border-bottom: 1px solid var(--hair);
-}
-
-.tml-map-pick-bar__hint {
-  margin: 0;
-  color: var(--cream-mute);
-  font-size: 0.875rem;
-  line-height: 1.45;
-}
-
-.tml-map-canvas-wrap {
-  position: relative;
-  width: 100%;
-  overflow: hidden;
-  border: 1px solid var(--hair);
-  border-radius: 18px;
-  background:
-    radial-gradient(60% 55% at 50% 45%, rgb(255 200 61 / 0.05), transparent 72%),
-    linear-gradient(180deg, rgb(12 10 9 / 0.92), rgb(21 17 15 / 0.96));
-}
-
-.tml-map-svg {
-  display: block;
-  width: 100%;
-  max-width: 100%;
-  height: auto;
-}
-
-.tml-map-grid-line {
-  stroke: rgb(244 236 224 / 0.05);
-  stroke-width: 1;
-}
-
-.tml-map-backdrop--water {
-  fill: rgb(43 196 180 / 0.12);
-  stroke: rgb(43 196 180 / 0.34);
-  stroke-width: 1.2;
-}
-
-.tml-map-backdrop--woods {
-  fill: rgb(244 236 224 / 0.045);
-  stroke: rgb(244 236 224 / 0.16);
-  stroke-width: 1.2;
-  stroke-dasharray: 4 4;
-}
-
-.tml-map-backdrop--meadow {
-  fill: rgb(233 196 106 / 0.06);
-  stroke: rgb(233 196 106 / 0.22);
-  stroke-width: 1.2;
-}
-
-.tml-map-backdrop-label {
-  fill: rgb(244 236 224 / 0.45);
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  pointer-events: none;
-  user-select: none;
-}
-
-.tml-map-edge {
-  stroke: rgb(244 236 224 / 0.24);
-  stroke-width: 2.2;
-  stroke-linecap: round;
-  transition: stroke 0.2s ease, stroke-width 0.2s ease;
-}
-
-.tml-map-edge--active {
-  stroke: var(--ea);
-  stroke-width: 4.5;
-  filter: drop-shadow(0 0 6px rgb(255 200 61 / 0.45));
-}
-
-.tml-map-edge-mid {
-  fill: var(--cream-mute);
-  font-family: var(--font-mono);
-  font-size: 10px;
-  pointer-events: none;
-  user-select: none;
-}
-
-.tml-map-edge-mid--active {
-  fill: var(--ea);
-  font-weight: 700;
-}
-
-.tml-map-node {
-  cursor: pointer;
-  outline: none;
-}
-
-.tml-map-node__halo {
-  fill: transparent;
-  stroke: transparent;
-  stroke-width: 2;
-  transition: stroke 0.18s ease, fill 0.18s ease;
-}
-
-.tml-map-node:focus-visible .tml-map-node__halo {
-  stroke: var(--ea);
-  stroke-width: 3;
-  fill: rgb(255 200 61 / 0.14);
-}
-
-.tml-map-node__dot {
-  fill: var(--surface-2);
-  stroke: var(--cream-mute);
-  stroke-width: 2;
-  transition: fill 0.18s ease, stroke 0.18s ease, transform 0.18s ease;
-}
-
-.tml-map-node--on-path .tml-map-node__dot {
-  fill: var(--surface-2);
-  stroke: var(--ea);
-  stroke-width: 2.5;
-}
-
-.tml-map-node--start .tml-map-node__dot {
-  fill: var(--teal);
-  stroke: var(--cream);
-  stroke-width: 2.5;
-}
-
-.tml-map-node--end .tml-map-node__dot {
-  fill: var(--ea);
-  stroke: var(--cream);
-  stroke-width: 2.5;
-}
-
-.tml-map-node__tag {
-  fill: var(--cream);
-  font-family: var(--font-mono);
-  font-size: 10px;
-  font-weight: 700;
-  pointer-events: none;
-  user-select: none;
-}
-
-.tml-map-node--start .tml-map-node__tag,
-.tml-map-node--end .tml-map-node__tag {
-  fill: var(--on-accent);
-}
-
-.tml-map-node__label-bg {
-  fill: rgb(12 10 9 / 0.88);
-  stroke: var(--hair-strong);
-  stroke-width: 1;
-}
-
-.tml-map-node--start .tml-map-node__label-bg {
-  stroke: var(--teal);
-}
-
-.tml-map-node--end .tml-map-node__label-bg {
-  stroke: var(--ea);
-}
-
-.tml-map-node__label {
-  fill: var(--cream);
-  font-family: var(--font-sans);
-  font-size: 12.5px;
-  font-weight: 600;
-  pointer-events: none;
-  user-select: none;
-}
-
-.tml-map-legend {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem 1.25rem;
-  margin-top: 0.95rem;
-  font-family: var(--font-mono);
-  font-size: 0.6875rem;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--cream-mute);
-}
-
-.tml-map-legend__item {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45rem;
-}
-
-.tml-map-legend__swatch {
-  display: inline-block;
-  width: 0.75rem;
-  height: 0.75rem;
-  border-radius: 50%;
-  border: 1.5px solid var(--cream);
-}
-
-.tml-map-legend__swatch--start {
-  background-color: var(--teal);
-}
-
-.tml-map-legend__swatch--end {
-  background-color: var(--ea);
-}
-
-.tml-map-legend__swatch--route {
-  width: 1.2rem;
-  height: 0.25rem;
-  border: 0;
-  border-radius: 999px;
-  background-color: var(--ea);
-}
-
-.tml-map-node-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.45rem;
-  margin-top: 1rem;
-}
-
-.tml-map-chip {
-  display: inline-flex;
-  min-height: 40px;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.35rem 0.75rem;
-  border: 1px solid var(--hair-strong);
-  border-radius: 999px;
-  background-color: rgb(12 10 9 / 0.55);
-  color: var(--cream);
-  font-family: var(--font-mono);
-  font-size: 0.7rem;
-  letter-spacing: 0.08em;
-  cursor: pointer;
-  transition: border-color 0.18s ease, background-color 0.18s ease;
-}
-
-.tml-map-chip--start {
-  border-color: var(--teal);
-  background-color: rgb(43 196 180 / 0.14);
-}
-
-.tml-map-chip--end {
-  border-color: var(--ea);
-  background-color: rgb(255 200 61 / 0.16);
-}
-
-.tml-map-chip__badge {
-  font-size: 0.625rem;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--cream-mute);
-}
-
 .tml-map-readout {
   display: grid;
   gap: 1rem;
@@ -342,6 +382,7 @@
   border: 1px solid var(--hair);
   border-radius: 18px;
   background-color: rgb(12 10 9 / 0.5);
+  min-width: 0;
 }
 
 .tml-map-stat--primary {
@@ -351,7 +392,7 @@
 .tml-map-stat__label {
   margin: 0;
   font-family: var(--font-mono);
-  font-size: 0.625rem;
+  font-size: 0.6875rem;
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--cream-mute);
@@ -393,6 +434,210 @@
   color: var(--ea);
 }
 
+.tml-map-notes {
+  margin-top: 1.25rem;
+}
+
+.tml-map-note-list {
+  margin: 0.35rem 0 0;
+  padding-left: 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.tml-map-note-list li {
+  color: var(--cream-mute);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.tml-map-empty {
+  margin: 1.25rem 0 0;
+  padding: 0.95rem 1.1rem;
+  border: 1px dashed var(--hair-strong);
+  border-radius: 14px;
+  color: var(--cream-mute);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+/* ---------- Zone list ---------- */
+
+.tml-map-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tml-map-list__row {
+  display: flex;
+  align-items: stretch;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.tml-map-list__select {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 52px;
+  align-items: flex-start;
+  gap: 0.7rem;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--hair);
+  border-radius: 14px;
+  background-color: rgb(12 10 9 / 0.45);
+  color: var(--cream);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 0.18s ease,
+    background-color 0.18s ease;
+}
+
+@media (hover: hover) {
+  .tml-map-list__select:hover {
+    border-color: var(--hair-strong);
+    background-color: rgb(21 17 15 / 0.7);
+  }
+}
+
+.tml-map-list__select[aria-pressed="true"] {
+  border-color: var(--ea);
+  background-color: rgb(255 200 61 / 0.1);
+}
+
+.tml-map-list__select:focus-visible,
+.tml-map-list__favourite:focus-visible {
+  outline: 2px solid var(--ea);
+  outline-offset: 2px;
+}
+
+.tml-map-list__dot {
+  width: 0.7rem;
+  height: 0.7rem;
+  margin-top: 0.4rem;
+  border-radius: 50%;
+  border: 1px solid rgb(12 10 9 / 0.8);
+  flex: none;
+}
+
+.tml-map-list__text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.tml-map-list__name {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 600;
+  font-size: 0.9375rem;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.tml-map-list__badge {
+  display: inline-flex;
+  min-width: 1.25rem;
+  min-height: 1.25rem;
+  align-items: center;
+  justify-content: center;
+  padding: 0 0.25rem;
+  border: 1px solid var(--ea);
+  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--ea);
+}
+
+.tml-map-list__meta {
+  color: var(--cream-mute);
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.tml-map-list__favourite {
+  display: inline-flex;
+  width: 44px;
+  min-height: 44px;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--hair);
+  border-radius: 14px;
+  background-color: rgb(12 10 9 / 0.45);
+  cursor: pointer;
+  transition:
+    border-color 0.18s ease,
+    background-color 0.18s ease;
+}
+
+@media (hover: hover) {
+  .tml-map-list__favourite:hover {
+    border-color: var(--ea);
+  }
+}
+
+.tml-map-list__favourite[aria-pressed="true"] {
+  border-color: var(--ea);
+  background-color: rgb(255 200 61 / 0.14);
+}
+
+.tml-map-list__star {
+  font-size: 1.05rem;
+  line-height: 1;
+  color: var(--ea);
+}
+
+.tml-map-inspected {
+  margin-top: 1.3rem;
+  padding: 1.1rem 1.15rem;
+  border: 1px solid var(--hair);
+  border-radius: 16px;
+  background-color: rgb(12 10 9 / 0.45);
+}
+
+.tml-map-inspected__label {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--cream-mute);
+}
+
+.tml-map-inspected__name {
+  margin: 0.3rem 0 0.5rem;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 1.25rem;
+  color: var(--cream);
+}
+
+.tml-map-inspected p {
+  margin: 0;
+  color: var(--cream-mute);
+  font-size: 0.875rem;
+  line-height: 1.55;
+}
+
+.tml-map-inspected__note {
+  margin-top: 0.55rem !important;
+  color: var(--cream) !important;
+}
+
+/* ---------- Facts grid, used by the page around the tool ---------- */
+
 .tml-map-facts-grid {
   display: grid;
   gap: 1rem;
@@ -415,7 +660,7 @@
 .tml-map-fact-card__label {
   margin: 0;
   font-family: var(--font-mono);
-  font-size: 0.625rem;
+  font-size: 0.6875rem;
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--cream-mute);
@@ -429,10 +674,9 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .tml-map-edge,
-  .tml-map-node__halo,
-  .tml-map-node__dot,
-  .tml-map-chip {
+  .tml-map-chip,
+  .tml-map-list__select,
+  .tml-map-list__favourite {
     transition: none;
   }
 }

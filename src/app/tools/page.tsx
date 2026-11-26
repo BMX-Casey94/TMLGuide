@@ -91,7 +91,7 @@ const TOOLS: readonly ToolEntry[] = [
     kicker: "Orientation",
     title: "Venue & DreamVille maps",
     description:
-      "Original schematic maps of De Schorre and DreamVille with a point-to-point walking-time estimator in minutes and miles plus crowd-surge notes.",
+      "An interactive OpenStreetMap view of De Schorre and DreamVille with this guide's own zone outlines, and a point-to-point walking planner in minutes and miles.",
     icon: "flag",
     status: "live",
   },

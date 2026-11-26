@@ -180,6 +180,50 @@ describe("PearlCalculator", () => {
     expect(rateField()).toHaveAttribute("aria-invalid", "true");
   });
 
+  it("announces the figure in a live region of its own, not the whole result panel", () => {
+    /*
+      The live region used to be the result <section>, so every keystroke re-read
+      the static "No 2027 rate has been announced" warning along with the figure.
+      The announcement is now one sentence about the figure alone.
+    */
+    renderCalculator();
+
+    const panel = screen.getByRole("heading", { name: "Result" }).closest("section");
+    expect(panel).not.toHaveAttribute("aria-live");
+
+    fireEvent.change(rateField(), { target: { value: "1.90" } });
+    fireEvent.change(amountField(), { target: { value: "20" } });
+
+    const live = document.querySelectorAll('[aria-live="polite"]');
+    expect(live).toHaveLength(1);
+    const announcer = live[0] as HTMLElement;
+    expect(announcer.textContent).toBe("10 Pearls for €20.00, with €1.00 left over.");
+    // The standing warning is not inside the region, so it is not repeated.
+    expect(announcer.textContent).not.toMatch(/2027 rate has been announced/i);
+  });
+
+  it("announces the money direction in euros when converting from Pearls", () => {
+    renderCalculator();
+
+    fireEvent.change(rateField(), { target: { value: "1.90" } });
+    fireEvent.click(screen.getByRole("button", { name: /Pearls to euros/i }));
+    fireEvent.change(amountField(), { target: { value: "10" } });
+
+    const announcer = document.querySelector('[aria-live="polite"]') as HTMLElement;
+    expect(announcer.textContent).toBe("€19.00 for 10 Pearls.");
+  });
+
+  it("says nothing in the live region while there is no result to report", () => {
+    renderCalculator();
+
+    const announcer = document.querySelector('[aria-live="polite"]') as HTMLElement;
+    expect(announcer.textContent).toBe("");
+
+    // A rate with no amount yet is still not a result.
+    fireEvent.change(rateField(), { target: { value: "1.90" } });
+    expect(announcer.textContent).toBe("");
+  });
+
   it("switches the direction and relabels the amount field", () => {
     renderCalculator();
 

@@ -3,7 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "postinstall": "node scripts/copy-maplibre-worker.mjs",
+    "predev": "node scripts/copy-maplibre-worker.mjs",
     "dev": "next dev",
+    "prebuild": "node scripts/copy-maplibre-worker.mjs",
     "build": "next build",
     "build:release": "next build && node scripts/generate-csp-hashes.mjs && next build && node scripts/generate-csp-hashes.mjs --check",
     "csp:hashes": "node scripts/generate-csp-hashes.mjs",
@@ -19,6 +22,7 @@
     "@mdx-js/loader": "^3.1.1",
     "@mdx-js/react": "^3.1.1",
     "@next/mdx": "^16.4.6",
+    "maplibre-gl": "6.19.0",
     "next": "16.4.6",
     "next-intl": "^4.15.1",
     "react": "19.3.0",

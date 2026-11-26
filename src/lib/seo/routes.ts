@@ -121,6 +121,13 @@ const STATIC_ROUTES: readonly SitemapRoute[] = [
   { path: "/radio", changeFrequency: "monthly", priority: 0.6 },
   { path: "/about", changeFrequency: "yearly", priority: 0.4 },
   { path: "/accessibility", changeFrequency: "yearly", priority: 0.3 },
+  /*
+    Last because it is a list of other pages rather than a page of its own. It is
+    indexed: a phone's More tab is the only route to /ask, /radio, /about and
+    /accessibility for a reader who arrived on a tab bar, so it is a real
+    destination, not a menu that a crawler should skip.
+  */
+  { path: "/more", changeFrequency: "monthly", priority: 0.3 },
 ];
 
 /** Routes that exist but must never appear in the sitemap, with the reason. */

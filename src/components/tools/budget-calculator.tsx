@@ -30,6 +30,7 @@ import {
 } from "./format";
 import { CUSTOM_TICKET_ID, ticketChoicesFor } from "./ticket-choices";
 import { buildShareUrl, clearToolState, loadToolState, safeLocalStorage, saveToolState } from "./state";
+import { TableScrollRegion } from "./table-scroll";
 
 /** Text buffers for the money fields, kept exactly as typed so partial input works. */
 interface Drafts {
@@ -133,6 +134,38 @@ export function BudgetCalculator({ paymentTerms }: BudgetCalculatorProps) {
     () => buildInstalmentHint(state.edition, result.grandTotalMinor, paymentTerms),
     [state.edition, result.grandTotalMinor, paymentTerms],
   );
+
+  /*
+    The total changes silently: a sighted reader watches the figure move, but a
+    screen-reader user heard nothing at all when an amount was typed. This polite
+    region carries the headline sentence, and the first render is not announced
+    because nothing has changed yet and the figure is already in the document.
+
+    The update is debounced rather than immediate. Every keystroke in an amount
+    field recomputes the total, and a region that spoke on each one would read
+    "total one hundred and forty four ... total one hundred and forty five" over
+    the reader typing. One announcement after the typing stops is what is wanted.
+  */
+  const [announcement, setAnnouncement] = useState("");
+  const announcedOnce = useRef(false);
+  useEffect(() => {
+    if (!hydrated) return;
+    if (!announcedOnce.current) {
+      announcedOnce.current = true;
+      return;
+    }
+    const timer = setTimeout(() => {
+      setAnnouncement(
+        result.isEmpty
+          ? `Nothing entered yet. Total ${formatMoney(result.grandTotalMinor, currency)}.`
+          : `Total for ${result.people} ${result.people === 1 ? "person" : "people"}: ${formatMoney(
+              result.grandTotalMinor,
+              currency,
+            )}, ${formatMoney(result.perPersonMinor, currency)} each.`,
+      );
+    }, 600);
+    return () => clearTimeout(timer);
+  }, [hydrated, result.isEmpty, result.grandTotalMinor, result.perPersonMinor, result.people, currency]);
 
   /**
    * Restores the saved plan once, after hydration.
@@ -548,6 +581,13 @@ export function BudgetCalculator({ paymentTerms }: BudgetCalculatorProps) {
       </section>
 
       <div className="tool-result">
+        {/*
+          The result's announcement. Visually hidden and empty on first paint, so
+          nothing is read twice; it fills after the reader stops editing.
+        */}
+        <p className="tool-announcer" role="status" aria-live="polite" aria-atomic="true">
+          {announcement}
+        </p>
         <section className="tool-total" aria-labelledby={field("total-label")}>
           <p className="tool-total__label" id={field("total-label")}>
             Total for {result.people} {result.people === 1 ? "person" : "people"}
@@ -711,7 +751,7 @@ function LineTable({ state, currency }: LineTableProps) {
   }
 
   return (
-    <div className="tool-table-wrap">
+    <TableScrollRegion label="Each entered line, and what it costs the whole group. The table scrolls sideways on a narrow screen.">
       <table className="tool-table">
         <caption>Each entered line, and what it costs the whole group</caption>
         <thead>
@@ -749,6 +789,6 @@ function LineTable({ state, currency }: LineTableProps) {
           </tr>
         </tfoot>
       </table>
-    </div>
+    </TableScrollRegion>
   );
 }

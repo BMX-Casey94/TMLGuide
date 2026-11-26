@@ -14,27 +14,28 @@ afterEach(cleanup);
 
 describe("CategoryChart", () => {
   it("draws one labelled row per category", () => {
-    render(<CategoryChart categories={categories} currency="EUR" />);
+    const { container } = render(<CategoryChart categories={categories} currency="EUR" />);
 
+    const rows = [...container.querySelectorAll(".tool-chart__row")];
+    expect(rows).toHaveLength(categories.length);
     for (const entry of categories) {
-      expect(document.querySelector("svg")?.textContent).toContain(entry.category);
+      expect(container.textContent).toContain(entry.category);
     }
   });
 
   it("shows each category's own total as text inside the drawing", () => {
-    render(<CategoryChart categories={categories} currency="EUR" />);
+    const { container } = render(<CategoryChart categories={categories} currency="EUR" />);
 
-    const text = document.querySelector("svg")?.textContent ?? "";
+    const text = container.textContent ?? "";
     expect(text).toContain("€422.00");
     expect(text).toContain("€50.00");
   });
 
   it("is hidden from assistive technology, because the table carries the same figures", () => {
-    render(<CategoryChart categories={categories} currency="EUR" />);
+    const { container } = render(<CategoryChart categories={categories} currency="EUR" />);
 
-    const svg = document.querySelector("svg");
-    expect(svg).toHaveAttribute("aria-hidden", "true");
-    expect(svg).toHaveAttribute("focusable", "false");
+    // The whole figure is decorative; the table beside it is the accessible form.
+    expect(container.querySelector("figure")).toHaveAttribute("aria-hidden", "true");
     // Nothing in the chart is announced, so there is no duplicate image role.
     expect(screen.queryByRole("img")).not.toBeInTheDocument();
   });
@@ -42,22 +43,25 @@ describe("CategoryChart", () => {
   it("sizes each bar in proportion to its own value", () => {
     // Categories arrive sorted largest first, but the bar is driven by the
     // category's value, not by its position.
-    render(<CategoryChart categories={categories} currency="EUR" />);
+    const { container } = render(<CategoryChart categories={categories} currency="EUR" />);
 
-    const bars = [...document.querySelectorAll(".tool-chart__bar")].map((bar) => ({
-      category: bar.parentElement?.querySelector("text")?.textContent ?? "",
-      width: Number(bar.getAttribute("width")),
-    }));
-
-    const widthOf = (name: string) => bars.find((bar) => bar.category === name)?.width ?? 0;
+    const widthOf = (name: string): number => {
+      const row = [...container.querySelectorAll(".tool-chart__row")].find((element) =>
+        element.querySelector(".tool-chart__row-label")?.textContent === name,
+      );
+      const bar = row?.querySelector<HTMLElement>(".tool-chart__bar");
+      return Number.parseFloat(bar?.style.width ?? "0");
+    };
 
     // Accommodation (€422) is the largest and therefore the widest.
     expect(widthOf("Accommodation")).toBeGreaterThan(widthOf("Tickets"));
     expect(widthOf("Tickets")).toBeGreaterThan(widthOf("Travel"));
+    // The largest bar fills the track.
+    expect(widthOf("Accommodation")).toBeCloseTo(100, 1);
   });
 
   it("draws a visible sliver for a tiny but non-zero category", () => {
-    render(
+    const { container } = render(
       <CategoryChart
         categories={[
           { category: "Tickets", totalMinor: 1_000_000, percent: 100, lineCount: 1 },
@@ -67,10 +71,28 @@ describe("CategoryChart", () => {
       />,
     );
 
-    const widths = [...document.querySelectorAll(".tool-chart__bar")].map((bar) =>
-      Number(bar.getAttribute("width")),
+    const widths = [...container.querySelectorAll<HTMLElement>(".tool-chart__bar")].map((bar) =>
+      Number.parseFloat(bar.style.width),
     );
     expect(widths[1]).toBeGreaterThan(0);
+  });
+
+  it("draws nothing at all for a zero-valued category", () => {
+    const { container } = render(
+      <CategoryChart
+        categories={[
+          { category: "Tickets", totalMinor: 1000, percent: 100, lineCount: 1 },
+          { category: "Extras", totalMinor: 0, percent: 0, lineCount: 1 },
+        ]}
+        currency="EUR"
+      />,
+    );
+
+    const widths = [...container.querySelectorAll<HTMLElement>(".tool-chart__bar")].map((bar) =>
+      Number.parseFloat(bar.style.width),
+    );
+    // A visible bar for nothing would be a lie about the figures.
+    expect(widths[1]).toBe(0);
   });
 
   it("draws nothing for an empty breakdown", () => {
@@ -156,6 +178,31 @@ describe("CategoryTable", () => {
     for (const name of ["Category", "Total", "Per person", "Share"]) {
       expect(screen.getByRole("columnheader", { name })).toBeInTheDocument();
     }
+  });
+
+  it("makes the sideways-scrolling wrapper reachable from the keyboard", () => {
+    /*
+      On a 320px screen four columns of money do not fit, so the wrapper scrolls.
+      A scroll container whose content holds no focusable control cannot be
+      scrolled by keyboard at all, which leaves the right-hand column unreadable
+      to anyone without a pointer. The wrapper therefore takes a tab stop and a
+      name, and the name is a real sentence rather than "scrollable region".
+    */
+    render(
+      <CategoryTable
+        categories={categories}
+        currency="EUR"
+        id="breakdown-table"
+        caption="Category breakdown"
+        people={2}
+      />,
+    );
+
+    const region = screen.getByRole("group", { name: /Category breakdown.*scrolls sideways/i });
+    expect(region).toHaveAttribute("tabindex", "0");
+    expect(region).toHaveClass("tool-table-wrap");
+    // The table inside is still named by its own caption, not by this wrapper.
+    expect(screen.getByRole("table", { name: "Category breakdown" })).toBeInTheDocument();
   });
 
   it("renders nothing for an empty breakdown", () => {

@@ -45,7 +45,7 @@ vi.mock("@/lib/security/csp-hashes", () => ({
 }));
 
 import { proxy, config } from "./proxy";
-import { CSP_HEADER, NONCE_HEADER } from "@/lib/security/csp";
+import { CSP_HEADER, MAP_TILE_ORIGIN, NONCE_HEADER } from "@/lib/security/csp";
 
 /** A request-shaped object with the members the proxy reads. */
 function makeRequest(
@@ -137,12 +137,14 @@ describe("response headers", () => {
     );
   });
 
-  it("admits the configured analytics endpoint in connect-src", () => {
+  it("admits the configured analytics endpoint in connect-src, alongside the map tiles", () => {
     vi.stubEnv("NEXT_PUBLIC_ANALYTICS_ENDPOINT", "https://analytics.example.com/collect");
     const { responseHeaders } = run(makeRequest("/", { "sec-fetch-dest": "document" }));
     const csp = responseHeaders.get(CSP_HEADER) ?? "";
     const connectSrc = csp.split(";").find((part) => part.trim().startsWith("connect-src ")) ?? "";
     expect(connectSrc).toContain("https://analytics.example.com");
+    // The venue map's tile host is unconditional, so it must survive too.
+    expect(connectSrc).toContain(MAP_TILE_ORIGIN);
   });
 });
 
@@ -288,8 +290,9 @@ describe("Cloudflare Turnstile", () => {
     );
     expect(directives.get("frame-src")).toEqual(["https://challenges.cloudflare.com"]);
     expect(directives.get("script-src")).toContain("https://challenges.cloudflare.com");
-    // The exemption must not relax anything else.
-    expect(directives.get("connect-src")).toEqual(["'self'"]);
+    // The exemption must not relax anything else. `connect-src` carries only the
+    // map tile host, which the venue map needs whether or not Turnstile is on.
+    expect(directives.get("connect-src")).toEqual(["'self'", MAP_TILE_ORIGIN]);
     expect(directives.get("default-src")).toEqual(["'self'"]);
     expect(directives.get("script-src")).not.toContain("'unsafe-inline'");
   });

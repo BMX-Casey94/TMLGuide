@@ -238,13 +238,56 @@ describe("BudgetCalculator", () => {
     fireEvent.change(field(/^Travel$/i), { target: { value: "100" } });
 
     // The chart is decorative; the table is the accessible form of the figures.
-    await waitFor(() => expect(document.querySelector(".tool-chart__svg")).not.toBeNull());
+    await waitFor(() => expect(document.querySelector(".tool-chart__bar")).not.toBeNull());
 
     const table = screen.getByRole("table", { name: /Category breakdown/i });
     expect(within(table).getByText("Travel")).toBeInTheDocument();
     expect(within(table).getByText("Tickets")).toBeInTheDocument();
     // 144 + 100 = 244
     expect(within(table).getAllByText("€244.00").length).toBeGreaterThan(0);
+  });
+
+  it("makes each sideways-scrolling table reachable from the keyboard", async () => {
+    /*
+      At 320px the four-column tables are wider than the panel, so they scroll
+      inside their own box. Neither table contains a focusable control, so
+      without a tab stop on the wrapper the right-hand figures could not be
+      reached by keyboard at all.
+    */
+    renderCalculator();
+    await waitFor(() => expect(ticketSelect().value).not.toBe(""));
+
+    const regions = document.querySelectorAll(".tool-table-wrap");
+    expect(regions.length).toBeGreaterThan(0);
+    for (const region of Array.from(regions)) {
+      expect(region).toHaveAttribute("tabindex", "0");
+      expect(region.getAttribute("aria-label")).toMatch(/scrolls sideways/i);
+    }
+  });
+
+  it("announces the new total in a polite live region after an edit", async () => {
+    /*
+      The total changes silently for a screen-reader user otherwise: the figure is
+      a plain paragraph with no live region. The announcement is debounced, so a
+      reader typing "120" hears one sentence rather than three.
+    */
+    renderCalculator();
+    await waitFor(() => expect(ticketSelect().value).not.toBe(""));
+
+    const announcer = document.querySelector(".tool-announcer");
+    expect(announcer).not.toBeNull();
+    expect(announcer).toHaveAttribute("role", "status");
+    expect(announcer).toHaveAttribute("aria-live", "polite");
+    // The first render says nothing: nothing has changed, and the figure is
+    // already in the document.
+    expect(announcer?.textContent).toBe("");
+
+    fireEvent.change(field(/Number of people/i), { target: { value: "3" } });
+
+    await waitFor(
+      () => expect(announcer?.textContent).toMatch(/Total for 3 people: €432\.00, €144\.00 each\./),
+      { timeout: 3000 },
+    );
   });
 
   it("shows the part-payment hint for Winter only", async () => {

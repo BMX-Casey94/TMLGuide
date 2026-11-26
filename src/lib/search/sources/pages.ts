@@ -107,7 +107,7 @@ export const pageEntries: SourceEntry[] = [
     slug: "maps",
     title: "Venue & DreamVille maps",
     snippet:
-      "Original schematic planning maps of De Schorre and DreamVille with a point-to-point walking-time estimator in minutes and miles plus peak crowd-surge notes.",
+      "An interactive OpenStreetMap view of De Schorre and DreamVille with this guide's own zone outlines, plus a point-to-point walking planner in minutes and miles and peak crowd-surge notes.",
     edition: "belgium",
     href: "/tools/maps",
     source: "src/app/tools/maps/page.tsx",
@@ -120,6 +120,15 @@ export const pageEntries: SourceEntry[] = [
     edition: "winter",
     href: "/tools/winter-timer",
     source: "src/app/tools/winter-timer/page.tsx",
+  },
+  {
+    slug: "ask",
+    title: "Ask the guide",
+    snippet:
+      "Ask a question about Tomorrowland Belgium, Winter or Brasil and get an answer drawn only from this guide's verified, dated records, with the official source beside it.",
+    edition: "all",
+    href: "/ask",
+    source: "src/app/ask/page.tsx",
   },
   {
     slug: "community",
@@ -156,5 +165,14 @@ export const pageEntries: SourceEntry[] = [
     edition: "all",
     href: "/accessibility",
     source: "src/app/accessibility/page.tsx",
+  },
+  {
+    slug: "more",
+    title: "More",
+    snippet:
+      "The pages outside the main tabs: Ask the guide, One World Radio, About this guide and the accessibility statement.",
+    edition: "all",
+    href: "/more",
+    source: "src/app/more/page.tsx",
   },
 ];

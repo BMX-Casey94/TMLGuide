@@ -1,0 +1,131 @@
+/*
+  TMLGUIDE "More" page styles.
+
+  Follows the Dusk Programme direction in docs/design/direction.md: warm-black
+  ground, hairline rules, tracked mono labels and serif display type. Only design
+  tokens from globals.css are used, so the edition accent (--ea) follows the
+  reader's edition without any per-page colour.
+
+  Every selector is prefixed `more-` because Next merges CSS globally. Nothing here
+  targets a bare element type, so the file cannot leak into another page. The cards
+  themselves are the shared kit's `.tml-card`, which brings its own stylesheet.
+*/
+
+.more-page {
+  position: relative;
+  overflow-x: clip;
+}
+
+.more-page__inner {
+  width: 100%;
+  max-width: 1120px;
+  margin-inline: auto;
+  /*
+    The top padding is set so the first heading clears the sticky header by more
+    than the 64px the layout convention asks for from 900px up (48px on a phone).
+    The label above the h1 sits in the same flow, so it is measured from the h1:
+    40px of padding plus the label's line box gives 71px at every width.
+  */
+  padding: 2.5rem 1.25rem 5rem;
+}
+
+@media (min-width: 390px) {
+  /* The layout convention asks for a 24px inset from 390px; 20px is only for a 320px phone. */
+  .more-page__inner {
+    padding-inline: 1.5rem;
+  }
+}
+
+@media (min-width: 700px) {
+  .more-page__inner {
+    padding-inline: 1.75rem;
+  }
+}
+
+/* ---------- Title block ---------- */
+
+.more-head {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  padding-bottom: 2rem;
+  border-bottom: 1px solid var(--hair);
+}
+
+.more-head__title {
+  margin: 0;
+  max-width: 20ch;
+  color: var(--cream);
+  font-family: var(--font-display);
+  font-size: clamp(2.25rem, 6vw, 3.6rem);
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  text-wrap: balance;
+  font-variation-settings:
+    "SOFT" 100,
+    "WONK" 1;
+}
+
+.more-head__intro {
+  max-width: 64ch;
+  color: var(--cream-mute);
+  font-size: 1.0625rem;
+  line-height: 1.6;
+  text-wrap: pretty;
+}
+
+.more-head__intro p {
+  margin: 0;
+}
+
+/* ---------- Page list ---------- */
+
+.more-section {
+  margin-top: 2.5rem;
+}
+
+.more-section__title {
+  margin: 0;
+  color: var(--cream);
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 400;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+
+.more-grid {
+  display: grid;
+  gap: 1rem;
+  margin: 1.5rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (min-width: 760px) {
+  .more-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/*
+  The card is the grid item's only child and fills it, so two cards on one row are
+  the same height and the "Open" line sits on the same baseline in both. `min-width`
+  is what keeps a long word from widening the column on a narrow phone.
+*/
+.more-grid__item {
+  display: flex;
+  min-width: 0;
+}
+
+.more-grid__item > .tml-card {
+  flex: 1;
+  width: 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .more-grid__item > .tml-card {
+    transition: none;
+  }
+}

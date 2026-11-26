@@ -7,7 +7,7 @@ import { socialMetadata } from "@/lib/seo/social";
 
 const TITLE = "Venue & DreamVille maps";
 const DESCRIPTION =
-  "Original schematic planning maps for De Schorre and DreamVille in Belgium, with a point-to-point walking-time estimator in minutes and miles plus peak crowd-surge notes.";
+  "An interactive map of De Schorre and DreamVille built on OpenStreetMap, with this guide's own zone outlines and a point-to-point walking planner in minutes and miles, plus peak crowd-surge notes.";
 
 export const metadata: Metadata = {
   title: TITLE,
@@ -49,20 +49,23 @@ export default function VenueMapsPage() {
       intro={
         <>
           <p>
-            Clean, original schematic diagrams of De Schorre and DreamVille for planning walks
-            between stages, entrances, and camping sectors. Pick any two zones to see estimated
-            normal and peak-changeover walking times alongside approximate distances in miles.
+            An interactive map of De Schorre and DreamVille, drawn over OpenStreetMap, with this
+            guide&rsquo;s own zone outlines on top. Pick any two zones to see the shortest walk
+            between them, with estimated normal and peak-changeover walking times and the distance
+            in miles.
           </p>
           <p>
-            Every diagram here is an independent planning schematic, not an official Tomorrowland
-            map. Official 2027 stage maps are released by the organiser closer to the festival.
+            Every outline and footpath here is an independent planning estimate, not an official
+            Tomorrowland map: the organiser has not published a 2027 site plan. The whole tool works
+            without the map canvas, so the zone list, the filters and the route planner are usable
+            on any device.
           </p>
         </>
       }
       noscriptNote={
         <p>
-          Without JavaScript the interactive route estimator cannot update, but the verified
-          opening hours, re-entry rules, and DreamVille crossing times below remain readable.
+          Without JavaScript the map and the route planner cannot run, but the verified opening
+          hours, re-entry rules, and DreamVille crossing times below remain readable.
         </p>
       }
       sources={mapSources()}

@@ -46,3 +46,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# MapLibre's tile worker, copied out of node_modules by
+# scripts/copy-maplibre-worker.mjs (it runs on postinstall, predev and prebuild).
+/public/maplibre-gl/

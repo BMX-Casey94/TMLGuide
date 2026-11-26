@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen, within } from "@testing-library/react";
 import { DESKTOP_NAV, MOBILE_TABS, activeHref, matchesPath } from "./nav";
+import { ICON_3D_NAMES } from "@/components/ui/icon-3d";
 import { HeaderTabs } from "./header-tabs";
 import { MobileTabBar } from "./mobile-tabbar";
 
@@ -35,6 +36,29 @@ describe("nav path matching", () => {
     expect(activeHref("/guides/tickets", DESKTOP_NAV)).toBe("/guides/tickets");
     expect(activeHref("/guides/dreamville", DESKTOP_NAV)).toBe("/guides");
     expect(activeHref("/about", DESKTOP_NAV)).toBeNull();
+  });
+
+  it("lights the Ask tab on /ask, and only there", () => {
+    expect(activeHref("/ask", DESKTOP_NAV)).toBe("/ask");
+    // Ask has no children, so nothing else lights it.
+    expect(activeHref("/", DESKTOP_NAV)).toBeNull();
+    expect(activeHref("/more", DESKTOP_NAV)).toBeNull();
+  });
+
+  it("offers every desktop destination exactly once, with Ask last", () => {
+    const hrefs = DESKTOP_NAV.map((item) => item.href);
+    expect(new Set(hrefs).size).toBe(hrefs.length);
+    expect(hrefs.at(-1)).toBe("/ask");
+    // A short label is what keeps six tabs inside the header at 900px; the page's
+    // own title is the longer "Ask the guide".
+    expect(DESKTOP_NAV.at(-1)?.label).toBe("Ask");
+  });
+
+  it("gives every destination a real 3D icon", () => {
+    for (const item of DESKTOP_NAV) {
+      expect(item.icon, item.href).toBeTruthy();
+      expect(ICON_3D_NAMES, item.href).toContain(item.icon);
+    }
   });
 
   it("picks at most one mobile tab", () => {
@@ -91,6 +115,25 @@ describe("HeaderTabs", () => {
     expect(screen.queryByRole("link", { current: "page" })).not.toBeInTheDocument();
   });
 
+  it("marks Ask current on /ask, and marks nothing current on /more", () => {
+    const { unmount } = render(
+      <nav aria-label="Primary">
+        <HeaderTabs pathname="/ask" />
+      </nav>,
+    );
+
+    expect(screen.getByRole("link", { current: "page" })).toHaveAccessibleName("Ask");
+    unmount();
+
+    render(
+      <nav aria-label="Primary">
+        <HeaderTabs pathname="/more" />
+      </nav>,
+    );
+    // More is a tab on a phone, not one of the six desktop destinations.
+    expect(screen.queryByRole("link", { current: "page" })).not.toBeInTheDocument();
+  });
+
   it("links every desktop destination", () => {
     render(
       <nav aria-label="Primary">
@@ -101,6 +144,17 @@ describe("HeaderTabs", () => {
     for (const item of DESKTOP_NAV) {
       expect(screen.getByRole("link", { name: item.label })).toHaveAttribute("href", item.href);
     }
+  });
+
+  it("renders six tabs, so the count in the header never drifts from the config", () => {
+    render(
+      <nav aria-label="Primary">
+        <HeaderTabs pathname={null} />
+      </nav>,
+    );
+
+    expect(screen.getAllByRole("link")).toHaveLength(DESKTOP_NAV.length);
+    expect(DESKTOP_NAV.length).toBe(6);
   });
 });
 
@@ -143,6 +197,22 @@ describe("MobileTabBar", () => {
     render(<MobileTabBar pathname="/guides/tickets" />);
 
     expect(screen.getByRole("link", { current: "page" })).toHaveAccessibleName("Guides");
+  });
+
+  it("marks the More tab current on /more, so the tab no longer lands on a 404", () => {
+    render(<MobileTabBar pathname="/more" />);
+
+    // The route now exists, and the tab that points at it lights up.
+    expect(screen.getByRole("link", { current: "page" })).toHaveAccessibleName("More");
+    expect(screen.getByRole("link", { name: "More" })).toHaveAttribute("href", "/more");
+  });
+
+  it("keeps Ask under More rather than lighting a second tab", () => {
+    render(<MobileTabBar pathname="/ask" />);
+
+    // Ask is reached from the header and from More, so no tab claims it: a bar
+    // that lit More on /ask would tell the reader they were on a menu.
+    expect(screen.queryByRole("link", { current: "page" })).not.toBeInTheDocument();
   });
 
   it("marks nothing current when the pathname is unknown", () => {

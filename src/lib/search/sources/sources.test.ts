@@ -70,16 +70,42 @@ describe("pageEntries", () => {
       "/tools/my-trip",
       "/tools/maps",
       "/tools/winter-timer",
+      "/ask",
       "/community",
       "/radio",
       "/about",
       "/accessibility",
+      "/more",
     ]);
   });
 
   it("has a unique slug for every page", () => {
     const slugs = pageEntries.map((entry) => entry.slug);
     expect(new Set(slugs).size).toBe(slugs.length);
+  });
+
+  it("indexes Ask the guide and More, with the text their own pages use", () => {
+    const ask = pageEntries.find((entry) => entry.href === "/ask");
+    const more = pageEntries.find((entry) => entry.href === "/more");
+
+    expect(ask?.title).toBe("Ask the guide");
+    expect(ask?.source).toBe("src/app/ask/page.tsx");
+    // The page's own metadata description, not a promise invented for the index.
+    expect(ask?.snippet).toContain("verified, dated records");
+    expect(ask?.snippet).toContain("official source beside it");
+
+    expect(more?.title).toBe("More");
+    expect(more?.source).toBe("src/app/more/page.tsx");
+    expect(more?.snippet).toContain("Ask the guide");
+    expect(more?.snippet).toContain("One World Radio");
+  });
+
+  it("makes no claim on a page entry that its page does not make", () => {
+    // Both are utility pages, so neither can carry a price or a date.
+    for (const href of ["/ask", "/more"]) {
+      const entry = pageEntries.find((candidate) => candidate.href === href);
+      expect(entry?.snippet, href).not.toMatch(/€|£|R\$|\b20\d{2}\b/);
+    }
   });
 
   it("claims no verification date, because a page is not a fact", () => {

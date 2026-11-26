@@ -603,13 +603,28 @@ interface PackingRowProps {
 /**
  * One catalogue item.
  *
- * The checkbox is a real input and the label is its own `<label>`, so the hit
- * area is the full 44px row and a screen reader reads the item text as the
- * control's name. The official/suggestion distinction is carried in words, not
- * in colour.
+ * The checkbox is a real input, the label is its own `<label>` and so the hit
+ * area is the full item. Its accessible name is the item text alone, named with
+ * `aria-labelledby`, and everything else in the row — the official or
+ * suggestion tag, the citation, the rule and the caveat — is its description.
+ * Left to the `<label>`, the name became a forty-word paragraph before the
+ * checkbox's own state was announced, so a reader tabbing the list heard the
+ * citation and the rule again for every row.
+ *
+ * The citation is a sibling of the label rather than a descendant. A link inside
+ * a label is clickable as part of the label, so a reader who only wanted the
+ * source could untick the item on the way out; it is also the pattern that puts
+ * a link's text into a control's name. Keeping it outside both problems, and the
+ * description still carries it.
+ *
+ * The official/suggestion distinction is carried in words, not in colour.
  */
 function PackingRow({ item, packed, sourceTitle, onToggle, hiddenByFilter }: PackingRowProps) {
-  return (    <li
+  const textId = `${checkboxId(item.id)}-text`;
+  const detailId = `${checkboxId(item.id)}-detail`;
+
+  return (
+    <li
       className="packing-item"
       data-packed={packed ? "true" : undefined}
       data-basis={item.basis}
@@ -620,10 +635,16 @@ function PackingRow({ item, packed, sourceTitle, onToggle, hiddenByFilter }: Pac
         className="packing-item__box"
         type="checkbox"
         checked={packed}
+        aria-labelledby={textId}
+        aria-describedby={detailId}
         onChange={(event) => onToggle(item.id, event.target.checked)}
       />
       <label className="packing-item__label" htmlFor={checkboxId(item.id)}>
-        <span className="packing-item__text">{item.label}</span>
+        <span className="packing-item__text" id={textId}>
+          {item.label}
+        </span>
+      </label>
+      <span className="packing-item__detail" id={detailId}>
         <span className="packing-item__meta">
           {item.basis === "official" ? (
             <span className="packing-tag packing-tag--official">{OFFICIAL_LABEL}</span>
@@ -647,7 +668,7 @@ function PackingRow({ item, packed, sourceTitle, onToggle, hiddenByFilter }: Pac
             )}
           </>
         ) : null}
-      </label>
+      </span>
     </li>
   );
 }
