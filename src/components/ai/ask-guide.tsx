@@ -304,26 +304,27 @@ export function AskGuide({ turnstileSiteKey }: AskGuideProps) {
           ) : null}
         </div>
 
-        <p className="tml-ai-hint">
-          Not sure what to ask?{" "}
-          {STARTER_QUESTIONS.map((starter, index) => (
-            <span key={starter}>
-              {index === 0 ? null : " · "}
-              <button
-                type="button"
-                className="tml-ai-chip"
-                style={{ minHeight: "auto", padding: "0.2rem 0.6rem" }}
-                disabled={loading}
-                onClick={() => {
-                  setQuestion(starter);
-                  inputRef.current?.focus();
-                }}
-              >
-                {starter}
-              </button>
-            </span>
+        <div
+          className="tml-ai-hint"
+          style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "0.6rem 0.65rem" }}
+        >
+          <span>Not sure what to ask?</span>
+          {STARTER_QUESTIONS.map((starter) => (
+            <button
+              key={starter}
+              type="button"
+              className="tml-ai-chip"
+              style={{ minHeight: "2.25rem", padding: "0.45rem 0.85rem" }}
+              disabled={loading}
+              onClick={() => {
+                setQuestion(starter);
+                inputRef.current?.focus();
+              }}
+            >
+              {starter}
+            </button>
           ))}
-        </p>
+        </div>
       </form>
 
       {/*
