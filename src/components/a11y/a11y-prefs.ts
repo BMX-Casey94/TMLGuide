@@ -1,14 +1,15 @@
 /**
- * Accessibility preferences: the values, the schema, the storage format and the mapping onto
- * `data-a11y-*` attributes on `<html>`.
+ * Accessibility preferences: the values, the validation rules, the storage format and the mapping
+ * onto `data-a11y-*` attributes on `<html>`.
  *
- * A pure module. Nothing here imports React or touches the DOM except the element handed to
- * `applyPrefsToElement`, so the store, the panel and the boot script's test all read the same
+ * A pure, dependency-free module. Nothing here imports React, touches the DOM (except the element
+ * handed to `applyPrefsToElement`) or pulls in a library: this file is part of the shared client
+ * bundle of every page, and validating six short allow-lists does not justify shipping a schema
+ * library to every visitor. The store, the panel and the boot script's test all read the same
  * definitions. The boot script itself is a string in `./boot-script`, because it has to run before
  * any module loads; its allowed values are duplicated there by necessity, and a test keeps the two
  * in step.
  */
-import { z } from "zod";
 
 /* ---------------------------------------------------------------------------------------------
  * Values
@@ -73,27 +74,115 @@ export const A11Y_ATTRIBUTES = {
 } as const satisfies Record<keyof A11yPrefs, string>;
 
 /* ---------------------------------------------------------------------------------------------
- * Schema
+ * Validation
  *
- * Every field carries its own `catch`, so one bad value costs the visitor that one setting rather
- * than the whole panel, and no input can make `parse` throw. Unknown keys are dropped by zod's
- * default object behaviour, so a tampered entry cannot smuggle anything into state.
+ * Six short allow-lists, written out in plain TypeScript. This module is in the shared client
+ * bundle of every page, and a schema library used for six enum checks added ~105 KB (raw) to every
+ * visit, so the rules live here instead of in a dependency.
+ *
+ * Three properties are load-bearing, and each one is preserved from the zod schema this replaced:
+ *
+ * - **Repair per field.** A value that is not one of the allowed members falls back to that field's
+ *   own default, so a tampered or stale record costs the visitor one setting rather than all six.
+ * - **Reject the record, not the visit.** Only a value that is not a non-null, non-array object
+ *   discards the whole record; everything else is repaired.
+ * - **Build a fresh object.** The result is constructed field by field, so an unknown key, an
+ *   inherited key or a `__proto__` payload cannot reach state: only the six documented fields are
+ *   ever read, and only those six are ever returned.
  * ------------------------------------------------------------------------------------------- */
 
-const textSizeSchema = z
-  .union([z.literal(100), z.literal(115), z.literal(130), z.literal(150)])
-  .catch(DEFAULT_A11Y_PREFS.textSize);
+/** Membership is compared without coercion: the string `"130"` is not the number `130`. */
+const TEXT_SIZES: ReadonlySet<number> = new Set(A11Y_TEXT_SIZES);
+const SPACINGS: ReadonlySet<string> = new Set(A11Y_SPACINGS);
+const CONTRASTS: ReadonlySet<string> = new Set(A11Y_CONTRASTS);
+const MOTIONS: ReadonlySet<string> = new Set(A11Y_MOTIONS);
+const LINK_STYLES: ReadonlySet<string> = new Set(A11Y_LINK_STYLES);
+const FONTS: ReadonlySet<string> = new Set(A11Y_FONTS);
 
-export const a11yPrefsSchema = z
-  .object({
-    textSize: textSizeSchema,
-    spacing: z.enum(A11Y_SPACINGS).catch(DEFAULT_A11Y_PREFS.spacing),
-    contrast: z.enum(A11Y_CONTRASTS).catch(DEFAULT_A11Y_PREFS.contrast),
-    motion: z.enum(A11Y_MOTIONS).catch(DEFAULT_A11Y_PREFS.motion),
-    links: z.enum(A11Y_LINK_STYLES).catch(DEFAULT_A11Y_PREFS.links),
-    font: z.enum(A11Y_FONTS).catch(DEFAULT_A11Y_PREFS.font),
-  })
-  .catch(DEFAULT_A11Y_PREFS);
+/*
+ * One type guard per preference. Each is a real narrowing predicate, so the repair below needs no
+ * assertions: the `typeof` check makes the value a string or a number, the set answers membership,
+ * and the compiler knows the result is the narrowed union. The six are written out rather than
+ * produced by a factory because a factory would need a cast to return a predicate, and six lines of
+ * obvious code are worth more here than one clever line that lies to the type checker.
+ */
+
+function isTextSize(value: unknown): value is A11yTextSize {
+  return typeof value === "number" && TEXT_SIZES.has(value);
+}
+
+function isSpacing(value: unknown): value is A11ySpacing {
+  return typeof value === "string" && SPACINGS.has(value);
+}
+
+function isContrast(value: unknown): value is A11yContrast {
+  return typeof value === "string" && CONTRASTS.has(value);
+}
+
+function isMotion(value: unknown): value is A11yMotion {
+  return typeof value === "string" && MOTIONS.has(value);
+}
+
+function isLinkStyle(value: unknown): value is A11yLinkStyle {
+  return typeof value === "string" && LINK_STYLES.has(value);
+}
+
+function isFont(value: unknown): value is A11yFont {
+  return typeof value === "string" && FONTS.has(value);
+}
+
+/** The record shape read from storage: six unknown fields, none of them trusted. */
+type UnknownPrefs = Partial<Record<keyof A11yPrefs, unknown>>;
+
+/**
+ * Repairs an arbitrary value into usable preferences. Never rejects a field and never throws: the
+ * result is always a complete `A11yPrefs`, and the shared defaults object is returned by reference
+ * when the value is not a record at all.
+ */
+function coercePrefs(value: unknown): A11yPrefs {
+  // Functions, primitives, `null` and arrays are not a preference record. A class instance, a
+  // `Date` or a null-prototype object is: its missing fields simply fall back, field by field.
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    return DEFAULT_A11Y_PREFS;
+  }
+
+  const source: UnknownPrefs = value;
+
+  // Each field is read from the record and validated on its own. A proxy whose getters throw is
+  // not something JSON can produce, but `parsePrefs` promises never to throw, so the promise is
+  // kept here rather than trusted to every caller.
+  try {
+    const { textSize, spacing, contrast, motion, links, font } = source;
+
+    return {
+      textSize: isTextSize(textSize) ? textSize : DEFAULT_A11Y_PREFS.textSize,
+      spacing: isSpacing(spacing) ? spacing : DEFAULT_A11Y_PREFS.spacing,
+      contrast: isContrast(contrast) ? contrast : DEFAULT_A11Y_PREFS.contrast,
+      motion: isMotion(motion) ? motion : DEFAULT_A11Y_PREFS.motion,
+      links: isLinkStyle(links) ? links : DEFAULT_A11Y_PREFS.links,
+      font: isFont(font) ? font : DEFAULT_A11Y_PREFS.font,
+    };
+  } catch {
+    return DEFAULT_A11Y_PREFS;
+  }
+}
+
+/** The result of validating a stored value. Every input is repaired, so this is always a success. */
+export interface A11yPrefsParseResult {
+  readonly success: true;
+  readonly data: A11yPrefs;
+}
+
+/**
+ * The validation entry point, kept for callers and tests that branch on `success`. It cannot fail:
+ * repairing an unreadable record to the defaults is the point of the module, which is why the
+ * discriminant is always `true`.
+ */
+export const a11yPrefsSchema: {
+  readonly safeParse: (value: unknown) => A11yPrefsParseResult;
+} = {
+  safeParse: (value) => ({ success: true, data: coercePrefs(value) }),
+};
 
 /**
  * Reads a stored value. Accepts anything: a missing item, non-JSON, JSON of the wrong shape, a
@@ -110,8 +199,7 @@ export function parsePrefs(raw: unknown): A11yPrefs {
     return DEFAULT_A11Y_PREFS;
   }
 
-  const result = a11yPrefsSchema.safeParse(value);
-  return result.success ? result.data : DEFAULT_A11Y_PREFS;
+  return coercePrefs(value);
 }
 
 /**

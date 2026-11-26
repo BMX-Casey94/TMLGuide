@@ -31,6 +31,18 @@ jobs:
         run: npm run build
         env:
           NEXT_PUBLIC_SITE_URL: https://example.invalid
+      - name: CSP hash manifest is current
+        # The proxy carries the manifest as a compiled module, so the two-pass
+        # release build is what production runs. `--check` fails when the committed
+        # manifest does not describe this build, which is the failure that would
+        # otherwise only show up as pages that never hydrate on a host without the
+        # build output on disk.
+        run: |
+          node scripts/generate-csp-hashes.mjs
+          npx next build
+          node scripts/generate-csp-hashes.mjs --check
+        env:
+          NEXT_PUBLIC_SITE_URL: https://example.invalid
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
       - name: End-to-end and accessibility checks

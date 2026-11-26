@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { readdirSync, readFileSync } from "node:fs";
+import path from "node:path";
 import {
   A11Y_ATTRIBUTES,
   A11Y_STORAGE_KEY,
@@ -128,6 +130,74 @@ describe("parsePrefs", () => {
       expect(() => parsePrefs(raw)).not.toThrow();
     }
   });
+
+  /*
+    Everything below pins behaviour that used to come from zod. Each case is a way a stored record
+    can differ from the canonical six-field object, and each expected value was measured against the
+    schema this module replaced, so the hand-written validator cannot drift into being stricter or
+    more forgiving without a test failing.
+  */
+
+  it("accepts a record that omits every field, and repairs all six", () => {
+    expect(parsePrefs("{}")).toEqual(DEFAULT_A11Y_PREFS);
+  });
+
+  it("reads inherited fields the same way it reads own fields", () => {
+    // A prototype-carried value was readable before the refactor and still is: the repair reads the
+    // property. `parsePrefs` cannot reach this case because JSON has no prototypes, so it is checked
+    // against the validator directly.
+    const inherited = Object.create({ textSize: 150, contrast: "high" }) as unknown;
+    expect(a11yPrefsSchema.safeParse(inherited).data).toEqual({
+      ...DEFAULT_A11Y_PREFS,
+      textSize: 150,
+      contrast: "high",
+    });
+  });
+
+  it("compares without coercion, so a numeric string is not a number", () => {
+    expect(parsePrefs(JSON.stringify({ textSize: "130" })).textSize).toBe(100);
+    expect(parsePrefs(JSON.stringify({ textSize: 130.5 })).textSize).toBe(100);
+    expect(parsePrefs(JSON.stringify({ textSize: 130.0 })).textSize).toBe(130);
+  });
+
+  it("returns the shared frozen defaults object, not a copy, when the record is not an object", () => {
+    // Identity matters: the store hands this object straight to React, and `Object.is` on a fresh
+    // copy each read would re-render every subscriber on every storage event.
+    for (const raw of ['"high"', "130", "true", "null", '["high"]']) {
+      expect(parsePrefs(raw)).toBe(DEFAULT_A11Y_PREFS);
+    }
+  });
+
+  it("returns a fresh plain object, not the defaults, for a repaired record", () => {
+    const parsed = parsePrefs("{}");
+    expect(parsed).toEqual(DEFAULT_A11Y_PREFS);
+    expect(parsed).not.toBe(DEFAULT_A11Y_PREFS);
+    expect(Object.getPrototypeOf(parsed)).toBe(Object.prototype);
+    expect(Object.isFrozen(parsed)).toBe(false);
+  });
+
+  it("survives a record whose reads throw, rather than propagating the error", () => {
+    const trap = new Proxy(
+      {},
+      {
+        get() {
+          throw new Error("hostile getter");
+        },
+      },
+    );
+    expect(() => a11yPrefsSchema.safeParse(trap)).not.toThrow();
+    expect(a11yPrefsSchema.safeParse(trap).data).toEqual(DEFAULT_A11Y_PREFS);
+  });
+
+  it("reports success for every input, because repairing is the contract", () => {
+    for (const value of [null, 42, "text", ["x"], {}, { textSize: 999 }]) {
+      const result = a11yPrefsSchema.safeParse(value);
+      expect(result.success).toBe(true);
+      expect(result.data).toEqual(
+        expect.objectContaining({ textSize: expect.any(Number), font: expect.any(String) }),
+      );
+    }
+  });
 });
 
 describe("serialisePrefs", () => {
@@ -143,7 +213,9 @@ describe("serialisePrefs", () => {
   });
 
   it("produces a value its own parser accepts", () => {
-    expect(a11yPrefsSchema.safeParse(JSON.parse(serialisePrefs(NON_DEFAULT))).success).toBe(true);
+    expect(a11yPrefsSchema.safeParse(JSON.parse(serialisePrefs(NON_DEFAULT))).data).toEqual(
+      NON_DEFAULT,
+    );
   });
 });
 
@@ -219,5 +291,77 @@ describe("describePrefChange", () => {
 
   it("has a reset message that says what happened", () => {
     expect(RESET_ANNOUNCEMENT).toBe("Accessibility settings reset to defaults");
+  });
+});
+
+describe("the accessibility code carries no client-bundle dependency", () => {
+  /*
+    This module is in the shared JavaScript every page loads, because the toolbar is mounted in the
+    root layout. It used to import zod to validate six enum values, which put ~105 KB raw of schema
+    library on every visit. These checks fail if a library is pulled back in, so the saving cannot
+    quietly disappear in a later refactor.
+  */
+
+  const A11Y_DIRECTORIES = ["src/components/a11y", "src/lib/a11y"].map((relative) =>
+    path.resolve(__dirname, "../../..", relative),
+  );
+
+  function sourceFiles(directory: string): string[] {
+    let entries: import("node:fs").Dirent[];
+    try {
+      entries = readdirSync(directory, { withFileTypes: true });
+    } catch {
+      return [];
+    }
+
+    return entries.flatMap((entry) => {
+      const full = path.join(directory, entry.name);
+      if (entry.isDirectory()) return sourceFiles(full);
+      return /\.(ts|tsx)$/.test(entry.name) && !/\.test\.(ts|tsx)$/.test(entry.name) ? [full] : [];
+    });
+  }
+
+  /** Every `from "x"` and `import("x")` specifier in a file. */
+  function importsOf(file: string): string[] {
+    const source = readFileSync(file, "utf8");
+    const matches = source.matchAll(/(?:from|import)\s*\(?\s*["']([^"']+)["']/g);
+    return [...matches].map((match) => match[1]);
+  }
+
+  it("finds the accessibility sources it is meant to check", () => {
+    // A guard that silently matched no files would pass forever.
+    const files = A11Y_DIRECTORIES.flatMap(sourceFiles);
+    expect(files.length).toBeGreaterThanOrEqual(6);
+    expect(files.some((file) => file.endsWith("a11y-prefs.ts"))).toBe(true);
+    expect(files.some((file) => file.endsWith("a11y-toolbar.tsx"))).toBe(true);
+  });
+
+  it("imports no bare package into the accessibility module graph", () => {
+    const bare: string[] = [];
+
+    for (const file of A11Y_DIRECTORIES.flatMap(sourceFiles)) {
+      for (const specifier of importsOf(file)) {
+        const isRelative = specifier.startsWith(".");
+        const isAlias = specifier.startsWith("@/components/") || specifier.startsWith("@/lib/");
+        const isStyle = specifier.endsWith(".css");
+        // `react` is unavoidable in the client components and is already in the shell; nothing
+        // else may be added without this test being deliberately updated.
+        const isSanctionedReact = specifier === "react";
+        if (isRelative || isAlias || isStyle || isSanctionedReact) continue;
+        bare.push(`${path.relative(path.resolve(__dirname, "../../.."), file)}: ${specifier}`);
+      }
+    }
+
+    expect(bare).toEqual([]);
+  });
+
+  it("imports zod from nowhere, in any spelling", () => {
+    // The module's comments name zod on purpose, to record what was removed and why. What must not
+    // come back is the import, so this checks specifiers rather than raw text.
+    for (const file of A11Y_DIRECTORIES.flatMap(sourceFiles)) {
+      for (const specifier of importsOf(file)) {
+        expect(specifier, file).not.toMatch(/^zod(\/|$)/);
+      }
+    }
   });
 });

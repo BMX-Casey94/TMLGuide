@@ -1,13 +1,12 @@
-import { z } from "zod";
-
 /**
  * Recent searches, persisted in `localStorage`.
  *
  * The stored value is untrusted: it can be edited by hand, left over from an
- * older schema, or corrupted by a partial write. Every read is validated with
- * zod and anything that fails is discarded rather than thrown, so a bad value
- * can never break the palette. Writes are failure-tolerant too — Safari in
- * private mode, or a browser with site data blocked, throws on `setItem`.
+ * older schema, or corrupted by a partial write. Every read is validated
+ * strictly without external schema libraries (keeping `zod` out of the shared
+ * client shell bundle) and anything that fails is discarded rather than thrown,
+ * so a bad value can never break the palette. Writes are failure-tolerant too —
+ * Safari in private mode, or a browser with site data blocked, throws on `setItem`.
  *
  * This module holds no React and no JSX, so it can be unit-tested as plain
  * functions and imported from either side of the client boundary.
@@ -27,7 +26,17 @@ const MAX_QUERY_LENGTH = 80;
  * over-long list is truncated rather than thrown away, because a sixth search is
  * not evidence of corruption.
  */
-const recentSearchesSchema = z.array(z.string().trim().min(1).max(MAX_QUERY_LENGTH));
+function parseRecentSearches(value: unknown): string[] | null {
+  if (!Array.isArray(value)) return null;
+  const cleaned: string[] = [];
+  for (const item of value) {
+    if (typeof item !== "string") return null;
+    const trimmed = item.trim();
+    if (trimmed.length < 1 || trimmed.length > MAX_QUERY_LENGTH) return null;
+    cleaned.push(trimmed);
+  }
+  return cleaned;
+}
 
 /** Type-safe subset of the DOM `Storage` interface this module relies on. */
 type StorageLike = Pick<Storage, "getItem" | "setItem" | "removeItem">;
@@ -77,14 +86,14 @@ export function readRecentSearches(): string[] {
     return [];
   }
 
-  const result = recentSearchesSchema.safeParse(parsed);
-  if (!result.success) {
+  const validated = parseRecentSearches(parsed);
+  if (validated === null) {
     clearRecentSearches();
     return [];
   }
 
   // Preserve order, drop duplicates a hand edit may have introduced.
-  return [...new Set(result.data)].slice(0, MAX_RECENT_SEARCHES);
+  return [...new Set(validated)].slice(0, MAX_RECENT_SEARCHES);
 }
 
 /**

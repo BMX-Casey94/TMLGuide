@@ -13,7 +13,9 @@
  *    renders for this request. The request header is deliberately small: the
  *    hashes would be dead weight there.
  * 3. The full policy is written onto the *response*, together with the standard
- *    hardening headers.
+ *    hardening headers. Its `script-src` carries the nonce plus the digests of the
+ *    inline scripts in the prerendered shell that will serve this path — see
+ *    `csp-hashes.ts` for the two sources those digests come from and which wins.
  *
  * `x-nonce` is forwarded as well so a server component can read the value with
  * `headers()` if it ever needs to render its own `<script>`. Nothing in the
@@ -31,7 +33,7 @@ import {
   CSP_HEADER,
   NONCE_HEADER,
 } from "@/lib/security/csp";
-import { getInlineScriptHashes, isPrerenderOutputAvailable } from "@/lib/security/csp-hashes";
+import { getInlineScriptHashes, describeHashSource, describeHashCoverage } from "@/lib/security/csp-hashes";
 /**
  * Reporting endpoint, when the deployment has one.
  *
@@ -103,13 +105,22 @@ export function proxy(request: NextRequest): NextResponse {
 
   const scriptHashes = isDev || !wantsDocument(request) ? [] : getInlineScriptHashes(request.nextUrl.pathname);
 
-  if (!isDev && !warnedAboutHashes && !isPrerenderOutputAvailable()) {
+  if (!isDev && !warnedAboutHashes) {
     warnedAboutHashes = true;
-    console.warn(
-      "[security] Prerendered shell output is not readable at runtime, so inline " +
-        "scripts in static shells cannot be hashed. Pages that are prerendered " +
-        "will not hydrate until the output is available to the server process.",
-    );
+    /*
+      Logged once per process, on the first document request, and only when the
+      deployment has neither source of digests: no usable manifest and no readable
+      build output. That is the one state in which a prerendered page is served
+      without the hashes its scripts need and so never hydrates, and one line
+      naming the fix is the whole point of the check.
+
+      A manifest generated for a different NEXT_PUBLIC_SITE_URL also lands here,
+      because none of its digests would match this build's scripts. The coverage
+      line says exactly that, which is more useful than "no hashes available".
+    */
+    if (scriptHashes.length === 0 && describeHashSource(request.nextUrl.pathname) === "none") {
+      console.warn(`[security] ${describeHashCoverage()}`);
+    }
   }
 
   const headers = buildSecurityHeaders({

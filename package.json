@@ -5,6 +5,9 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:release": "next build && node scripts/generate-csp-hashes.mjs && next build && node scripts/generate-csp-hashes.mjs --check",
+    "csp:hashes": "node scripts/generate-csp-hashes.mjs",
+    "csp:check": "node scripts/generate-csp-hashes.mjs --check",
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
