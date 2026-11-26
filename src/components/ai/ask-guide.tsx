@@ -542,25 +542,6 @@ export function AskGuide({ turnstileSiteKey }: AskGuideProps) {
         }}
         noValidate
       >
-        <div className="tml-ai-composer__toolbar">
-          <span id={editionLabelId} className="tml-ai-composer__scope-label">
-            Edition
-          </span>
-          <div className="tml-ai-chips" role="group" aria-labelledby={editionLabelId}>
-            {EDITION_OPTIONS.map((option) => (
-              <button
-                key={option.value}
-                type="button"
-                className="tml-ai-chip"
-                aria-pressed={edition === option.value}
-                onClick={() => setEdition(option.value)}
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
         <div className="tml-ai-composer__shell">
           <label className="tml-ai-sr-only" htmlFor={fieldId}>
             Your question
@@ -588,29 +569,47 @@ export function AskGuide({ turnstileSiteKey }: AskGuideProps) {
               send();
             }}
           />
-          <button
-            type="submit"
-            className="tml-ai-send"
-            disabled={!canSend}
-            aria-label={pending ? "Reading the guide" : "Ask the guide"}
-          >
-            <span>{pending ? "Reading" : "Ask"}</span>
-            <svg
-              className="tml-ai-send__arrow"
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.4"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-              focusable="false"
+          <div className="tml-ai-composer__actions">
+            <label className="tml-ai-sr-only" htmlFor={editionLabelId}>
+              Edition
+            </label>
+            <select
+              id={editionLabelId}
+              className="tml-ai-edition-select"
+              aria-label="Edition"
+              value={edition}
+              onChange={(event) => setEdition(event.target.value as Edition)}
             >
-              <path d="M12 19V5M12 5l-6 6M12 5l6 6" />
-            </svg>
-          </button>
+              {EDITION_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+            <button
+              type="submit"
+              className="tml-ai-send"
+              disabled={!canSend}
+              aria-label={pending ? "Reading the guide" : "Ask the guide"}
+            >
+              <span>{pending ? "Reading" : "Ask"}</span>
+              <svg
+                className="tml-ai-send__arrow"
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.4"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+                focusable="false"
+              >
+                <path d="M12 19V5M12 5l-6 6M12 5l6 6" />
+              </svg>
+            </button>
+          </div>
         </div>
 
         <div className="tml-ai-composer__foot">

@@ -118,6 +118,13 @@ export interface CspOptions {
    * is an opt-in that a misconfiguration cannot switch on by accident.
    */
   readonly turnstile?: boolean;
+  /**
+   * Permit inline scripts via `'unsafe-inline'` (omitting nonce/hash tokens, which
+   * would otherwise cause browsers to ignore `'unsafe-inline'`). Used only on hosts
+   * like Vercel where Next.js `cacheComponents` prerenders static shells on Linux
+   * whose chunk hashes cannot be read from disk by the edge proxy.
+   */
+  readonly allowInlineScripts?: boolean;
 }
 
 /** Same inputs as the policy itself: the headers are a superset of the policy. */
@@ -301,19 +308,27 @@ export function buildCspHeader({
   scriptHashes = [],
   connectSrc = [],
   turnstile = false,
+  allowInlineScripts = false,
 }: CspOptions): string {
   const hashSources = scriptHashes
     .map((hash) => toCspHashSource(hash))
     .filter((hash): hash is string => hash !== null);
 
-  const scriptSrc = [
-    "'self'",
-    `'nonce-${nonce}'`,
-    ...hashSources,
-    ...(turnstile ? [TURNSTILE_ORIGIN] : []),
-    ...(strictDynamic ? ["'strict-dynamic'"] : []),
-    ...(isDev ? ["'unsafe-eval'"] : []),
-  ].join(" ");
+  const scriptSrc = allowInlineScripts
+    ? [
+        "'self'",
+        "'unsafe-inline'",
+        ...(turnstile ? [TURNSTILE_ORIGIN] : []),
+        ...(isDev ? ["'unsafe-eval'"] : []),
+      ].join(" ")
+    : [
+        "'self'",
+        `'nonce-${nonce}'`,
+        ...hashSources,
+        ...(turnstile ? [TURNSTILE_ORIGIN] : []),
+        ...(strictDynamic ? ["'strict-dynamic'"] : []),
+        ...(isDev ? ["'unsafe-eval'"] : []),
+      ].join(" ");
 
   const connectOrigins = connectSrc
     .map((origin) => normaliseConnectOrigin(origin))

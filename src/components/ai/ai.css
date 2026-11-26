@@ -910,6 +910,7 @@
    that carries the focus state for both. */
 .tml-ai-composer__shell {
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-end;
   gap: 0.55rem;
   padding: 0.5rem 0.5rem 0.5rem 1rem;
@@ -920,6 +921,40 @@
     inset 0 1px 0 rgb(244 236 224 / 0.04),
     0 10px 28px -18px rgb(0 0 0 / 0.85);
   transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.tml-ai-composer__actions {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 0.45rem;
+  margin-left: auto;
+}
+
+.tml-ai-edition-select {
+  min-height: 44px;
+  padding: 0 0.75rem;
+  border: 1px solid var(--hair-strong);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ground) 72%, var(--surface-2));
+  color: var(--cream);
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: border-color 0.18s ease, background 0.18s ease;
+}
+
+.tml-ai-edition-select:hover,
+.tml-ai-edition-select:focus-visible {
+  border-color: var(--ea);
+  outline: none;
+}
+
+.tml-ai-edition-select option {
+  background: var(--surface);
+  color: var(--cream);
 }
 
 .tml-ai-composer__shell:focus-within {

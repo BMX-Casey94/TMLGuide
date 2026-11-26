@@ -77,7 +77,7 @@ describe("initial render", () => {
     expect(screen.getByText(`0 / ${MAX_QUESTION_LENGTH}`)).toBeInTheDocument();
 
     for (const option of EDITION_OPTIONS) {
-      expect(screen.getByRole("button", { name: option.label })).toBeInTheDocument();
+      expect(screen.getByRole("option", { name: option.label })).toBeInTheDocument();
     }
   });
 
@@ -100,14 +100,13 @@ describe("initial render", () => {
     }
   });
 
-  it("marks the default edition as pressed and moves the pressed state on click", () => {
+  it("selects the default edition and updates on change", () => {
     render(<AskGuide />);
-    const all = screen.getByRole("button", { name: "All editions" });
-    expect(all).toHaveAttribute("aria-pressed", "true");
+    const select = screen.getByRole("combobox", { name: /edition/i });
+    expect(select).toHaveValue("all");
 
-    fireEvent.click(screen.getByRole("button", { name: "Winter" }));
-    expect(screen.getByRole("button", { name: "Winter" })).toHaveAttribute("aria-pressed", "true");
-    expect(all).toHaveAttribute("aria-pressed", "false");
+    fireEvent.change(select, { target: { value: "winter" } });
+    expect(select).toHaveValue("winter");
   });
 
   it("keeps the send button disabled until there is something to send", () => {
@@ -162,7 +161,9 @@ describe("asking a question", () => {
     render(<AskGuide />);
 
     typeQuestion("How much is a day pass?");
-    fireEvent.click(screen.getByRole("button", { name: "Belgium" }));
+    fireEvent.change(screen.getByRole("combobox", { name: /edition/i }), {
+      target: { value: "belgium" },
+    });
     fireEvent.click(screen.getByRole("button", { name: /ask the guide/i }));
 
     expect(await screen.findByText(/€144 in the pre-sale/)).toBeInTheDocument();
@@ -500,9 +501,9 @@ describe("accessibility", () => {
     );
   });
 
-  it("groups the edition buttons with a label", () => {
+  it("labels the edition selector", () => {
     render(<AskGuide />);
-    expect(screen.getByRole("group", { name: /edition/i })).toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: /edition/i })).toBeInTheDocument();
   });
 
   it("groups the thread so it can be named and scrolled with a keyboard", async () => {

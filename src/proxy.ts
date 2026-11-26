@@ -123,11 +123,13 @@ export function proxy(request: NextRequest): NextResponse {
     }
   }
 
+  const onVercel = process.env.VERCEL === "1";
   const headers = buildSecurityHeaders({
     nonce,
     isDev,
     reportToUrl: reportToUrl(),
-    scriptHashes,
+    scriptHashes: onVercel ? [] : scriptHashes,
+    allowInlineScripts: onVercel,
     connectSrc: connectOrigins(),
     /*
       The Turnstile exemption is applied from the deployment's own configuration,
