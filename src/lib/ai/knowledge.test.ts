@@ -11,14 +11,19 @@
  *    answers them is found, plus the abstention cases where nothing should be found.
  */
 
+import { existsSync } from "node:fs";
+import path from "node:path";
 import { describe, expect, it } from "vitest";
+import { allChapters } from "@/content";
 import {
+  COMMUNITY_ESTIMATE_LABEL,
   DEFAULT_MIN_SCORE,
   DEFAULT_TOP_K,
   MIN_COVERAGE,
   buildIndex,
   diversify,
   expandQuery,
+  foodEstimateChunks,
   formatBrl,
   formatDateRange,
   formatEur,
@@ -34,8 +39,12 @@ import {
   tokenise,
   unknownQuestionShare,
   withPhrases,
+  type FoodEstimateRecord,
   type KnowledgeChunk,
 } from "./knowledge";
+
+/** Owned by another workstream. Absent until that module lands. */
+const FOOD_ESTIMATES_FILE = path.resolve(import.meta.dirname, "../../data/shared/food-estimates.ts");
 
 const CHUNKS = getKnowledgeBase();
 
@@ -182,6 +191,289 @@ describe("buildKnowledgeBase", () => {
       (chunk) => chunk.kind === "ticket" && chunk.edition === "belgium" && chunk.content.includes("Pearl"),
     );
     expect(current).toHaveLength(0);
+  });
+});
+
+function foodEstimate(overrides: Partial<FoodEstimateRecord> = {}): FoodEstimateRecord {
+  return {
+    edition: "belgium",
+    kind: "stall",
+    name: "Fries",
+    summary: "A portion of fries from a DreamVille marketplace stall.",
+    currency: "EUR",
+    low: 800,
+    high: 1200,
+    source: {
+      url: "https://example.test/community/fries",
+      title: "Community food notes",
+      retrievedOn: "2026-11-18",
+    },
+    confidence: "community-estimate",
+    ...overrides,
+  };
+}
+
+describe("food and drink chapters", () => {
+  const FOOD = CHUNKS.filter((chunk) => chunk.kind === "chapter");
+
+  it("indexes every food chapter the registry publishes, and no other chapter", () => {
+    const published = allChapters().filter(
+      (chapter) => chapter.slug === "food" || chapter.slug.startsWith("food-"),
+    );
+    expect(published.map((chapter) => `${chapter.edition}/${chapter.slug}`)).toContain("belgium/food-drinks");
+
+    const prefixes = published.map((chapter) => {
+      const edition = chapter.edition === "general" ? "all" : chapter.edition;
+      return `${edition}:chapter:${chapter.slug}:`;
+    });
+
+    for (const prefix of prefixes) {
+      expect(FOOD.some((chunk) => chunk.id.startsWith(prefix)), prefix).toBe(true);
+    }
+    for (const chunk of FOOD) {
+      expect(prefixes.some((prefix) => chunk.id.startsWith(prefix)), chunk.id).toBe(true);
+    }
+  });
+
+  it("keeps the Belgium food-chapter ids stable", () => {
+    for (const id of [
+      "belgium:chapter:food-drinks:overview",
+      "belgium:chapter:food-drinks:how-paying-works",
+      "belgium:chapter:food-drinks:food-and-drink-rules",
+      "belgium:chapter:food-drinks:why-no-prices",
+      "belgium:chapter:food-drinks:practical-order",
+    ]) {
+      expect(CHUNKS.some((chunk) => chunk.id === id), id).toBe(true);
+    }
+  });
+
+  it("puts the cup deposit and the Pearl rate in the paying section", () => {
+    const paying = CHUNKS.find((chunk) => chunk.id === "belgium:chapter:food-drinks:how-paying-works");
+    expect(paying?.content.toLowerCase()).toContain("cup deposit");
+    expect(paying?.content.toLowerCase()).toContain("one pearl");
+    expect(paying?.content.toLowerCase()).toContain("not published");
+    expect(paying?.sourceUrl).toMatch(/^https:\/\//);
+  });
+
+  it("answers a Pearls question from the food chapter", () => {
+    const results = retrieve("How do Pearls work for food and drinks at Tomorrowland Belgium?", {
+      edition: "belgium",
+    });
+    expect(results.some((hit) => hit.chunk.id.startsWith("belgium:chapter:food-drinks:"))).toBe(true);
+  });
+
+  it("answers a cup-deposit question from the food chapter", () => {
+    const results = retrieve("What is the cup deposit for a reusable cup at Tomorrowland Belgium?", {
+      edition: "belgium",
+    });
+    expect(results.map((hit) => hit.chunk.id)).toContain("belgium:chapter:food-drinks:how-paying-works");
+  });
+
+  it("answers what a reader may carry in from the food chapter", () => {
+    const results = retrieve("Can I bring my own food and drinks into Tomorrowland Belgium?", {
+      edition: "belgium",
+    });
+    expect(results.map((hit) => hit.chunk.id)).toContain("belgium:chapter:food-drinks:food-and-drink-rules");
+    const rules = results.find((hit) => hit.chunk.id === "belgium:chapter:food-drinks:food-and-drink-rules");
+    expect(rules?.chunk.content.toLowerCase()).toContain("prohibited");
+  });
+
+  it("offers the food chapter for a best-food question", () => {
+    // The prompt turns this into guidance. The retriever's job is to supply the
+    // chapter that describes paying and the rules, not to invent a winner.
+    const results = retrieve("What is the best food in DreamVille?", { edition: "belgium" });
+    expect(results.some((hit) => hit.chunk.id.startsWith("belgium:chapter:food-drinks:"))).toBe(true);
+  });
+});
+
+describe("community food estimates", () => {
+  const DISCLAIMER = "Ranges are crowd-sourced from readers and change every edition.";
+
+  it("labels the range, refuses to convert Pearls, and cites the source URL", () => {
+    const [euros, pearls, reais] = foodEstimateChunks(
+      [
+        foodEstimate(),
+        foodEstimate({
+          edition: "belgium",
+          kind: "drink",
+          name: "Beer",
+          summary: "A draft beer at a main stall.",
+          currency: "pearls",
+          low: 300,
+          high: 400,
+          source: {
+            url: "https://example.test/community/beer",
+            title: "Community drink notes",
+            retrievedOn: "2026-11-18",
+          },
+        }),
+        foodEstimate({
+          edition: "brasil",
+          kind: "stall",
+          name: "Pastel",
+          summary: "A pastel from a festival stall.",
+          currency: "BRL",
+          low: 2000,
+          high: 3000,
+          source: {
+            url: "https://example.test/community/pastel",
+            title: "Community Brasil notes",
+            retrievedOn: "2026-11-18",
+          },
+        }),
+      ],
+      DISCLAIMER,
+    );
+
+    expect(euros?.id).toBe("belgium:food-estimate:stall-fries");
+    expect(euros?.content).toContain("€8");
+    expect(euros?.content).toContain("€12");
+    expect(euros?.content).toContain(COMMUNITY_ESTIMATE_LABEL);
+    expect(euros?.content.toLowerCase()).toContain("not an official tomorrowland price");
+    expect(euros?.content).toContain("https://example.test/community/fries");
+    expect(euros?.content).toContain(DISCLAIMER);
+    expect(euros?.sourceUrl).toBe("https://example.test/community/fries");
+
+    expect(pearls?.content).toContain("3 Pearls");
+    expect(pearls?.content).toContain("4 Pearls");
+    expect(pearls?.content).not.toMatch(/€|£|R\$/);
+
+    expect(reais?.content).toContain("R$20");
+    expect(reais?.content).toContain("R$30");
+    expect(reais?.content).not.toMatch(/€|£/);
+  });
+
+  it("writes a Brasil euro estimate as EUR and does not convert it", () => {
+    // The corpus forbids a euro symbol on a Brasil passage. The stored code
+    // stays EUR; it is not turned into reais.
+    const [chunk] = foodEstimateChunks(
+      [
+        foodEstimate({
+          edition: "brasil",
+          currency: "EUR",
+          low: 900,
+          high: 900,
+          name: "Water",
+          kind: "drink",
+          summary: "A bottle of water, priced in euros by the stall.",
+        }),
+      ],
+      DISCLAIMER,
+    );
+    expect(chunk?.content).toContain("EUR 9");
+    expect(chunk?.content).not.toMatch(/€|£|R\$/);
+  });
+
+  it("does not index a row that is not a community estimate", () => {
+    const official = { ...foodEstimate(), confidence: "official" } as unknown as FoodEstimateRecord;
+    expect(foodEstimateChunks([official], DISCLAIMER)).toHaveLength(0);
+  });
+
+  it("keeps a second row with the same name by suffixing the id", () => {
+    const chunks = foodEstimateChunks(
+      [foodEstimate(), foodEstimate({ summary: "A second fries stall." })],
+      DISCLAIMER,
+    );
+    expect(chunks.map((chunk) => chunk.id)).toEqual([
+      "belgium:food-estimate:stall-fries",
+      "belgium:food-estimate:stall-fries-2",
+    ]);
+  });
+
+  it("retrieves the estimate for a food-stall price question", () => {
+    const estimates = foodEstimateChunks([foodEstimate()], DISCLAIMER);
+    const decoy: KnowledgeChunk = {
+      id: "belgium:ticket:decoy",
+      edition: "belgium",
+      kind: "ticket",
+      title: "Day Pass",
+      content: "Day Pass. Price €144 per person.",
+      sourceUrl: "https://belgium.tomorrowland.com/en/tickets/",
+      sourceTitle: "Tickets",
+      lastVerified: "2026-11-18",
+      context: "Tomorrowland Belgium 2027 ticket",
+    };
+    const results = retrieve("How much are fries at the food stalls?", { edition: "belgium" }, [
+      ...estimates,
+      decoy,
+    ]);
+    expect(results[0]?.chunk.kind).toBe("food-estimate");
+    expect(results[0]?.chunk.content).toContain("€8");
+    expect(results[0]?.chunk.content).toContain("€12");
+    expect(results[0]?.chunk.content.toLowerCase()).toContain("community estimate");
+    expect(results[0]?.chunk.content).toContain("https://example.test/community/fries");
+  });
+
+  it("writes minor units out in the stored currency and does not quote them as major units", () => {
+    const [chunk] = foodEstimateChunks(
+      [foodEstimate({ low: 665, high: 903, summary: "A small portion and a large portion." })],
+      DISCLAIMER,
+    );
+    expect(chunk?.content).toContain("€6.65");
+    expect(chunk?.content).toContain("€9.03");
+    expect(chunk?.content).not.toContain("€665");
+    expect(chunk?.content).not.toContain("€903");
+  });
+
+  it("keeps an unpriced stall so the marketplace can be described", () => {
+    const [chunk] = foodEstimateChunks(
+      [
+        foodEstimate({
+          name: "DreamVille marketplace",
+          kind: "stall-type",
+          currency: null,
+          low: null,
+          high: null,
+          summary: "A supermarket and a bakery in DreamVille. The article gives no item price.",
+        }),
+      ],
+      DISCLAIMER,
+    );
+    expect(chunk?.id).toBe("belgium:food-estimate:stall-type-dreamville-marketplace");
+    expect(chunk?.content.toLowerCase()).toContain("no sourced range is stored");
+    expect(chunk?.content).toContain(COMMUNITY_ESTIMATE_LABEL);
+    expect(chunk?.content).not.toMatch(/€|£|R\$/);
+  });
+
+  it("retrieves an estimate chunk when the data module exports rows", () => {
+    expect(existsSync(FOOD_ESTIMATES_FILE)).toBe(true);
+    const results = retrieve("How much are frites at the Belgium food stalls?", { edition: "belgium" });
+    const hit = results.find(
+      (item) => item.chunk.kind === "food-estimate" && /frites/i.test(item.chunk.title),
+    );
+    expect(hit, results.map((item) => item.chunk.id).join(", ")).toBeDefined();
+    expect(hit?.chunk.content).toContain("€6.65");
+    expect(hit?.chunk.content).toContain("€9.03");
+    expect(hit?.chunk.content).not.toContain("€665");
+    expect(hit?.chunk.content.toLowerCase()).toContain("community estimate");
+    expect(hit?.chunk.content.toLowerCase()).toContain("not an official tomorrowland price");
+    expect(hit?.chunk.content).toContain("https://festileaks.com/");
+    expect(hit?.chunk.sourceUrl).toMatch(/^https:\/\//);
+  });
+
+  it("keeps indexed estimates in their stored currency, with stable ids", () => {
+    const pizza = CHUNKS.find((chunk) => chunk.id === "belgium:food-estimate:stall-type-pizza");
+    expect(pizza?.content).toContain("5.50 Pearls");
+    expect(pizza?.content).toContain("8.75 Pearls");
+    expect(pizza?.content).not.toContain("550 Pearls");
+
+    const brasilFrites = CHUNKS.find((chunk) => chunk.id === "brasil:food-estimate:stall-type-frites");
+    expect(brasilFrites?.content).toContain("R$31.20");
+    expect(brasilFrites?.content).toContain("R$38.40");
+    expect(brasilFrites?.content).not.toMatch(/€|£/);
+
+    const market = CHUNKS.find(
+      (chunk) => chunk.id === "belgium:food-estimate:stall-type-dreamville-marketplace-supermarket-and-bakery",
+    );
+    expect(market?.content.toLowerCase()).toContain("no sourced range is stored");
+    expect(market?.content.toLowerCase()).toContain("dreamville");
+
+    for (const chunk of CHUNKS.filter((candidate) => candidate.kind === "food-estimate")) {
+      expect(chunk.content.toLowerCase(), chunk.id).toContain("community estimate");
+      expect(chunk.content.toLowerCase(), chunk.id).toContain("not an official tomorrowland price");
+      expect(chunk.content, chunk.id).toContain(chunk.sourceUrl);
+      expect(chunk.lastVerified, chunk.id).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    }
   });
 });
 

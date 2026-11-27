@@ -63,6 +63,13 @@ import {
   webglSupport,
   webglSupportServerSnapshot,
 } from "./map-support";
+import {
+  applyViewMode,
+  attachSurveyedGround,
+  MAP_PITCH_DEGREES,
+  VIEW_MODE_CAMERA,
+  type ViewMode,
+} from "./map-ground";
 import { buildMapStyle } from "./map-style";
 import { INTERACTIVE_NODE_LAYERS, buildMapLayers } from "./map-layer-specs";
 /*
@@ -185,6 +192,157 @@ interface LocateNote {
  * assignable to. Confining the cast here is the alternative to making every shape
  * in `geo-types` mutable for the sake of one consumer.
  */
+interface ZoneListboxGroup {
+  readonly label: string | null;
+  readonly nodes: readonly GeoMapNode[];
+}
+
+/**
+ * A rounded listbox in place of a native select.
+ *
+ * The button is the 44px target. The popup closes on Escape and on a pointer
+ * press outside it, and the chosen row is gold. Nothing here comes from
+ * `src/components/ui`.
+ */
+function ZoneListbox({
+  id,
+  labelId,
+  groups,
+  value,
+  onChange,
+}: {
+  readonly id: string;
+  readonly labelId: string;
+  readonly groups: readonly ZoneListboxGroup[];
+  readonly value: string;
+  readonly onChange: (nodeId: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const optionRefs = useRef(new Map<string, HTMLButtonElement>());
+
+  const options = groups.flatMap((group) => [...group.nodes]);
+  const selected = options.find((node) => node.id === value) ?? null;
+
+  useEffect(() => {
+    if (!open) return;
+
+    const closeIfOutside = (event: PointerEvent): void => {
+      const target = event.target;
+      if (!(target instanceof Node)) return;
+      if (rootRef.current?.contains(target)) return;
+      setOpen(false);
+    };
+
+    const closeOnEscape = (event: KeyboardEvent): void => {
+      if (event.key !== "Escape") return;
+      setOpen(false);
+      buttonRef.current?.focus();
+    };
+
+    document.addEventListener("pointerdown", closeIfOutside);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeIfOutside);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    optionRefs.current.get(value)?.focus();
+  }, [open, value]);
+
+  const moveFocus = (fromId: string, direction: 1 | -1 | "start" | "end"): void => {
+    const ids = options.map((node) => node.id);
+    if (ids.length === 0) return;
+    const index = ids.indexOf(fromId);
+    const nextIndex =
+      direction === "start"
+        ? 0
+        : direction === "end"
+          ? ids.length - 1
+          : Math.min(ids.length - 1, Math.max(0, index + direction));
+    const nextId = ids[nextIndex];
+    if (nextId !== undefined) optionRefs.current.get(nextId)?.focus();
+  };
+
+  return (
+    <div className="tml-map-listbox" ref={rootRef}>
+      <button
+        ref={buttonRef}
+        type="button"
+        id={id}
+        className="tml-map-listbox__button"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-controls={`${id}-listbox`}
+        aria-labelledby={`${labelId} ${id}-value`}
+        onClick={() => setOpen((current) => !current)}
+      >
+        <span id={`${id}-value`}>{selected?.name ?? "Choose a zone"}</span>
+      </button>
+      {open ? (
+        <div
+          id={`${id}-listbox`}
+          className="tml-map-listbox__popup"
+          role="listbox"
+          aria-labelledby={labelId}
+          tabIndex={-1}
+        >
+          {groups.map((group) => {
+            const rows = group.nodes.map((node) => (
+              <button
+                key={node.id}
+                type="button"
+                role="option"
+                ref={(element) => {
+                  if (element === null) optionRefs.current.delete(node.id);
+                  else optionRefs.current.set(node.id, element);
+                }}
+                className="tml-map-listbox__option"
+                aria-selected={node.id === value}
+                onClick={() => {
+                  onChange(node.id);
+                  setOpen(false);
+                  buttonRef.current?.focus();
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === "ArrowDown") {
+                    event.preventDefault();
+                    moveFocus(node.id, 1);
+                  } else if (event.key === "ArrowUp") {
+                    event.preventDefault();
+                    moveFocus(node.id, -1);
+                  } else if (event.key === "Home") {
+                    event.preventDefault();
+                    moveFocus(node.id, "start");
+                  } else if (event.key === "End") {
+                    event.preventDefault();
+                    moveFocus(node.id, "end");
+                  }
+                }}
+              >
+                {node.name}
+              </button>
+            ));
+
+            if (group.label === null) return <div key="zones">{rows}</div>;
+
+            return (
+              <div key={group.label} role="group" aria-label={group.label}>
+                <p className="tml-map-listbox__group">{group.label}</p>
+                {rows}
+              </div>
+            );
+          })}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function asGeoJson(collection: FeatureCollectionLike<unknown>): GeoJSON.GeoJSON {
   return collection as unknown as GeoJSON.GeoJSON;
 }
@@ -227,6 +385,8 @@ export function VenueMapsTool({ initialVenueId = "de-schorre" }: VenueMapsToolPr
   const [located, setLocated] = useState<LocatedPosition>(null);
   const [locateNote, setLocateNote] = useState<LocateNote | null>(null);
   const [locatePending, setLocatePending] = useState(false);
+  /** Credit lines for ground layers that passed the image-byte probe. */
+  const [groundNotes, setGroundNotes] = useState<readonly string[]>([]);
 
   /*
     WebGL support is fixed for the life of the document, so it is read as an
@@ -247,6 +407,15 @@ export function VenueMapsTool({ initialVenueId = "de-schorre" }: VenueMapsToolPr
   const [mapReady, setMapReady] = useState(false);
   const [mapFailed, setMapFailed] = useState(false);
   const [tilesDegraded, setTilesDegraded] = useState(false);
+  /**
+   * Which of the two camera modes is showing.
+   *
+   * Held in React state rather than read back from the map because the toggle is
+   * a button whose `aria-pressed` has to be right on the first render, and because
+   * a reader who arrives without WebGL should still see the control in a sensible
+   * state. The map is told about a change; it is not the source of truth.
+   */
+  const [viewMode, setViewMode] = useState<ViewMode>("3d");
 
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
@@ -663,6 +832,8 @@ export function VenueMapsTool({ initialVenueId = "de-schorre" }: VenueMapsToolPr
           dragRotate: false,
           pitchWithRotate: false,
           touchPitch: false,
+          // A slight tilt so the clay-pit relief reads once terrain is on.
+          pitch: MAP_PITCH_DEGREES,
         });
 
         const instance = created;
@@ -672,6 +843,13 @@ export function VenueMapsTool({ initialVenueId = "de-schorre" }: VenueMapsToolPr
           if (cancelled) return;
           addSourcesAndLayers(instance);
           setMapReady(true);
+          void attachSurveyedGround(instance)
+            .then((credits) => {
+              if (!cancelled) setGroundNotes(credits);
+            })
+            .catch(() => {
+              // A failed probe leaves the vector map flat. The walk figures do not depend on it.
+            });
         });
 
         /*
@@ -759,18 +937,81 @@ export function VenueMapsTool({ initialVenueId = "de-schorre" }: VenueMapsToolPr
     pushCollections(instance, collections);
   }, [status, collections]);
 
-  /* Fits the venue when the switcher changes, and once when the map first loads. */
+  /**
+   * Frames a venue with the chosen view mode already applied.
+   *
+   * `fitBounds` resets the bearing to north as part of fitting, so calling it and
+   * then easing the tilt afterwards leaves the camera briefly flat and swinging —
+   * and, worse, two competing animations where the second cancels the first. The
+   * fix is to compute the fit's own camera with `cameraForBounds` and hand centre,
+   * zoom, pitch and bearing to a single `easeTo`. One move, one animation, and the
+   * tilt survives a venue switch.
+   *
+   * `cameraForBounds` is a plain geometric calculation with no side effect, so a
+   * map that cannot answer it yet falls back to the venue's own centre rather than
+   * leaving the camera wherever it was.
+   */
+  const frameVenue = useCallback(
+    (instance: MapLibreMap, id: VenueMapId, mode: ViewMode, duration: number): void => {
+      const target = VENUE_MAPS[id];
+      const padding = { top: 48, bottom: 48, left: 32, right: 32 };
+      const camera = VIEW_MODE_CAMERA[mode];
+
+      /*
+        Pitch and bearing are passed to the fit itself, not applied afterwards.
+        A tilted camera sees a trapezoid, not the rectangle a flat fit assumes, so
+        fitting flat and then tilting would push the far edge of the venue off the
+        top of the screen. Handing the tilt to `cameraForBounds` makes it solve for
+        the view the reader is actually going to get.
+      */
+      const fitted = instance.cameraForBounds(venueBoundsPair(target), {
+        padding,
+        maxZoom: 16.6,
+        pitch: camera.pitch,
+        bearing: camera.bearing,
+      });
+
+      instance.easeTo({
+        center: fitted?.center ?? [target.centre[0], target.centre[1]],
+        zoom: fitted?.zoom ?? 15,
+        pitch: camera.pitch,
+        bearing: camera.bearing,
+        padding,
+        duration,
+      });
+    },
+    [],
+  );
+
+  /**
+   * What the camera was last told, so a change can be answered with the right move.
+   *
+   * A venue switch re-frames the whole site; a mode switch only tips the camera,
+   * keeping the reader's place. Two effects driving one camera would cancel each
+   * other's animation, so there is one effect and these refs say which of the two
+   * things actually changed.
+   */
+  const framedRef = useRef<{ venueId: VenueMapId; mode: ViewMode } | null>(null);
+
   useEffect(() => {
     if (status !== "ready") return;
     const instance = mapRef.current;
     if (instance === null) return;
 
-    instance.fitBounds(venueBoundsPair(VENUE_MAPS[venueId]), {
-      padding: { top: 48, bottom: 48, left: 32, right: 32 },
-      duration: prefersReducedMotion() ? 0 : 900,
-      maxZoom: 16.6,
-    });
-  }, [status, venueId]);
+    const previous = framedRef.current;
+    framedRef.current = { venueId, mode: viewMode };
+
+    if (previous === null || previous.venueId !== venueId) {
+      // First frame, or a different venue: fit the site with the current tilt.
+      frameVenue(instance, venueId, viewMode, prefersReducedMotion() ? 0 : 900);
+      return;
+    }
+
+    if (previous.mode !== viewMode) {
+      // Same place, different camera: tip without losing where the reader is.
+      applyViewMode(instance, viewMode, prefersReducedMotion());
+    }
+  }, [status, venueId, viewMode, frameVenue]);
 
   /* Flies to a zone the reader asked for, from search or from the list. */
   useEffect(() => {
@@ -838,12 +1079,10 @@ export function VenueMapsTool({ initialVenueId = "de-schorre" }: VenueMapsToolPr
   const handleResetView = useCallback(() => {
     const instance = mapRef.current;
     if (instance === null) return;
-    instance.fitBounds(venueBoundsPair(VENUE_MAPS[venueId]), {
-      padding: { top: 48, bottom: 48, left: 32, right: 32 },
-      duration: prefersReducedMotion() ? 0 : 700,
-      maxZoom: 16.6,
-    });
-  }, [venueId]);
+    // The same path the venue switcher takes, so "show the whole venue" keeps the
+    // reader's chosen tilt instead of flattening the camera behind their back.
+    frameVenue(instance, venueId, viewMode, prefersReducedMotion() ? 0 : 700);
+  }, [venueId, viewMode, frameVenue]);
 
   /* ------------------------------------------------------------------ */
   /* Render                                                              */
@@ -902,6 +1141,35 @@ export function VenueMapsTool({ initialVenueId = "de-schorre" }: VenueMapsToolPr
               </button>
             ))}
           </div>
+
+          {/*
+            The camera toggle exists only while there is a canvas to tilt. With no
+            WebGL the whole map stage has already been replaced by the fallback
+            panel that explains itself, so a "3D View" button beside it would be a
+            control that could never do anything. `aria-pressed` carries the state
+            in words, because the tilt itself is not available to every reader.
+          */}
+          {status === "ready" ? (
+            <button
+              type="button"
+              className="tool-btn tool-btn--quiet tml-map-viewmode"
+              aria-pressed={viewMode === "3d"}
+              onClick={() => {
+                const next: ViewMode = viewMode === "3d" ? "2d" : "3d";
+                setViewMode(next);
+                setAnnouncement(
+                  next === "3d"
+                    ? "Tilted view, showing the ground in three dimensions."
+                    : "Flat view, looking straight down.",
+                );
+              }}
+            >
+              <span className="tml-map-viewmode__icon" aria-hidden="true">
+                {viewMode === "3d" ? "◭" : "▣"}
+              </span>
+              {viewMode === "3d" ? "3D View" : "2D View"}
+            </button>
+          ) : null}
         </div>
 
         <form className="tml-map-search" role="search" onSubmit={handleSearch}>
@@ -1119,6 +1387,7 @@ export function VenueMapsTool({ initialVenueId = "de-schorre" }: VenueMapsToolPr
                 OpenFreeMap
               </a>
               . Zone outlines and footpaths are this guide&rsquo;s own estimates.
+              {groundNotes.length > 0 ? ` ${groundNotes.join(" ")}` : ""}
             </p>
           </div>
         ) : null}
@@ -1210,39 +1479,21 @@ export function VenueMapsTool({ initialVenueId = "de-schorre" }: VenueMapsToolPr
 
         <div className="tml-map-controls">
           <div className="tool-field">
-            <label className="tool-field__label" htmlFor={`${uid}-from`}>
+            <label className="tool-field__label" id={`${uid}-from-label`} htmlFor={`${uid}-from`}>
               Starting zone (A)
             </label>
-            <select
+            <ZoneListbox
               id={`${uid}-from`}
-              className="tool-select"
+              labelId={`${uid}-from-label`}
+              groups={routeOptions}
               value={fromId}
-              onChange={(event) => {
-                const next = event.target.value;
+              onChange={(next) => {
                 setRouteEnds((previous) => ({
                   ...previous,
                   [venueId]: { ...previous[venueId], from: next },
                 }));
               }}
-            >
-              {routeOptions.map((group) =>
-                group.label === null ? (
-                  group.nodes.map((node) => (
-                    <option key={node.id} value={node.id}>
-                      {node.name}
-                    </option>
-                  ))
-                ) : (
-                  <optgroup key={group.label} label={group.label}>
-                    {group.nodes.map((node) => (
-                      <option key={node.id} value={node.id}>
-                        {node.name}
-                      </option>
-                    ))}
-                  </optgroup>
-                ),
-              )}
-            </select>
+            />
           </div>
 
           <button type="button" className="tool-btn tml-map-swap" onClick={handleSwap}>
@@ -1251,39 +1502,21 @@ export function VenueMapsTool({ initialVenueId = "de-schorre" }: VenueMapsToolPr
           </button>
 
           <div className="tool-field">
-            <label className="tool-field__label" htmlFor={`${uid}-to`}>
+            <label className="tool-field__label" id={`${uid}-to-label`} htmlFor={`${uid}-to`}>
               Destination zone (B)
             </label>
-            <select
+            <ZoneListbox
               id={`${uid}-to`}
-              className="tool-select"
+              labelId={`${uid}-to-label`}
+              groups={routeOptions}
               value={toId}
-              onChange={(event) => {
-                const next = event.target.value;
+              onChange={(next) => {
                 setRouteEnds((previous) => ({
                   ...previous,
                   [venueId]: { ...previous[venueId], to: next },
                 }));
               }}
-            >
-              {routeOptions.map((group) =>
-                group.label === null ? (
-                  group.nodes.map((node) => (
-                    <option key={node.id} value={node.id}>
-                      {node.name}
-                    </option>
-                  ))
-                ) : (
-                  <optgroup key={group.label} label={group.label}>
-                    {group.nodes.map((node) => (
-                      <option key={node.id} value={node.id}>
-                        {node.name}
-                      </option>
-                    ))}
-                  </optgroup>
-                ),
-              )}
-            </select>
+            />
           </div>
         </div>
 

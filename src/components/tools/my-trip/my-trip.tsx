@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { useEdition } from "@/components/shell";
 import { GoldDivider } from "@/components/ui/gold-divider";
+import { CustomSelect } from "@/components/ui/custom-select";
 import { downloadTextFile } from "../download";
 import { EDITION_LABEL, TOOL_EDITIONS, type ToolEdition } from "../editions";
 import { safeLocalStorage } from "../state";
@@ -550,22 +551,18 @@ export function MyTrip({ data }: MyTripProps) {
             <label className="tool-field__label" htmlFor={field("ticket")}>
               The ticket you hold
             </label>
-            <select
+            <CustomSelect
               id={field("ticket")}
-              className="tool-select"
+              ariaLabel="The ticket you hold"
+              ariaDescribedBy={field("ticket-note")}
               value={state.ticketId ?? ""}
-              aria-describedby={field("ticket-note")}
-              onChange={(event) =>
-                commit({ ...state, ticketId: event.target.value === "" ? null : event.target.value })
-              }
-            >
-              <option value="">No ticket chosen yet</option>
-              {editionData.tickets.map((option) => (
-                <option key={option.id} value={option.id}>
-                  {option.name}
-                </option>
-              ))}
-            </select>
+              placeholder="No ticket chosen yet"
+              onChange={(next) => commit({ ...state, ticketId: next === "" ? null : next })}
+              options={[
+                { value: "", label: "No ticket chosen yet" },
+                ...editionData.tickets.map((option) => ({ value: option.id, label: option.name })),
+              ]}
+            />
             <p className="tool-field__note" id={field("ticket-note")}>
               The published {editionData.label} products, by name. The price, its year and the page
               it came from are shown once you pick one.
@@ -616,22 +613,18 @@ export function MyTrip({ data }: MyTripProps) {
             <label className="tool-field__label" htmlFor={field("package")}>
               A published accommodation package, if you booked one
             </label>
-            <select
+            <CustomSelect
               id={field("package")}
-              className="tool-select"
+              ariaLabel="A published accommodation package, if you booked one"
+              ariaDescribedBy={field("package-note")}
               value={state.packageId ?? ""}
-              aria-describedby={field("package-note")}
-              onChange={(event) =>
-                commit({ ...state, packageId: event.target.value === "" ? null : event.target.value })
-              }
-            >
-              <option value="">No package chosen</option>
-              {editionData.packages.map((option) => (
-                <option key={option.id} value={option.id}>
-                  {option.name}
-                </option>
-              ))}
-            </select>
+              placeholder="No package chosen"
+              onChange={(next) => commit({ ...state, packageId: next === "" ? null : next })}
+              options={[
+                { value: "", label: "No package chosen" },
+                ...editionData.packages.map((option) => ({ value: option.id, label: option.name })),
+              ]}
+            />
             <p className="tool-field__note" id={field("package-note")}>
               {editionData.packagesNote}
             </p>

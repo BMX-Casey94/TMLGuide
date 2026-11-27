@@ -159,9 +159,9 @@ export const pageEntries: SourceEntry[] = [
   },
   {
     slug: "accessibility",
-    title: "Accessibility statement",
+    title: "Accessibility",
     snippet:
-      "How TMLGuide approaches WCAG 2.2 AA, what has been tested automatically, what has not yet been tested by hand, and how to use the display toolbar.",
+      "Display settings for text size, contrast and reduced motion, keyboard navigation, and what has been checked so far.",
     edition: "all",
     href: "/accessibility",
     source: "src/app/accessibility/page.tsx",

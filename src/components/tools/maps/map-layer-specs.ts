@@ -223,9 +223,10 @@ export function buildMapLayers(): LayerSpecification[] {
         Collision is handled by MapLibre rather than by a hand-tuned zoom floor.
         `text-allow-overlap: false` means a letter that would touch one already
         placed is dropped, so two letters can never print over each other at any
-        zoom. The nearest two zones on the site are 41 metres apart (the
-        DreamVille Gate and its lockers), so at a whole-venue zoom one of that
-        pair loses its letter and keeps its colour; zoom in and both return.
+        zoom. The nearest two zones on the site are Elixir and The Rave Cave,
+        about 23 metres apart on the bridge landing, so at a whole-venue zoom
+        one of that pair loses its letter and keeps its colour; zoom in and
+        both return.
 
         This layer comes *after* the place labels on purpose. MapLibre places
         symbols in layer order and a placed symbol reserves its box, so putting

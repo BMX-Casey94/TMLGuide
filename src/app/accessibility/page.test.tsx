@@ -4,18 +4,16 @@ import { cleanup, render, screen, within } from "@testing-library/react";
 import AccessibilityPage, { metadata } from "@/app/accessibility/page";
 import { CORRECTIONS_EMAIL } from "@/components/home/contact";
 import { expectResolvableLinks, expectSoundHeadingOrder } from "@/components/home/page-assertions";
-import {
-  expectDividerCount,
-  expectNoAdjacentRules,
-} from "@/components/guides/divider-guard";
+import { expectDividerCount, expectNoAdjacentRules } from "@/components/guides/divider-guard";
 
 /**
- * Page-level tests for the accessibility statement.
+ * Page-level tests for the accessibility page.
  *
- * The claims this suite guards are the honest ones: the page names a target without claiming
- * conformance, states what was tested automatically and what was not, does not invent a contact
- * address, and carries a review date. A statement that overclaims is worse than none, so each of
- * those is asserted rather than left to review.
+ * TMLGuide is an independent fan guide, not a public body, so this page is written for readers
+ * rather than as a compliance statement. The claims it guards are the useful ones: it describes the
+ * display settings the site actually ships, says the pages work from a keyboard and on a phone,
+ * admits the gaps that remain, and does not invent a contact address. It also must not slip back
+ * into the regulatory vocabulary the owner objected to.
  */
 
 function visibleText(container: HTMLElement): string {
@@ -34,11 +32,12 @@ describe("structure", () => {
     expectSoundHeadingOrder(container);
   });
 
-  it("names the page in its h1", () => {
+  it("names the page in its h1 without the language of a compliance statement", () => {
     render(<AccessibilityPage />);
-    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
-      /What works, what has been checked, and what has not/i,
-    );
+    const heading = screen.getByRole("heading", { level: 1 });
+
+    expect(heading).toHaveTextContent(/Making the guide easy to read and use/i);
+    expect(heading).not.toHaveTextContent(/statement/i);
   });
 
   it("links only to known routes and outbound links safely", () => {
@@ -46,105 +45,88 @@ describe("structure", () => {
     expectResolvableLinks(container);
   });
 
-  it("has a labelled section for each claim the brief asks for", () => {
+  it("has a labelled section for each part of the brief", () => {
     render(<AccessibilityPage />);
 
     for (const name of [
-      /^The target$/,
-      /^What has been tested automatically$/,
-      /^What has not yet been tested by hand$/,
-      /^Changing how the site looks$/,
-      /^What has been checked in the tools$/,
+      /^Change how the site looks$/,
+      /^Built for keyboards and small screens$/,
+      /^What we have checked$/,
       /^Known limitations$/,
-      /^Reporting a problem$/,
+      /^Telling us about a problem$/,
     ]) {
       expect(screen.getByRole("region", { name })).toBeInTheDocument();
     }
   });
 });
 
-describe("the target", () => {
-  it("names WCAG 2.2 AA as the target", () => {
+describe("the language", () => {
+  it("drops the standards and regulatory vocabulary a public-sector statement would carry", () => {
     const { container } = render(<AccessibilityPage />);
-    expect(visibleText(container)).toContain("WCAG 2.2 Level AA");
+    const text = visibleText(container);
+    const lower = text.toLowerCase();
+
+    expect(text).not.toMatch(/WCAG/i);
+    expect(lower).not.toMatch(/conformance|conformant|conforms/);
+    expect(lower).not.toMatch(/compliant|compliance/);
+    expect(lower).not.toMatch(/equality and human rights commission/);
+    expect(lower).not.toMatch(/enforcement|enforce/);
+    expect(lower).not.toMatch(/public sector/);
+    expect(lower).not.toMatch(/NHS/);
+    expect(lower).not.toMatch(/legal requirement|legal obligation/);
+    expect(lower).not.toMatch(/accessibility statement/);
+    expect(lower).not.toMatch(/level aa|level a\b/);
+    expect(lower).not.toMatch(/audit/);
   });
 
-  it("never claims conformance or compliance", () => {
+  it("says what the site is, so the reader knows who is putting the page up", () => {
+    const { container } = render(<AccessibilityPage />);
+    expect(visibleText(container)).toMatch(/independent fan guide/i);
+  });
+
+  it("never claims the site is fully accessible", () => {
     const { container } = render(<AccessibilityPage />);
     const text = visibleText(container).toLowerCase();
 
-    expect(text).not.toMatch(/\b(fully|wcag[\w\s.]*)\s*compliant\b/);
-    expect(text).not.toMatch(/\bconforms\b/);
-    expect(text).not.toMatch(/\bconformant\b/);
     expect(text).not.toMatch(/\bfully accessible\b/);
     expect(text).not.toMatch(/\b100% accessible\b/);
   });
 
-  it("says an automated pass is a floor rather than a certificate", () => {
+  it("keeps the honest caveat in its own callout", () => {
     const { container } = render(<AccessibilityPage />);
-    expect(visibleText(container)).toMatch(/floor, not a certificate/i);
+    const caveat = container.querySelector(".a11y-page-callout--caveat");
+
+    expect(caveat).not.toBeNull();
+    expect(caveat?.textContent).toMatch(/not proof that the site works with a screen reader/i);
   });
 });
 
-describe("what was tested", () => {
-  it("describes the axe-core scan of every route at desktop and phone viewports", () => {
-    const { container } = render(<AccessibilityPage />);
-    const text = visibleText(container);
-
-    expect(text).toContain("axe-core");
-    expect(text).toMatch(/every route/i);
-    expect(text).toMatch(/desktop viewport/i);
-    expect(text).toMatch(/phone\s+viewport/i);
-    expect(text).toMatch(/no violations/i);
-  });
-
-  it("lists only what axe can actually catch", () => {
-    const { container } = render(<AccessibilityPage />);
-    const text = visibleText(container);
-
-    expect(text).toMatch(/alternative text/i);
-    expect(text).toMatch(/form fields with no\s+label/i);
-    expect(text).toMatch(/heading levels that skip/i);
-    expect(text).toMatch(/contrast/i);
-  });
-});
-
-describe("what has not been tested", () => {
-  it("names screen readers, the keyboard audit, 200 percent zoom, contrast over imagery and touch targets", () => {
-    const { container } = render(<AccessibilityPage />);
-    const text = visibleText(container);
-
-    expect(text).toMatch(/NVDA/);
-    expect(text).toMatch(/JAWS/);
-    expect(text).toMatch(/VoiceOver/);
-    expect(text).toMatch(/keyboard/i);
-    expect(text).toMatch(/200 percent zoom/i);
-    expect(text).toMatch(/Contrast over imagery/i);
-    expect(text).toMatch(/Touch target sizes/i);
-  });
-
-  it("does not present the outstanding checks as done", () => {
-    const { container } = render(<AccessibilityPage />);
-    // The list sits under a heading that says these are outstanding, and each item says so.
-    const section = screen.getByRole("region", { name: /not yet been tested by hand/i });
-    expect(within(section).getByText(/outstanding/i)).toBeInTheDocument();
-    expect(visibleText(container)).toMatch(/has not been|have not|not been tested/i);
-  });
-});
-
-describe("using the toolbar", () => {
+describe("changing how the site looks", () => {
   it("explains how to open the panel and what each setting does", () => {
     const { container } = render(<AccessibilityPage />);
     const text = visibleText(container);
 
     expect(text).toContain("Accessibility settings");
     expect(text).toMatch(/Text size/i);
-    expect(text).toMatch(/Line and letter spacing/i);
-    expect(text).toMatch(/Contrast/i);
-    expect(text).toMatch(/Motion/i);
-    expect(text).toMatch(/Underline links/i);
+    expect(text).toMatch(/High contrast/i);
+    expect(text).toMatch(/Reduced motion/i);
     expect(text).toMatch(/Readable font/i);
+    expect(text).toMatch(/Underlined links/i);
+    expect(text).toMatch(/Line and letter spacing/i);
     expect(text).toMatch(/Reset to defaults/i);
+  });
+
+  it("describes the settings in the terms the panel itself uses", () => {
+    const { container } = render(<AccessibilityPage />);
+    const text = visibleText(container);
+
+    // The panel's motion control offers "Follow system"; the page says the same.
+    expect(text).toMatch(/Follow system/i);
+    // High contrast is described by what it does, not by a bare ratio.
+    expect(text).toMatch(/high contrast[^.]*stand out/i);
+    expect(text).not.toMatch(/\d(\.\d+)?:1/);
+    // Text sizes are the four the panel offers.
+    for (const size of ["100", "115", "130", "150"]) expect(text).toContain(size);
   });
 
   it("says Escape closes the panel and focus returns to the trigger", () => {
@@ -155,15 +137,14 @@ describe("using the toolbar", () => {
     expect(text).toMatch(/Focus returns to the button/i);
   });
 
-  it("places the button in the header from 900px, not in the phone's bottom bar", () => {
+  it("places the button in the header from 900 pixels, not in the phone's bottom bar", () => {
     const { container } = render(<AccessibilityPage />);
     const text = visibleText(container);
 
-    // The button lives in the header only, and appears from 900px wide.
-    expect(text).toMatch(/right-hand end of the site\s+header/i);
-    expect(text).toMatch(/900px/);
+    expect(text).toMatch(/top right of the\s+header/i);
+    expect(text).toMatch(/900 pixels/);
     // The dock is navigation only, and the page must not send a reader looking for a copy there.
-    expect(text).toMatch(/bottom bar on a phone carries navigation only/i);
+    expect(text).toMatch(/bar at the bottom of a phone carries navigation only/i);
     expect(text).not.toMatch(/last\s+cell of the bottom bar/i);
   });
 
@@ -183,18 +164,101 @@ describe("using the toolbar", () => {
   });
 });
 
-describe("known limitations", () => {
-  it("admits the site is dark only and lists further gaps", () => {
-    const { container } = render(<AccessibilityPage />);
-    const text = visibleText(container);
+describe("keyboards and small screens", () => {
+  it("says the pages work without a mouse, with a visible focus ring", () => {
+    render(<AccessibilityPage />);
+    const section = screen.getByRole("region", { name: /keyboards and small screens/i });
+    const text = visibleText(section as HTMLElement);
 
-    expect(text).toMatch(/dark only/i);
-    expect(text).toMatch(/no light theme/i);
-    expect(text).toMatch(/third-party/i);
+    expect(text).toMatch(/without a mouse/i);
+    expect(text).toMatch(/focus ring is drawn on every stop/i);
+    expect(text).toMatch(/Escape/i);
+  });
+
+  it("gives the phone width and the zoom level the layout was built against", () => {
+    render(<AccessibilityPage />);
+    const section = screen.getByRole("region", { name: /keyboards and small screens/i });
+    const text = visibleText(section as HTMLElement);
+
+    expect(text).toMatch(/320 pixels wide/i);
+    expect(text).toMatch(/200 percent browser zoom/i);
+    expect(text).toMatch(/44 by 44 pixels/i);
+    // Wide content scrolls inside its own box rather than the page scrolling sideways.
+    expect(text).toMatch(/scroll inside their own box/i);
   });
 });
 
-describe("reporting a problem", () => {
+describe("what we have checked", () => {
+  it("describes the automatic scan and what it can catch", () => {
+    const { container } = render(<AccessibilityPage />);
+    const text = visibleText(container);
+
+    expect(text).toMatch(/every page is scanned automatically/i);
+    expect(text).toMatch(/desktop width/i);
+    expect(text).toMatch(/phone\s+width/i);
+    expect(text).toMatch(/alternative text/i);
+    expect(text).toMatch(/no label/i);
+    expect(text).toMatch(/heading levels that skip/i);
+    expect(text).toMatch(/contrast/i);
+  });
+
+  it("says the scan cannot see everything", () => {
+    const { container } = render(<AccessibilityPage />);
+    expect(visibleText(container)).toMatch(/Automated checks cannot see everything/i);
+  });
+
+  it("names the tools that were walked with the keyboard and measured at a phone width", () => {
+    const { container } = render(<AccessibilityPage />);
+    const text = visibleText(container);
+
+    expect(text).toMatch(/sale timeline/i);
+    expect(text).toMatch(/calculators/i);
+    expect(text).toMatch(/packing list/i);
+    expect(text).toMatch(/venue map/i);
+    expect(text).toMatch(/only the keyboard/i);
+    expect(text).toMatch(/assistive technology/i);
+  });
+});
+
+describe("known limitations", () => {
+  it("says the maps and calculators need a current browser", () => {
+    render(<AccessibilityPage />);
+    const section = screen.getByRole("region", { name: /known limitations/i });
+    const text = visibleText(section as HTMLElement);
+
+    expect(text).toMatch(/Maps and calculators need a current browser/i);
+    expect(text).toMatch(/Chrome, Safari, Firefox or\s+Edge/i);
+    expect(text).toMatch(/in-app browsers/i);
+  });
+
+  it("admits no page has been read with a screen reader, and names the ones a reader might try", () => {
+    render(<AccessibilityPage />);
+    const section = screen.getByRole("region", { name: /known limitations/i });
+    const text = visibleText(section as HTMLElement);
+
+    expect(text).toMatch(/NVDA/);
+    expect(text).toMatch(/JAWS/);
+    expect(text).toMatch(/VoiceOver/);
+    expect(text).toMatch(/TalkBack/);
+    expect(text).toMatch(/not been tried by hand/i);
+    // And it never presents the checks as done.
+    expect(text).not.toMatch(/tested with (a |the )?screen reader/i);
+    expect(text).not.toMatch(/verified with (a |the )?screen reader/i);
+  });
+
+  it("admits the site is dark only and that third-party pages are outside its control", () => {
+    render(<AccessibilityPage />);
+    const section = screen.getByRole("region", { name: /known limitations/i });
+    const text = visibleText(section as HTMLElement);
+
+    expect(text).toMatch(/dark only/i);
+    expect(text).toMatch(/no light theme/i);
+    expect(text).toMatch(/forced-colours/i);
+    expect(text).toMatch(/outside our control/i);
+  });
+});
+
+describe("telling us about a problem", () => {
   it("says plainly that there is no published contact address, rather than inventing one", () => {
     const { container } = render(<AccessibilityPage />);
 
@@ -221,75 +285,25 @@ describe("reporting a problem", () => {
 });
 
 describe("the review date", () => {
-  it("states 26 November 2026, in a machine-readable time element", () => {
+  it("states 27 November 2026, in a machine-readable time element", () => {
     const { container } = render(<AccessibilityPage />);
 
     const time = container.querySelector("time");
-    expect(time).toHaveAttribute("datetime", "2026-11-26");
-    expect(time).toHaveTextContent("26 November 2026");
-    expect(visibleText(container)).toMatch(/Last reviewed\s+26 November 2026/);
-  });
-});
-
-describe("what was checked in the tools", () => {
-  it("reports the checks actually done, naming the method rather than claiming a screen reader", () => {
-    const { container } = render(<AccessibilityPage />);
-    const section = screen.getByRole("region", { name: /checked in the tools/i });
-    const text = visibleText(section as HTMLElement);
-
-    // The methods that were used are named.
-    expect(text).toMatch(/accessibility tree/i);
-    expect(text).toMatch(/keyboard/i);
-    expect(text).toMatch(/320/i);
-    expect(text).toMatch(/200 percent zoom/i);
-
-    // The section is not presented as a screen-reader pass.
-    expect(text).toMatch(/No screen reader was run/i);
-    expect(text).not.toMatch(/tested with (a |the )?screen reader/i);
-    expect(text).not.toMatch(/verified with (a |the )?screen reader/i);
-    // And the page's own text keeps to the same limit.
-    expect(visibleText(container)).not.toMatch(/tested with (a |the )?screen reader/i);
-  });
-
-  it("says the tools were measured for sideways scrolling rather than left unmentioned", () => {
-    render(<AccessibilityPage />);
-    const section = screen.getByRole("region", { name: /checked in the tools/i });
-    expect(visibleText(section as HTMLElement)).toMatch(/does not scroll\s+sideways|scrolls\s+sideways/i);
-  });
-
-  it("admits what the accessibility-tree check cannot show", () => {
-    render(<AccessibilityPage />);
-    const section = screen.getByRole("region", { name: /checked in the tools/i });
-    const text = visibleText(section as HTMLElement);
-    // The distinction between "has a name" and "is announced usefully" is the point.
-    expect(text).toMatch(/not the same thing|not by listening|unverified|not verified/i);
-  });
-
-  it("no longer lists the sale timeline and the calculators as untested here", () => {
-    render(<AccessibilityPage />);
-    const untested = screen.getByRole("region", { name: /not yet been tested by hand/i });
-    const text = visibleText(untested as HTMLElement);
-
-    // The screen-reader gap stays outstanding and is still stated.
-    expect(text).toMatch(/Screen reader testing/i);
-    expect(text).toMatch(/NVDA/);
-    // But the keyboard and zoom checks now say what was done.
-    expect(text).toMatch(/tools pages have been walked end to end with the keyboard alone/i);
-    expect(text).toMatch(/320 CSS pixels/i);
+    expect(time).toHaveAttribute("datetime", "2026-11-27");
+    expect(time).toHaveTextContent("27 November 2026");
+    expect(visibleText(container)).toMatch(/Last reviewed\s+27 November 2026/);
   });
 });
 
 /*
-  Presentation conventions this page has to hold, alongside the wording the sections
-  above guard. The owner asked for a redesign that matches /about and the guides, so
-  the checks are the ones those two pages carry: one break per boundary, one review
-  line at the close, and no stacked rules.
+  Presentation conventions this page has to hold, alongside the wording the sections above guard.
+  The page carries the same reading grammar as /about and the guides: one break per boundary, one
+  review line at the close, and no stacked rules.
 */
 describe("presentation conventions", () => {
   it("uses one GoldDivider per boundary that wants an ornament, and no more", () => {
     const { container } = render(<AccessibilityPage />);
-    // Three boundaries: after the target, after the untested list, and before the
-    // tools section, which is a new block of claims rather than more of the toolbar copy.
+    // Three boundaries: after the display settings, after the checks, and before the report.
     expectDividerCount(container, 3);
   });
 
@@ -311,21 +325,21 @@ describe("presentation conventions", () => {
     expect(main?.lastElementChild).toBe(reviewed);
   });
 
-  it("puts the no-conformance-claim statement in its own callout", () => {
-    const { container } = render(<AccessibilityPage />);
-    const caveat = container.querySelector(".a11y-page-callout--caveat");
-
-    expect(caveat).not.toBeNull();
-    expect(caveat?.textContent).toMatch(/does not claim conformance/i);
-    expect(caveat?.textContent).toMatch(/No conformance claim/);
-  });
-
   it("keeps every section on the page's own class, so none draws a rule of its own", () => {
     const { container } = render(<AccessibilityPage />);
     const sections = Array.from(container.querySelectorAll("main > section"));
 
-    expect(sections).toHaveLength(7);
+    expect(sections).toHaveLength(5);
     for (const section of sections) expect(section.className).toContain("a11y-page-section");
+    // Every section is named by its own heading rather than by a loose aria-label.
+    for (const section of sections) {
+      const labelledBy = section.getAttribute("aria-labelledby");
+      expect(labelledBy).toBeTruthy();
+      expect(within(section as HTMLElement).getByRole("heading", { level: 2 })).toHaveAttribute(
+        "id",
+        labelledBy,
+      );
+    }
   });
 });
 
@@ -342,7 +356,12 @@ describe("metadata", () => {
     expect(openGraph?.images).toBeUndefined();
   });
 
-  it("describes the page without claiming conformance in the description", () => {
-    expect(String(metadata.description).toLowerCase()).not.toMatch(/compliant|conforms/);
+  it("describes the page without the vocabulary of a compliance statement", () => {
+    const description = String(metadata.description);
+
+    expect(description.length).toBeGreaterThan(50);
+    expect(description.length).toBeLessThanOrEqual(320);
+    expect(description).not.toMatch(/WCAG|compliant|conforms|conformance/i);
+    expect(description).toMatch(/text size|contrast/i);
   });
 });

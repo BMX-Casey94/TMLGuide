@@ -19,6 +19,9 @@ import {
   isDevelopment,
   describeTurnstile,
   isTurnstileEnabled,
+  MAP_AERIAL_ORIGIN,
+  MAP_CONNECT_ORIGINS,
+  MAP_TERRAIN_ORIGIN,
   MAP_TILE_ORIGIN,
   NONCE_BYTE_LENGTH,
   normaliseConnectOrigin,
@@ -178,15 +181,18 @@ describe("buildCspHeader", () => {
     expect(parse(buildCspHeader(BASE)).get("img-src")).toEqual(["'self'", "data:", "blob:"]);
   });
 
-  it("restricts connect-src to 'self', the map tiles and explicit origins", () => {
-    expect(parse(buildCspHeader(BASE)).get("connect-src")).toEqual(["'self'", MAP_TILE_ORIGIN]);
+  it("restricts connect-src to 'self', the map hosts and explicit origins", () => {
+    expect(parse(buildCspHeader(BASE)).get("connect-src")).toEqual([
+      "'self'",
+      ...MAP_CONNECT_ORIGINS,
+    ]);
 
     const withEndpoint = parse(
       buildCspHeader({ ...BASE, connectSrc: ["https://analytics.example.com/collect"] }),
     );
     expect(withEndpoint.get("connect-src")).toEqual([
       "'self'",
-      MAP_TILE_ORIGIN,
+      ...MAP_CONNECT_ORIGINS,
       "https://analytics.example.com",
     ]);
   });
@@ -200,7 +206,7 @@ describe("buildCspHeader", () => {
     );
     expect(parsed.get("connect-src")).toEqual([
       "'self'",
-      MAP_TILE_ORIGIN,
+      ...MAP_CONNECT_ORIGINS,
       "https://ok.example.com",
     ]);
   });
@@ -258,9 +264,14 @@ describe("buildCspHeader", () => {
       expect(parsed.get("script-src") ?? []).not.toContain("blob:");
     });
 
-    it("adds no wildcard and no third-party origin beyond the tile host", () => {
+    it("adds no wildcard and no third-party origin beyond the map hosts", () => {
       const parsed = parse(buildCspHeader(BASE));
-      expect(parsed.get("connect-src")).toEqual(["'self'", MAP_TILE_ORIGIN]);
+      expect(parsed.get("connect-src")).toEqual(["'self'", ...MAP_CONNECT_ORIGINS]);
+      expect(MAP_CONNECT_ORIGINS).toEqual([
+        MAP_TILE_ORIGIN,
+        MAP_TERRAIN_ORIGIN,
+        MAP_AERIAL_ORIGIN,
+      ]);
       for (const [directive, sources] of parsed) {
         for (const source of sources) {
           if (directive === "default-src") continue;
@@ -271,10 +282,12 @@ describe("buildCspHeader", () => {
       expect(buildCspHeader(BASE)).not.toMatch(/connect-src[^;]*\*/);
     });
 
-    it("keeps the tile origin out of every directive that does not need it", () => {
+    it("keeps the map origins out of every directive that does not need them", () => {
       const parsed = parse(buildCspHeader(BASE));
-      for (const directive of ["script-src", "style-src", "font-src", "media-src", "frame-src"]) {
-        expect(parsed.get(directive) ?? [], directive).not.toContain(MAP_TILE_ORIGIN);
+      for (const directive of ["script-src", "style-src", "font-src", "media-src", "frame-src", "img-src"]) {
+        for (const origin of MAP_CONNECT_ORIGINS) {
+          expect(parsed.get(directive) ?? [], directive).not.toContain(origin);
+        }
       }
     });
   });

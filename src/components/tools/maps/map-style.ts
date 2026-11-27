@@ -1,6 +1,7 @@
 /**
- * The MapLibre style for the venue maps: OpenFreeMap vector tiles, painted in the
- * Dusk Programme's warm blacks rather than a stock dark theme.
+ * The MapLibre style for the venue maps: OpenFreeMap vector tiles over a real
+ * elevation surface, painted in the Dusk Programme's warm blacks rather than a
+ * stock dark theme.
  *
  * ## Why a hand-written style rather than `https://tiles.openfreemap.org/styles/dark`
  *
@@ -8,19 +9,25 @@
  * park it draws residential landuse, buildings, and a road hierarchy that has
  * nothing to do with the festival, and its neutral grey (#0c0c0c, rgb(32,32,32))
  * sits beside this site's warm black (#0d0b0a, #15110f) as a different colour
- * family. Two dozen layers here, tuned for one park at zoom 13–17, keep the
- * ground quiet so the gold route and the category markers are the only things
- * that read at a glance.
+ * family. The layers here, tuned for one park at zoom 13–17, keep the ground
+ * quiet so the gold route and the category markers are the only things that read
+ * at a glance.
  *
  * Everything below is data, not code: {@link buildMapStyle} returns a plain
  * `StyleSpecification` object, so the structure can be tested without WebGL.
  *
  * ## Sources
  *
- * One vector source, from OpenFreeMap's OpenMapTiles schema. The tile URL is the
- * un-dated `planet` template rather than the dated TileJSON document's URL,
- * because the dated path changes when OpenFreeMap rebuilds the planet and a
- * hard-coded copy of it would go stale. The glyph endpoint is the same host.
+ * One **vector** source from OpenFreeMap's OpenMapTiles schema, pointed at the
+ * TileJSON document rather than a tile template. The un-dated template answers
+ * `200` with a zero-byte body for every coordinate, which draws bare ground while
+ * every network check passes; see {@link MAP_TILEJSON_URL}.
+ *
+ * The elevation surface is *not* here. `map-ground.ts` adds the raster-DEM source,
+ * the hillshade and the terrain mesh after probing that the tile host is reachable,
+ * so a blocked or offline network leaves a clean flat vector map instead of a
+ * terrain mesh with no heights under it. Keeping that decision in one module also
+ * means the style can be built, and tested, with no network at all.
  *
  * No sprite sheet is used. Every symbol layer here draws text with a glyph font
  * or a circle layer, so there is no icon to fetch and no third-party image to
@@ -74,6 +81,7 @@ export const MAP_FONT = "Noto Sans Regular";
 /** Source id for the vector basemap. */
 export const BASE_SOURCE_ID = "openfreetiles";
 
+
 /**
  * Colour tokens, in one place.
  *
@@ -106,6 +114,8 @@ export const MAP_PALETTE = {
   labelHalo: "#0d0b0a",
   /** Route and marker gold, matching `--ea`. */
   gold: "#ffc83d",
+  /** Extruded building walls, a shade above the flat footprint fill. */
+  buildingWall: "#241d18",
 } as const;
 
 /**
@@ -144,6 +154,7 @@ export function buildMapStyle(): StyleSpecification {
       },
       {
         id: "landcover-wood",
+
         type: "fill",
         source: BASE_SOURCE_ID,
         "source-layer": "landcover",
@@ -204,6 +215,29 @@ export function buildMapStyle(): StyleSpecification {
         paint: {
           "fill-color": MAP_PALETTE.building,
           "fill-outline-color": MAP_PALETTE.buildingEdge,
+        },
+      },
+      {
+        /*
+          The walls. Heights come from OpenMapTiles' `render_height`, which is in
+          metres, with a fallback for the buildings that carry no height tag:
+          without one, every untagged shed would collapse to zero and vanish.
+
+          Drawn after the flat `building` fill above, which stays as the low-zoom
+          footprint. At pitch 0 the extrusion's top faces land exactly on that
+          fill, so 2D mode looks unchanged.
+        */
+        id: "building-3d",
+        type: "fill-extrusion",
+        source: BASE_SOURCE_ID,
+        "source-layer": "building",
+        minzoom: 14.5,
+        paint: {
+          "fill-extrusion-color": MAP_PALETTE.buildingWall,
+          "fill-extrusion-height": ["coalesce", ["get", "render_height"], 6],
+          "fill-extrusion-base": ["coalesce", ["get", "render_min_height"], 0],
+          "fill-extrusion-opacity": 0.92,
+          "fill-extrusion-vertical-gradient": true,
         },
       },
       {

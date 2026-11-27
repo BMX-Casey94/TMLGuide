@@ -6,6 +6,13 @@ afterEach(() => {
   cleanup();
 });
 
+function chooseStage(label: string, value: string): void {
+  fireEvent.click(screen.getByLabelText(label));
+  const option = screen.getAllByRole("option").find((item) => item.getAttribute("data-value") === value);
+  if (option === undefined) throw new Error(`No stage option ${value} for ${label}`);
+  fireEvent.click(option);
+}
+
 describe("WinterTimerTool", () => {
   it("renders the planning estimate notice, default transfer, and official links", () => {
     render(<WinterTimerTool />);
@@ -44,11 +51,8 @@ describe("WinterTimerTool", () => {
   it("updates route when changing stages and clicking swap", () => {
     render(<WinterTimerTool />);
 
-    const fromSelect = screen.getByLabelText("Starting stage or hub");
-    const toSelect = screen.getByLabelText("Target stage or hub");
-
-    fireEvent.change(fromSelect, { target: { value: "oz-3300" } });
-    fireEvent.change(toSelect, { target: { value: "cage-2027" } });
+    chooseStage("Starting stage or hub", "oz-3300");
+    chooseStage("Target stage or hub", "cage-2027");
 
     expect(
       screen.getByRole("heading", { name: "Oz 3300 (Base Village) to Cage" }),

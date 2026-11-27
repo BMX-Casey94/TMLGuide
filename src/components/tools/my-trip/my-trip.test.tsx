@@ -56,8 +56,24 @@ function field(label: RegExp): HTMLInputElement | HTMLTextAreaElement {
   return screen.getByLabelText(label) as HTMLInputElement | HTMLTextAreaElement;
 }
 
-function select(label: RegExp): HTMLSelectElement {
-  return screen.getByLabelText(label) as HTMLSelectElement;
+function menuValue(label: RegExp): string {
+  return screen.getByLabelText(label).getAttribute("data-value") ?? "";
+}
+
+/** Opens the menu, reads every option label, then closes it again. */
+function menuLabels(label: RegExp): string[] {
+  const trigger = screen.getByLabelText(label);
+  fireEvent.click(trigger);
+  const labels = screen.getAllByRole("option").map((option) => (option.textContent ?? "").trim());
+  fireEvent.click(trigger);
+  return labels;
+}
+
+function chooseMenu(label: RegExp, value: string): void {
+  fireEvent.click(screen.getByLabelText(label));
+  const option = screen.getAllByRole("option").find((item) => item.getAttribute("data-value") === value);
+  if (option === undefined) throw new Error(`No menu option with value ${value}`);
+  fireEvent.click(option);
 }
 
 /** Writes a sheet into storage before the component mounts. */
@@ -103,7 +119,7 @@ describe("first visit", () => {
     renderSheet();
     expect(screen.getByRole("heading", { level: 2, name: "Your trip" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Belgium/ })).toHaveAttribute("aria-pressed", "true");
-    expect(select(/The ticket you hold/).value).toBe("");
+    expect(menuValue(/The ticket you hold/)).toBe("");
     expect(field(/How many of you are going/)).toHaveValue(1);
   });
 
@@ -153,7 +169,7 @@ describe("first visit", () => {
 describe("choosing a ticket", () => {
   it("lists the edition's verified products by name only", () => {
     renderSheet();
-    const options = Array.from(select(/The ticket you hold/).options).map((option) => option.text);
+    const options = menuLabels(/The ticket you hold/);
     // The first option is the empty one.
     expect(options[0]).toMatch(/No ticket chosen yet/);
     expect(options).toHaveLength(data.belgium.tickets.length + 1);
@@ -168,7 +184,7 @@ describe("choosing a ticket", () => {
     renderSheet();
     const first = data.belgium.tickets[0];
     if (first === undefined) throw new Error("the Belgium data has no ticket");
-    fireEvent.change(select(/The ticket you hold/), { target: { value: first.id } });
+    chooseMenu(/The ticket you hold/, first.id);
 
     expect(screen.getByText("€144.00")).toBeInTheDocument();
     expect(screen.getByText("2027 price")).toBeInTheDocument();
@@ -183,7 +199,7 @@ describe("choosing a ticket", () => {
     fireEvent.click(screen.getByRole("button", { name: /Brasil/ }));
     const brasil = data.brasil.tickets[0];
     if (brasil === undefined) throw new Error("the Brasil data has no ticket");
-    fireEvent.change(select(/The ticket you hold/), { target: { value: brasil.id } });
+    chooseMenu(/The ticket you hold/, brasil.id);
 
     const detail = screen.getByText(brasil.detail);
     expect(detail).toBeInTheDocument();
@@ -196,7 +212,7 @@ describe("choosing a ticket", () => {
     fireEvent.click(screen.getByRole("button", { name: /Brasil/ }));
     const soldOut = data.brasil.tickets.find((ticket) => ticket.soldOut);
     if (soldOut === undefined) throw new Error("no Brasil ticket is marked sold out");
-    fireEvent.change(select(/The ticket you hold/), { target: { value: soldOut.id } });
+    chooseMenu(/The ticket you hold/, soldOut.id);
     expect(screen.getAllByText("Sold out").length).toBeGreaterThan(0);
   });
 });
@@ -204,13 +220,11 @@ describe("choosing a ticket", () => {
 describe("choosing a package", () => {
   it("offers Belgium DreamVille packages at their published totals", () => {
     renderSheet();
-    const options = Array.from(select(/A published accommodation package/).options).map(
-      (option) => option.text,
-    );
+    const options = menuLabels(/A published accommodation package/);
     expect(options).toHaveLength(data.belgium.packages.length + 1);
     const first = data.belgium.packages[0];
     if (first === undefined) throw new Error("the Belgium data has no package");
-    fireEvent.change(select(/A published accommodation package/), { target: { value: first.id } });
+    chooseMenu(/A published accommodation package/, first.id);
     expect(screen.getByText(first.detail)).toBeInTheDocument();
     expect(screen.getByText(/1 person/)).toBeInTheDocument();
   });
@@ -218,7 +232,7 @@ describe("choosing a package", () => {
   it("says why Winter offers no package instead of showing an empty list", () => {
     renderSheet();
     fireEvent.click(screen.getByRole("button", { name: /Winter/ }));
-    expect(select(/A published accommodation package/).options).toHaveLength(1);
+    expect(menuLabels(/A published accommodation package/)).toHaveLength(1);
     expect(screen.getByText(data.winter.packagesNote)).toBeInTheDocument();
   });
 });
@@ -256,7 +270,7 @@ describe("autosave", () => {
     });
     expect(field(/How many of you are going/)).toHaveValue(3);
     expect(field(/How you are travelling/)).toHaveValue("Train from London");
-    expect(select(/The ticket you hold/).value).toBe("belgium-2027-full-madness-presale");
+    expect(menuValue(/The ticket you hold/)).toBe("belgium-2027-full-madness-presale");
     expect(screen.getByRole("radio", { name: /Weekend 1/ })).toBeChecked();
     expect(screen.getByText("The trip saved in this browser is open below.")).toBeInTheDocument();
   });
@@ -363,7 +377,7 @@ describe("switching edition", () => {
 
     expect(field(/Anything else/)).toHaveValue("Our trip");
     expect(field(/How many of you are going/)).toHaveValue(5);
-    expect(select(/The ticket you hold/).value).toBe("");
+    expect(menuValue(/The ticket you hold/)).toBe("");
     expect(screen.getByText(/clears the weekend, ticket and package/i)).toBeInTheDocument();
     // The Winter week is the only dated Winter option.
     expect(screen.getByRole("radio", { name: /Winter 2027/ })).toBeInTheDocument();
@@ -435,7 +449,7 @@ describe("import", () => {
       expect(field(/Anything else/)).toHaveValue("Imported notes");
     });
     expect(screen.getByRole("button", { name: /Brasil/ })).toHaveAttribute("aria-pressed", "true");
-    expect(select(/The ticket you hold/).value).toBe("full-madness");
+    expect(menuValue(/The ticket you hold/)).toBe("full-madness");
     expect(screen.getByText(/Trip imported/i)).toBeInTheDocument();
   });
 

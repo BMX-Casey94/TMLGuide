@@ -45,7 +45,7 @@ vi.mock("@/lib/security/csp-hashes", () => ({
 }));
 
 import { proxy, config } from "./proxy";
-import { CSP_HEADER, MAP_TILE_ORIGIN, NONCE_HEADER } from "@/lib/security/csp";
+import { CSP_HEADER, MAP_CONNECT_ORIGINS, MAP_TILE_ORIGIN, NONCE_HEADER } from "@/lib/security/csp";
 
 /** A request-shaped object with the members the proxy reads. */
 function makeRequest(
@@ -290,9 +290,12 @@ describe("Cloudflare Turnstile", () => {
     );
     expect(directives.get("frame-src")).toEqual(["https://challenges.cloudflare.com"]);
     expect(directives.get("script-src")).toContain("https://challenges.cloudflare.com");
-    // The exemption must not relax anything else. `connect-src` carries only the
-    // map tile host, which the venue map needs whether or not Turnstile is on.
-    expect(directives.get("connect-src")).toEqual(["'self'", MAP_TILE_ORIGIN]);
+    /*
+      The exemption must not relax anything else. `connect-src` carries exactly the
+      map hosts the venue map needs — vector tiles, elevation tiles and the
+      orthophoto — whether or not Turnstile is on, and nothing besides.
+    */
+    expect(directives.get("connect-src")).toEqual(["'self'", ...MAP_CONNECT_ORIGINS]);
     expect(directives.get("default-src")).toEqual(["'self'"]);
     expect(directives.get("script-src")).not.toContain("'unsafe-inline'");
   });

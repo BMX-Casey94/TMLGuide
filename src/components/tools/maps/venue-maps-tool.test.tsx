@@ -2,6 +2,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 
 import { VenueMapsTool } from "./venue-maps-tool";
+
+/** Opens a zone listbox and chooses the row with this visible name. */
+function chooseZone(label: string, zoneName: string): void {
+  fireEvent.click(screen.getByLabelText(label));
+  fireEvent.click(screen.getByRole("option", { name: zoneName }));
+}
 import { FAVOURITES_STORAGE_KEY } from "./map-favourites";
 import { GEO_DATA_DISCLAIMER } from "@/lib/maps/geo-data";
 
@@ -85,9 +91,7 @@ describe("disclaimer and venue switcher", () => {
   it("restores each venue's own selection when switching back", () => {
     render(<VenueMapsTool />);
 
-    fireEvent.change(screen.getByLabelText("Starting zone (A)"), {
-      target: { value: "ds-core" },
-    });
+    chooseZone("Starting zone (A)", "Core");
     fireEvent.click(screen.getByRole("button", { name: "DreamVille (Camping & Accommodation)" }));
     fireEvent.click(screen.getByRole("button", { name: "De Schorre (Festival Grounds)" }));
 
@@ -127,17 +131,18 @@ describe("the venue switcher", () => {
     render(<VenueMapsTool />);
     fireEvent.click(screen.getByRole("button", { name: "Full site: De Schorre + DreamVille" }));
 
-    const from = screen.getByLabelText("Starting zone (A)") as HTMLSelectElement;
-    const groups = [...from.querySelectorAll("optgroup")].map((group) => group.getAttribute("label"));
+    fireEvent.click(screen.getByLabelText("Starting zone (A)"));
+    const listbox = screen.getByRole("listbox", { name: "Starting zone (A)" });
+    const groups = [...listbox.querySelectorAll("[role='group']")].map((group) =>
+      group.getAttribute("aria-label"),
+    );
     expect(groups).toEqual(["De Schorre (festival grounds)", "DreamVille (campsite)"]);
   });
 
   it("keeps each view's own route selection when switching between them", () => {
     render(<VenueMapsTool />);
 
-    fireEvent.change(screen.getByLabelText("Starting zone (A)"), {
-      target: { value: "ds-core" },
-    });
+    chooseZone("Starting zone (A)", "Core");
     expect(screen.getByRole("heading", { name: "Core to Mainstage" })).toBeTruthy();
 
     fireEvent.click(screen.getByRole("button", { name: "Full site: De Schorre + DreamVille" }));
@@ -166,27 +171,24 @@ describe("the venue switcher", () => {
   it("lists zones from both venues on the combined view, and neither on its own", () => {
     render(<VenueMapsTool />);
 
-    const deSchorreOptions = [...(screen.getByLabelText("Starting zone (A)") as HTMLSelectElement).options];
-    expect(deSchorreOptions.some((option) => option.value === "ds-mainstage")).toBe(true);
-    expect(deSchorreOptions.some((option) => option.value === "dv-montagoe")).toBe(false);
+    fireEvent.click(screen.getByLabelText("Starting zone (A)"));
+    expect(screen.getByRole("option", { name: "Mainstage" })).toBeTruthy();
+    expect(screen.queryByRole("option", { name: "Montagoe" })).toBeNull();
+    fireEvent.keyDown(document, { key: "Escape" });
 
     fireEvent.click(screen.getByRole("button", { name: "Full site: De Schorre + DreamVille" }));
 
-    const allOptions = [...(screen.getByLabelText("Starting zone (A)") as HTMLSelectElement).options];
-    expect(allOptions.some((option) => option.value === "ds-mainstage")).toBe(true);
-    expect(allOptions.some((option) => option.value === "dv-montagoe")).toBe(true);
+    fireEvent.click(screen.getByLabelText("Starting zone (A)"));
+    expect(screen.getByRole("option", { name: "Mainstage" })).toBeTruthy();
+    expect(screen.getByRole("option", { name: "Montagoe" })).toBeTruthy();
   });
 
   it("routes from any camp to any stage on the combined view", () => {
     render(<VenueMapsTool />);
     fireEvent.click(screen.getByRole("button", { name: "Full site: De Schorre + DreamVille" }));
 
-    fireEvent.change(screen.getByLabelText("Starting zone (A)"), {
-      target: { value: "dv-magnificent-greens" },
-    });
-    fireEvent.change(screen.getByLabelText("Destination zone (B)"), {
-      target: { value: "ds-freedom" },
-    });
+    chooseZone("Starting zone (A)", "Magnificent Greens");
+    chooseZone("Destination zone (B)", "Freedom");
 
     const section = screen
       .getByRole("heading", { name: "Magnificent Greens to Freedom" })
@@ -208,15 +210,11 @@ describe("a view opened with an endpoint from the other venue", () => {
     */
     render(<VenueMapsTool initialVenueId="all" />);
 
-    fireEvent.change(screen.getByLabelText("Starting zone (A)"), {
-      target: { value: "dv-friendship-garden" },
-    });
-    fireEvent.change(screen.getByLabelText("Destination zone (B)"), {
-      target: { value: "ds-rose-garden" },
-    });
+    chooseZone("Starting zone (A)", "Friendship Garden");
+    chooseZone("Destination zone (B)", "The Rose Garden");
 
     const section = screen
-      .getByRole("heading", { name: "Friendship Garden to Rose Garden" })
+      .getByRole("heading", { name: "Friendship Garden to The Rose Garden" })
       .closest("section") as HTMLElement;
     expect(section.textContent).toMatch(/\d+\.?\d* miles?/);
     expect(section.textContent).toMatch(/DreamVille Gate and Festival Walkway/);
@@ -515,8 +513,24 @@ describe("the locate button", () => {
   });
 });
 
-describe("the legend", () => {
-  it("gives each category a letter as well as a colour", () => {
+describe("the 2D and 3D view toggle", () => {
+  /*
+    jsdom has no WebGL, so the whole map stage falls back to its explanatory panel
+    here. The camera toggle is deliberately part of the canvas rather than of the
+    page: with no map to tilt it is a control that could never do anything, and a
+    dead control is clutter. Its behaviour is covered by `map-ground.test.ts`,
+    which drives `applyViewMode` against a fake map; these tests cover its absence
+    in the fallback, which is the case this environment can actually reach.
+  */
+  it("is absent where the map cannot run, so no dead control is offered", () => {
+    render(<VenueMapsTool />);
+
+    expect(screen.getByText("The map cannot run in this browser")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /3D View|2D View/ })).toBeNull();
+  });
+});
+
+describe("the legend", () => {  it("gives each category a letter as well as a colour", () => {
     render(<VenueMapsTool />);
 
     const legend = screen.getByRole("list", { name: "Map legend" });
@@ -577,12 +591,8 @@ describe("route planner", () => {
       .closest("section") as HTMLElement;
     expect(section.querySelector(".tml-map-readout")?.getAttribute("aria-live")).toBe("polite");
 
-    fireEvent.change(screen.getByLabelText("Starting zone (A)"), {
-      target: { value: "ds-freedom" },
-    });
-    fireEvent.change(screen.getByLabelText("Destination zone (B)"), {
-      target: { value: "ds-core" },
-    });
+    chooseZone("Starting zone (A)", "Freedom");
+    chooseZone("Destination zone (B)", "Core");
 
     expect(screen.getByRole("heading", { name: "Freedom to Core" })).toBeTruthy();
   });
@@ -601,9 +611,7 @@ describe("route planner", () => {
   it("says so when both ends are the same zone", () => {
     render(<VenueMapsTool />);
 
-    fireEvent.change(screen.getByLabelText("Destination zone (B)"), {
-      target: { value: "ds-main-entrance" },
-    });
+    chooseZone("Destination zone (B)", "Main Entrance");
 
     expect(screen.getByText(/Both ends are the same zone/i)).toBeTruthy();
   });
@@ -611,12 +619,8 @@ describe("route planner", () => {
   it("lists the bottleneck notes for the legs actually walked", () => {
     render(<VenueMapsTool />);
 
-    fireEvent.change(screen.getByLabelText("Starting zone (A)"), {
-      target: { value: "ds-mainstage" },
-    });
-    fireEvent.change(screen.getByLabelText("Destination zone (B)"), {
-      target: { value: "ds-dreamville-gate" },
-    });
+    chooseZone("Starting zone (A)", "Mainstage");
+    chooseZone("Destination zone (B)", "DreamVille Gate");
 
     const notes = screen.getByText("Bottlenecks on this walk").closest("div") as HTMLElement;
     expect(within(notes).getAllByRole("listitem").length).toBeGreaterThan(0);
@@ -801,7 +805,7 @@ describe("the accessible zone list", () => {
     fireEvent.click(screen.getByRole("button", { name: /^Core, set as the starting zone A/ }));
     fireEvent.click(screen.getByRole("button", { name: /^Rose Garden, set as the destination B/ }));
 
-    expect(screen.getByRole("heading", { name: "Core to Rose Garden" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Core to The Rose Garden" })).toBeTruthy();
   });
 
   it("prints the A and B badges and puts them in the accessible name", () => {
@@ -930,11 +934,31 @@ describe("accessibility wiring", () => {
     }
   });
 
-  it("labels both route selects, so neither is an unlabelled combobox", () => {
+  it("labels both route listboxes", () => {
     render(<VenueMapsTool />);
 
     expect(screen.getByLabelText("Starting zone (A)")).toBeTruthy();
     expect(screen.getByLabelText("Destination zone (B)")).toBeTruthy();
     expect(screen.getByLabelText("Search zones")).toBeTruthy();
+  });
+
+  it("closes a zone listbox on Escape and on an outside press, and marks the chosen row", () => {
+    render(<VenueMapsTool />);
+
+    const button = screen.getByLabelText("Starting zone (A)");
+    expect(button.className).toContain("tml-map-listbox__button");
+
+    fireEvent.click(button);
+    const selected = screen.getByRole("option", { name: "Main Entrance" });
+    expect(selected.getAttribute("aria-selected")).toBe("true");
+    expect(selected.className).toContain("tml-map-listbox__option");
+
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(screen.queryByRole("listbox")).toBeNull();
+
+    fireEvent.click(screen.getByLabelText("Starting zone (A)"));
+    expect(screen.getByRole("listbox")).toBeTruthy();
+    fireEvent.pointerDown(document.body);
+    expect(screen.queryByRole("listbox")).toBeNull();
   });
 });

@@ -85,6 +85,29 @@ export const TURNSTILE_ORIGIN = "https://challenges.cloudflare.com";
  */
 export const MAP_TILE_ORIGIN = "https://tiles.openfreemap.org";
 
+/**
+ * Keyless terrarium elevation tiles for the venue map's terrain and hillshade.
+ *
+ * The bucket is named in full rather than using the `s3.amazonaws.com` root, so
+ * `connect-src` does not open every object on S3. MapLibre's tile worker reads the
+ * pixels, so the host must answer with CORS; it does, with
+ * `access-control-allow-origin: *`, checked on 27 November 2026 against a Boom
+ * tile at z15.
+ */
+export const MAP_TERRAIN_ORIGIN = "https://elevation-tiles-prod.s3.amazonaws.com";
+
+/**
+ * Digitaal Vlaanderen's winter orthophoto WMTS, used under the map labels.
+ *
+ * No token. The dataset is published under the Modellicentie voor gratis
+ * hergebruik v1.0, which permits publication on a public website when the
+ * stated source line is shown. Only this host is admitted.
+ */
+export const MAP_AERIAL_ORIGIN = "https://geo.api.vlaanderen.be";
+
+/** The map hosts `connect-src` always allows, in header order. */
+export const MAP_CONNECT_ORIGINS = [MAP_TILE_ORIGIN, MAP_TERRAIN_ORIGIN, MAP_AERIAL_ORIGIN] as const;
+
 export interface CspOptions {
   /** Base64 nonce, as produced by `generateNonce`. */
   readonly nonce: string;
@@ -292,8 +315,10 @@ export function normaliseReportUrl(value: string): string | null {
  *   placeholders, the 3D icons use inline SVG data URLs, and MapLibre's canvas
  *   produces `blob:` images for its own markers.
  * - `connect-src` admits the configured analytics endpoint, so the consent-gated
- *   scaffold keeps working without a second policy edit, and
- *   {@link MAP_TILE_ORIGIN} for the venue map's tiles, glyphs and TileJSON.
+ *   scaffold keeps working without a second policy edit, {@link MAP_TILE_ORIGIN}
+ *   for the venue map's vector tiles, glyphs and TileJSON, and
+ *   {@link MAP_TERRAIN_ORIGIN} for its elevation tiles. The DEM host is the S3
+ *   bucket root because a source expression carries no path; see that constant.
  * - `worker-src` and `child-src` admit `blob:` because MapLibre GL JS builds its
  *   tile worker from a blob URL. `script-src` deliberately does not, so a blob
  *   can be executed only as a worker and never as a page script.
@@ -349,13 +374,13 @@ export function buildCspHeader({
     "img-src 'self' data: blob:",
     "font-src 'self'",
     /*
-      MapLibre fetches the TileJSON document and the glyph ranges with `fetch`,
-      and its worker fetches the tiles. All three come from {@link MAP_TILE_ORIGIN}.
-      The origin is added unconditionally rather than behind a flag: the venue map
-      is part of the guide, not an optional integration, and an origin in
-      `connect-src` grants nothing beyond reading that public tile set.
+      MapLibre fetches the TileJSON document, the glyph ranges, the elevation
+      tiles and the orthophoto with `fetch`, including from its worker. Those
+      hosts are {@link MAP_CONNECT_ORIGINS}. They are added unconditionally
+      rather than behind a flag: the venue map is part of the guide, and an
+      origin in `connect-src` grants nothing beyond reading that public set.
     */
-    `connect-src ${["'self'", MAP_TILE_ORIGIN, ...connectOrigins].join(" ")}`,
+    `connect-src ${["'self'", ...MAP_CONNECT_ORIGINS, ...connectOrigins].join(" ")}`,
     `media-src 'self' ${ONE_WORLD_RADIO_STREAM_ORIGIN}`,
     "manifest-src 'self'",
     /*

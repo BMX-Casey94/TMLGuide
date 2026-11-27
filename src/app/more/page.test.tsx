@@ -59,7 +59,7 @@ describe("more page", () => {
       "Ask the guide",
       "One World Radio",
       "About this guide",
-      "Accessibility statement",
+      "Accessibility",
     ]) {
       const heading = screen.getByRole("heading", { level: 3, name: title });
       const card = heading.closest("a");

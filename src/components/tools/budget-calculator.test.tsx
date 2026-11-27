@@ -23,9 +23,22 @@ function renderCalculator(paymentTerms?: PaymentTermsFact) {
   );
 }
 
-/** The ticket select, which is the only combobox in the form. */
-function ticketSelect(): HTMLSelectElement {
-  return screen.getByLabelText(/^Ticket$/i) as HTMLSelectElement;
+/** The ticket menu. The current choice is the trigger's `data-value`. */
+function ticketSelect(): HTMLElement {
+  return screen.getByLabelText(/^Ticket$/i);
+}
+
+function ticketValue(): string {
+  return ticketSelect().getAttribute("data-value") ?? "";
+}
+
+function chooseTicket(value: string): void {
+  fireEvent.click(ticketSelect());
+  const option = screen
+    .getAllByRole("option")
+    .find((item) => item.getAttribute("data-value") === value);
+  if (option === undefined) throw new Error(`No ticket option with value ${value}`);
+  fireEvent.click(option);
 }
 
 function field(label: RegExp): HTMLInputElement {
@@ -73,14 +86,14 @@ describe("BudgetCalculator", () => {
   it("starts on a published ticket price for Belgium in euros", async () => {
     renderCalculator();
 
-    await waitFor(() => expect(ticketSelect().value).toBe("belgium-2027-day-pass-presale"));
+    await waitFor(() => expect(ticketValue()).toBe("belgium-2027-day-pass-presale"));
     // The first Belgium product is the €144 day pass, priced for one person.
     await waitFor(() => expect(total()).toBe("€144.00"));
   });
 
   it("multiplies the ticket by the number of people", async () => {
     renderCalculator();
-    await waitFor(() => expect(ticketSelect().value).not.toBe(""));
+    await waitFor(() => expect(ticketValue()).not.toBe(""));
 
     fireEvent.change(field(/Number of people/i), { target: { value: "3" } });
     await waitFor(() => expect(total()).toBe("€432.00"));
@@ -88,7 +101,7 @@ describe("BudgetCalculator", () => {
 
   it("adds per-person amounts and totals them with the ticket", async () => {
     renderCalculator();
-    await waitFor(() => expect(ticketSelect().value).not.toBe(""));
+    await waitFor(() => expect(ticketValue()).not.toBe(""));
 
     fireEvent.change(field(/^Travel$/i), { target: { value: "50" } });
     fireEvent.change(field(/^Food and drink$/i), { target: { value: "20.50" } });
@@ -99,9 +112,9 @@ describe("BudgetCalculator", () => {
 
   it("accepts a custom ticket price", async () => {
     renderCalculator();
-    await waitFor(() => expect(ticketSelect().value).not.toBe(""));
+    await waitFor(() => expect(ticketValue()).not.toBe(""));
 
-    fireEvent.change(ticketSelect(), { target: { value: "custom" } });
+    chooseTicket("custom");
     const customField = await screen.findByLabelText(/Your ticket price, per person/i);
     fireEvent.change(customField, { target: { value: "250" } });
 
@@ -110,7 +123,7 @@ describe("BudgetCalculator", () => {
 
   it("shows an error for a negative amount and does not use it", async () => {
     renderCalculator();
-    await waitFor(() => expect(ticketSelect().value).not.toBe(""));
+    await waitFor(() => expect(ticketValue()).not.toBe(""));
 
     const travel = field(/^Travel$/i);
     fireEvent.change(travel, { target: { value: "-50" } });
@@ -123,7 +136,7 @@ describe("BudgetCalculator", () => {
 
   it("refuses a group size outside the allowed range and restores a valid figure on blur", async () => {
     renderCalculator();
-    await waitFor(() => expect(ticketSelect().value).not.toBe(""));
+    await waitFor(() => expect(ticketValue()).not.toBe(""));
 
     const people = field(/Number of people/i);
     fireEvent.change(people, { target: { value: "0" } });
@@ -138,11 +151,11 @@ describe("BudgetCalculator", () => {
 
   it("switches currency with the edition and never converts", async () => {
     renderCalculator();
-    await waitFor(() => expect(ticketSelect().value).not.toBe(""));
+    await waitFor(() => expect(ticketValue()).not.toBe(""));
 
     fireEvent.click(screen.getByRole("button", { name: "Brasil" }));
 
-    await waitFor(() => expect(ticketSelect().value).toBe("full-madness"));
+    await waitFor(() => expect(ticketValue()).toBe("full-madness"));
     // The Brasil Full Madness pass is R$3,160, shown in reais.
     await waitFor(() => expect(total()).toBe("R$3,160.00"));
     expect(screen.queryByText(/^€/)).not.toBeInTheDocument();
@@ -150,7 +163,7 @@ describe("BudgetCalculator", () => {
 
   it("resets every field", async () => {
     renderCalculator();
-    await waitFor(() => expect(ticketSelect().value).not.toBe(""));
+    await waitFor(() => expect(ticketValue()).not.toBe(""));
 
     fireEvent.change(field(/^Travel$/i), { target: { value: "50" } });
     fireEvent.change(field(/Number of people/i), { target: { value: "2" } });
@@ -166,7 +179,7 @@ describe("BudgetCalculator", () => {
   it("persists the plan and restores it on a fresh mount", async () => {
     const storage = installStorage();
     const { unmount } = renderCalculator();
-    await waitFor(() => expect(ticketSelect().value).not.toBe(""));
+    await waitFor(() => expect(ticketValue()).not.toBe(""));
 
     fireEvent.change(field(/^Travel$/i), { target: { value: "75" } });
     fireEvent.change(field(/Number of people/i), { target: { value: "2" } });
@@ -219,7 +232,7 @@ describe("BudgetCalculator", () => {
 
   it("builds a shareable link containing the plan", async () => {
     renderCalculator();
-    await waitFor(() => expect(ticketSelect().value).not.toBe(""));
+    await waitFor(() => expect(ticketValue()).not.toBe(""));
 
     fireEvent.change(field(/^Travel$/i), { target: { value: "30" } });
     fireEvent.click(screen.getByRole("button", { name: /Share this plan/i }));
@@ -233,7 +246,7 @@ describe("BudgetCalculator", () => {
 
   it("renders the category chart and its text table with matching figures", async () => {
     renderCalculator();
-    await waitFor(() => expect(ticketSelect().value).not.toBe(""));
+    await waitFor(() => expect(ticketValue()).not.toBe(""));
 
     fireEvent.change(field(/^Travel$/i), { target: { value: "100" } });
 
@@ -255,7 +268,7 @@ describe("BudgetCalculator", () => {
       reached by keyboard at all.
     */
     renderCalculator();
-    await waitFor(() => expect(ticketSelect().value).not.toBe(""));
+    await waitFor(() => expect(ticketValue()).not.toBe(""));
 
     const regions = document.querySelectorAll(".tool-table-wrap");
     expect(regions.length).toBeGreaterThan(0);
@@ -272,7 +285,7 @@ describe("BudgetCalculator", () => {
       reader typing "120" hears one sentence rather than three.
     */
     renderCalculator();
-    await waitFor(() => expect(ticketSelect().value).not.toBe(""));
+    await waitFor(() => expect(ticketValue()).not.toBe(""));
 
     const announcer = document.querySelector(".tool-announcer");
     expect(announcer).not.toBeNull();
@@ -292,7 +305,7 @@ describe("BudgetCalculator", () => {
 
   it("shows the part-payment hint for Winter only", async () => {
     renderCalculator(winterFact);
-    await waitFor(() => expect(ticketSelect().value).not.toBe(""));
+    await waitFor(() => expect(ticketValue()).not.toBe(""));
 
     // Belgium holds the fact but must not show it.
     expect(screen.queryByText(/Pay in two parts/i)).not.toBeInTheDocument();
@@ -306,17 +319,17 @@ describe("BudgetCalculator", () => {
 
   it("does not show a part-payment hint when the page supplies no fact", async () => {
     renderCalculator();
-    await waitFor(() => expect(ticketSelect().value).not.toBe(""));
+    await waitFor(() => expect(ticketValue()).not.toBe(""));
 
     fireEvent.click(screen.getByRole("button", { name: "Winter" }));
 
-    await waitFor(() => expect(ticketSelect().value).toBe("seven-day-festival-ticket-2027"));
+    await waitFor(() => expect(ticketValue()).toBe("seven-day-festival-ticket-2027"));
     expect(screen.queryByText(/Pay in two parts/i)).not.toBeInTheDocument();
   });
 
   it("labels every control for assistive technology", async () => {
     renderCalculator();
-    await waitFor(() => expect(ticketSelect().value).not.toBe(""));
+    await waitFor(() => expect(ticketValue()).not.toBe(""));
 
     for (const label of [
       /^Ticket$/i,
@@ -341,7 +354,7 @@ describe("BudgetCalculator", () => {
     vi.stubGlobal("print", print);
 
     renderCalculator();
-    await waitFor(() => expect(ticketSelect().value).not.toBe(""));
+    await waitFor(() => expect(ticketValue()).not.toBe(""));
 
     fireEvent.click(screen.getByRole("button", { name: /^Print$/i }));
     expect(print).toHaveBeenCalledTimes(1);
@@ -355,7 +368,7 @@ describe("BudgetCalculator", () => {
     });
 
     renderCalculator();
-    await waitFor(() => expect(ticketSelect().value).not.toBe(""));
+    await waitFor(() => expect(ticketValue()).not.toBe(""));
 
     fireEvent.click(screen.getByRole("button", { name: /Copy summary/i }));
 
@@ -374,7 +387,7 @@ describe("BudgetCalculator", () => {
     });
 
     renderCalculator();
-    await waitFor(() => expect(ticketSelect().value).not.toBe(""));
+    await waitFor(() => expect(ticketValue()).not.toBe(""));
 
     fireEvent.click(screen.getByRole("button", { name: /Copy summary/i }));
 

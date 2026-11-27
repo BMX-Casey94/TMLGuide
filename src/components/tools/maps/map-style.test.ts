@@ -124,8 +124,41 @@ describe("buildMapStyle", () => {
     expect(at("background")).toBeLessThan(at("landcover-wood"));
     expect(at("landcover-wood")).toBeLessThan(at("water"));
     expect(at("water")).toBeLessThan(at("building"));
-    expect(at("building")).toBeLessThan(at("road-casing"));
+    expect(at("building")).toBeLessThan(at("building-3d"));
+    expect(at("building-3d")).toBeLessThan(at("road-casing"));
     expect(at("place-label")).toBeGreaterThan(at("path"));
+  });
+
+  it("extrudes the buildings so the 3D view has walls as well as ground", () => {
+    const style = buildMapStyle();
+    const extrusion = style.layers.find((layer) => layer.type === "fill-extrusion");
+    expect(extrusion, "no fill-extrusion layer").toBeDefined();
+    if (extrusion === undefined || extrusion.type !== "fill-extrusion") return;
+
+    expect(extrusion.source).toBe(BASE_SOURCE_ID);
+    expect(extrusion["source-layer"]).toBe("building");
+    // A height expression, so a real building height is used where OpenMapTiles
+    // has one and a plausible fallback where it does not. A literal height here
+    // would make every shed the same tall box.
+    expect(extrusion.paint?.["fill-extrusion-height"]).toBeDefined();
+    const height = JSON.stringify(extrusion.paint?.["fill-extrusion-height"]);
+    expect(height).toContain("render_height");
+    expect(height).toContain("coalesce");
+  });
+
+  it("declares no elevation source, because the ground is probed at runtime", () => {
+    /*
+      The DEM and its hillshade are added by `attachSurveyedGround` only after a
+      real Boom tile comes back as image bytes, so a blocked host leaves a clean
+      flat map rather than a terrain mesh with no heights under it. A DEM source
+      in the static style would remove that fallback and also collide with the one
+      the probe adds, which MapLibre rejects as a duplicate id.
+    */
+    const sources = buildMapStyle().sources ?? {};
+    for (const [id, source] of Object.entries(sources)) {
+      expect(source.type, `${id} is a DEM in the static style`).not.toBe("raster-dem");
+    }
+    expect(buildMapStyle().layers.some((layer) => layer.type === "hillshade")).toBe(false);
   });
 
   it("uses the one font stack OpenFreeMap publishes", () => {
@@ -323,9 +356,9 @@ describe("buildMapLayers", () => {
     const circle = buildMapLayers().find((layer) => layer.id === LAYER_IDS.nodeCircle);
     if (circle === undefined || circle.type !== "circle") throw new Error("node circle missing");
 
-    // The nearest two zones are the DreamVille Gate and its lockers. This records
-    // the geometry the collision engine is working against, so a future change to
-    // those coordinates that made the pair overlap is visible here.
+    // Elixir and The Rave Cave are closer than this pair. The gate and its
+    // lockers are still a tight pair, and this records their geometry so a
+    // future change that made the discs overlap is visible here.
     const gate = nodeById(DE_SCHORRE_MAP, "ds-dreamville-gate") as GeoMapNode;
     const lockers = nodeById(DE_SCHORRE_MAP, "ds-lockers-dreamville") as GeoMapNode;
     const metres = haversineMiles([gate.lng, gate.lat], [lockers.lng, lockers.lat]) * 1609.344;

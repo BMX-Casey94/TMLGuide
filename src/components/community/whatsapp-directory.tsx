@@ -3,6 +3,7 @@
 import { useCallback, useId, useMemo, useSyncExternalStore } from "react";
 import type { EditionScope, WhatsappGroup } from "@/data/schemas";
 import { cx } from "@/components/ui/cx";
+import { CustomSelect } from "@/components/ui/custom-select";
 import { WhatsappGroupCard } from "./whatsapp-group-card";
 import { WhatsappSafetyNote } from "./safety-note";
 import {
@@ -47,7 +48,7 @@ const SERVER_SEARCH = "";
  * because `popstate` is one of the store's triggers.
  *
  * URL handling: typing replaces the current history entry, so a search does not
- * fill the back button one keystroke at a time; the two selects push one entry,
+ * fill the back button one keystroke at a time; the two menus push one entry,
  * so back undoes a whole filter choice.
  */
 export function WhatsappDirectory({ groups, className }: WhatsappDirectoryProps) {
@@ -97,45 +98,35 @@ export function WhatsappDirectory({ groups, className }: WhatsappDirectoryProps)
             <label htmlFor={`${id}-edition`} className="label text-cream-mute">
               Edition
             </label>
-            <select
+            <CustomSelect
               id={`${id}-edition`}
+              ariaLabel="Edition"
               value={filters.edition}
-              onChange={(event) =>
-                commit({ ...filters, edition: event.target.value as EditionFilter }, "push")
-              }
-              className="min-h-11 w-full rounded-full border border-hair-strong bg-ground/60 px-4 text-sm text-cream focus:border-accent"
-            >
-              <option value="any">All editions</option>
-              {EDITION_ORDER.map((edition) => (
-                <option key={edition} value={edition}>
-                  {EDITION_LABELS[edition]}
-                </option>
-              ))}
-            </select>
+              onChange={(next) => commit({ ...filters, edition: next as EditionFilter }, "push")}
+              options={[
+                { value: "any", label: "All editions" },
+                ...EDITION_ORDER.map((edition) => ({
+                  value: edition,
+                  label: EDITION_LABELS[edition],
+                })),
+              ]}
+            />
           </div>
 
           <div className="flex flex-col gap-1.5">
             <label htmlFor={`${id}-region`} className="label text-cream-mute">
               Region
             </label>
-            <select
+            <CustomSelect
               id={`${id}-region`}
+              ariaLabel="Region"
               value={filters.region ?? ""}
-              onChange={(event) =>
-                commit(
-                  { ...filters, region: event.target.value === "" ? null : event.target.value },
-                  "push",
-                )
-              }
-              className="min-h-11 w-full rounded-full border border-hair-strong bg-ground/60 px-4 text-sm text-cream focus:border-accent"
-            >
-              <option value="">All regions</option>
-              {regions.map((region) => (
-                <option key={region} value={region}>
-                  {region}
-                </option>
-              ))}
-            </select>
+              onChange={(next) => commit({ ...filters, region: next === "" ? null : next }, "push")}
+              options={[
+                { value: "", label: "All regions" },
+                ...regions.map((region) => ({ value: region, label: region })),
+              ]}
+            />
           </div>
         </div>
 

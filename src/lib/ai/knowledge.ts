@@ -2,10 +2,17 @@
  * The knowledge base behind "Ask the guide".
  *
  * Every passage the model ever sees comes from here: the validated records in
- * `src/data/**`, which are parsed by their Zod schemas at import time. Nothing is
- * fetched, generated or paraphrased. That is the whole safety argument — a
- * figure in an answer has a record behind it, and that record has a citation and
- * a verification date.
+ * `src/data/**`, which are parsed by their Zod schemas at import time, plus the
+ * guide's own food-and-drink chapters. Nothing is fetched, generated or
+ * paraphrased. That is the whole safety argument — a figure in an answer has a
+ * record behind it, and that record has a citation and a verification date.
+ *
+ * Community food and drink estimates are the labelled exception. They are
+ * indexed only from `src/data/shared/food-estimates.ts`. Every such chunk says
+ * it is a community estimate and not an official Tomorrowland price, cites the
+ * source URL, and keeps the currency as stored (EUR, BRL or Pearls). Bounds are
+ * minor units and are written out in that currency; they are not converted
+ * into another one. A 2027 figure that is not in a passage is still refused.
  *
  * Two retrievers share one chunk set:
  *
@@ -42,6 +49,7 @@ import { brasilData } from "@/data/brasil";
 import { partners, resources, whatsappGroups } from "@/data/community";
 import type { EditionId, EditionScope, Source } from "@/data/schemas";
 import { editions, validatedGeneralFaqs as sharedFaqs } from "@/data/shared";
+import { FOOD_ESTIMATE_DISCLAIMER, foodEstimates } from "@/data/shared/food-estimates";
 import { winterAddOns } from "@/data/winter/add-ons";
 import { winterFacts } from "@/data/winter/facts";
 import { winterFaqs } from "@/data/winter/faqs";
@@ -49,6 +57,8 @@ import { winterSaleWindows } from "@/data/winter/sale-windows";
 import { winterShuttles } from "@/data/winter/shuttles";
 import { winterStages } from "@/data/winter/stages";
 import { winterTickets } from "@/data/winter/tickets";
+import { allChapters, type GuideChapter } from "@/content";
+import type { GuideBlock } from "@/content/schema";
 
 /** Cross-edition passages are scoped "all", matching the data layer. */
 export type Edition = EditionId | "all";
@@ -68,7 +78,9 @@ export type ChunkKind =
   | "edition"
   | "resource"
   | "partner"
-  | "community-group";
+  | "community-group"
+  | "chapter"
+  | "food-estimate";
 
 export interface KnowledgeChunk {
   /** Stable across builds: `edition:kind:record-id`. Vector rows reference this. */
@@ -287,6 +299,8 @@ const KIND_NOUNS: Readonly<Record<ChunkKind, string>> = {
   resource: "link resource",
   partner: "partner",
   "community-group": "community group",
+  chapter: "guide chapter",
+  "food-estimate": "food drink stall price community estimate",
 };
 
 function chunk(
@@ -463,6 +477,367 @@ const AVAILABILITY_LABELS: Readonly<Record<string, string>> = {
   "sold-out": "Sold out",
   "on-sale": "On sale",
 };
+
+/* -------------------------------------------------------------------------- */
+/* Food chapters and community estimates                                       */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * The sentence every community-estimate passage carries.
+ *
+ * The dataset may add its own disclaimer. This sentence is always present so a
+ * passage can be recognised, and quoted, as an estimate rather than an official
+ * Tomorrowland price.
+ */
+export const COMMUNITY_ESTIMATE_LABEL = "Community estimate, not an official Tomorrowland price.";
+
+/**
+ * One row of `src/data/shared/food-estimates.ts`.
+ *
+ * Structural on purpose: that module is owned elsewhere, and this indexer only
+ * depends on the fields the row is specified to have. `confidence` is fixed so
+ * an official price cannot enter through this path.
+ */
+export interface FoodEstimateRecord {
+  readonly edition: Edition;
+  readonly kind: string;
+  readonly name: string;
+  readonly summary: string;
+  /**
+   * Null when the source did not give a range. EUR, BRL and pearls are never
+   * converted into each other.
+   */
+  readonly currency: string | null;
+  /**
+   * Minor units when `currency` is set: euro cents, Brazilian centavos, or
+   * hundredths of a Pearl (150 is 1.50 Pearls). Null when no range is stored.
+   */
+  readonly low: number | null;
+  readonly high: number | null;
+  readonly source: {
+    readonly url: string;
+    readonly title: string;
+    /** Present on rows built before `checkedOn` was the dataset's field. */
+    readonly retrievedOn?: string;
+    /** When the source page was read for this estimate. */
+    readonly checkedOn?: string;
+  };
+  readonly confidence: "community-estimate";
+}
+
+/** A kebab-case id fragment. Stable for a given label: punctuation folds, case does not matter. */
+function slugifyLabel(value: string): string {
+  const slug = value
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/&/g, " and ")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 48);
+  return slug.length > 0 ? slug : "item";
+}
+
+/**
+ * Writes a minor-unit integer as a major-unit amount.
+ *
+ * 665 cents is €6.65, not €665. 150 hundredths of a Pearl is 1.50 Pearls.
+ * A whole amount drops the decimals; a fraction keeps two places so 380 cents
+ * is 3.80, matching the figure the source printed.
+ */
+function formatMinorUnits(minor: number): string {
+  const negative = minor < 0;
+  const absolute = Math.abs(minor);
+  const whole = Math.trunc(absolute / 100);
+  const fraction = absolute % 100;
+  const wholeText = new Intl.NumberFormat("en-GB", { maximumFractionDigits: 0 }).format(whole);
+  const body = fraction === 0 ? wholeText : `${wholeText}.${String(fraction).padStart(2, "0")}`;
+  return negative ? `-${body}` : body;
+}
+
+/**
+ * Renders one stored amount without converting it into another currency.
+ *
+ * `minor` is euro cents, centavos, or hundredths of a Pearl. EUR is shown as
+ * `€` on Belgium and Winter. A Brasil passage must not carry a euro or pound
+ * symbol, so a Brasil row stored as EUR is written `EUR 9` — the stored code,
+ * not a conversion into reais. BRL stays `R$`. Pearls stay Pearls.
+ */
+function formatEstimateAmount(edition: Edition, currency: string, minor: number): string {
+  if (!Number.isInteger(minor)) return "";
+  const rendered = formatMinorUnits(minor);
+  const code = currency.trim().toLowerCase();
+  if (code === "pearl" || code === "pearls") {
+    const major = minor / 100;
+    return `${rendered} ${major === 1 ? "Pearl" : "Pearls"}`;
+  }
+  if (code === "brl" || code === "real" || code === "reais") return `R$${rendered}`;
+  if (code === "eur" || code === "euro" || code === "euros") {
+    if (edition === "brasil") return `EUR ${rendered}`;
+    return `€${rendered}`;
+  }
+  return `${rendered} ${currency.trim()}`;
+}
+
+function formatEstimateRange(edition: Edition, currency: string, low: number, high: number): string {
+  const from = formatEstimateAmount(edition, currency, low);
+  const to = formatEstimateAmount(edition, currency, high);
+  if (from.length === 0 || to.length === 0) return "";
+  if (low === high) return from;
+  return `${from} to ${to}`;
+}
+
+/** The dataset disclaimer, plus the required label when the disclaimer does not already say it. */
+function joinEstimateDisclaimer(moduleDisclaimer: string): string {
+  const extra = moduleDisclaimer.replace(/\s+/g, " ").trim();
+  const required = COMMUNITY_ESTIMATE_LABEL;
+  if (extra.length === 0) return required;
+  const folded = extra.toLowerCase();
+  if (folded.includes("community estimate") && folded.includes("not an official")) return extra;
+  return `${required} ${extra}`;
+}
+
+/**
+ * One chunk per community food or drink estimate.
+ *
+ * The currency is rendered as stored. The disclaimer and the source URL are in
+ * the passage text, because that text is what the model is allowed to quote
+ * and what the output validator checks figures against.
+ */
+function estimateCheckedOn(source: FoodEstimateRecord["source"]): string {
+  if (typeof source.checkedOn === "string" && source.checkedOn.length > 0) return source.checkedOn;
+  if (typeof source.retrievedOn === "string" && source.retrievedOn.length > 0) return source.retrievedOn;
+  return "";
+}
+
+/**
+ * One chunk per community food or drink estimate.
+ *
+ * Bounds are minor units and are written out in the stored currency. A row
+ * with no currency is still indexed: it describes a stall or a marketplace
+ * the source did not price. The disclaimer and the source URL are in the
+ * passage text, because that text is what the model may quote and what the
+ * output validator checks figures against.
+ */
+export function foodEstimateChunks(
+  estimates: readonly FoodEstimateRecord[],
+  disclaimer: string,
+): KnowledgeChunk[] {
+  const chunks: KnowledgeChunk[] = [];
+  const used = new Set<string>();
+
+  for (const record of estimates) {
+    if (record.confidence !== "community-estimate") continue;
+    const name = record.name.trim();
+    if (name.length === 0) continue;
+
+    const checkedOn = estimateCheckedOn(record.source);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(checkedOn)) continue;
+
+    const priced = record.currency !== null && record.low !== null && record.high !== null;
+    const unpriced = record.currency === null && record.low === null && record.high === null;
+    if (!priced && !unpriced) continue;
+
+    let amountLine = "No sourced range is stored.";
+    if (priced && record.currency !== null && record.low !== null && record.high !== null) {
+      const range = formatEstimateRange(record.edition, record.currency, record.low, record.high);
+      if (range.length === 0) continue;
+      amountLine =
+        record.low === record.high
+          ? `Estimated amount ${range}. The stored integer is minor units of ${record.currency}, already written out above.`
+          : `Estimated range ${range}. The stored integers are minor units of ${record.currency}, already written out above.`;
+    }
+
+    let recordId = `${slugifyLabel(record.kind)}-${slugifyLabel(name)}`;
+    if (used.has(`${record.edition}:${recordId}`)) {
+      let suffix = 2;
+      while (used.has(`${record.edition}:${recordId}-${suffix}`)) suffix += 1;
+      recordId = `${recordId}-${suffix}`;
+    }
+    used.add(`${record.edition}:${recordId}`);
+
+    const label = joinEstimateDisclaimer(disclaimer);
+
+    chunks.push(
+      chunk(
+        record.edition,
+        "food-estimate",
+        recordId,
+        `${name} — food and drink community estimate`,
+        [
+          `${name}.`,
+          `Kind: ${record.kind.trim()}.`,
+          amountLine,
+          plainMarkdown(record.summary),
+          "Marked as a community estimate.",
+          "Not an official 2027 price.",
+          label.endsWith(".") ? label : `${label}.`,
+          `Source: ${record.source.url}.`,
+        ]
+          .filter((part) => part.length > 0)
+          .join(" "),
+        { url: record.source.url, title: record.source.title, retrievedOn: checkedOn },
+        checkedOn,
+      ),
+    );
+  }
+
+  return chunks;
+}
+
+function isFoodChapter(chapter: GuideChapter): boolean {
+  return chapter.slug === "food" || chapter.slug.startsWith("food-");
+}
+
+function editionForChapter(edition: GuideChapter["edition"]): Edition {
+  switch (edition) {
+    case "belgium":
+    case "winter":
+    case "brasil":
+      return edition;
+    case "general":
+      return "all";
+    default: {
+      const exhaustive: never = edition;
+      return exhaustive;
+    }
+  }
+}
+
+function sourceIdsIn(block: GuideBlock): readonly string[] {
+  if (block.type === "facts") return block.rows.flatMap((row) => row.sources);
+  if (block.type === "p" || block.type === "ul" || block.type === "ol" || block.type === "callout") {
+    return block.sources ?? [];
+  }
+  return [];
+}
+
+function blockToProse(block: GuideBlock): string {
+  switch (block.type) {
+    case "p":
+      return plainMarkdown(block.text);
+    case "callout":
+      return `${block.title}. ${plainMarkdown(block.text)}`;
+    case "ul":
+    case "ol":
+      return block.items.map((item) => plainMarkdown(item)).join("; ");
+    case "facts":
+      return block.rows.map((row) => `${row.label}: ${plainMarkdown(row.value)}`).join("; ");
+    case "h3":
+      return block.text;
+    case "h2":
+    case "data":
+      return "";
+    default: {
+      const exhaustive: never = block;
+      return exhaustive;
+    }
+  }
+}
+
+interface FoodSection {
+  readonly id: string;
+  readonly heading: string;
+  readonly blocks: readonly GuideBlock[];
+}
+
+/** Splits a chapter on its h2s. The lead, before the first h2, is "overview". */
+function foodSections(chapter: GuideChapter): FoodSection[] {
+  const sections: FoodSection[] = [];
+  let current: { id: string; heading: string; blocks: GuideBlock[] } = {
+    id: "overview",
+    heading: chapter.title,
+    blocks: [],
+  };
+
+  const flush = (): void => {
+    if (current.blocks.length > 0) sections.push(current);
+  };
+
+  for (const block of chapter.blocks) {
+    if (block.type === "h2") {
+      flush();
+      current = { id: block.id, heading: block.text, blocks: [] };
+      continue;
+    }
+    current.blocks.push(block);
+  }
+  flush();
+  return sections;
+}
+
+/**
+ * The citation for a section: the source its blocks cite most often.
+ *
+ * A section has one citation slot. The source that supports the most of its
+ * lines is the one a reader should land on; ties keep the chapter's source
+ * order, which is stable.
+ */
+function primarySource(chapter: GuideChapter, ids: readonly string[]): { url: string; title: string } | null {
+  if (chapter.sources.length === 0) return null;
+  const counts = new Map<string, number>();
+  for (const id of ids) counts.set(id, (counts.get(id) ?? 0) + 1);
+
+  let chosen = chapter.sources[0];
+  let bestCount = -1;
+  for (const source of chapter.sources) {
+    const count = counts.get(source.id) ?? 0;
+    if (count > bestCount) {
+      chosen = source;
+      bestCount = count;
+    }
+  }
+  if (chosen === undefined) return null;
+  return { url: chosen.url, title: chosen.title };
+}
+
+/**
+ * Indexes food-and-drink chapters from the guide registry.
+ *
+ * One path, the registry, rather than a direct import of each chapter file:
+ * a Winter or Brasil food chapter is picked up when it is added to its edition
+ * index, and a chapter that is not registered is not indexed. Chunk ids are
+ * `edition:chapter:slug:heading-id`, with the lead called `overview`.
+ */
+function foodGuideChapterChunks(chapters: readonly GuideChapter[]): KnowledgeChunk[] {
+  const chunks: KnowledgeChunk[] = [];
+
+  for (const chapter of chapters) {
+    if (!isFoodChapter(chapter)) continue;
+    const edition = editionForChapter(chapter.edition);
+
+    for (const section of foodSections(chapter)) {
+      const prose = section.blocks.map((block) => blockToProse(block)).filter((part) => part.length > 0);
+      if (prose.length === 0 && section.id !== "overview") continue;
+
+      const cited = section.blocks.flatMap((block) => [...sourceIdsIn(block)]);
+      const source = primarySource(chapter, cited);
+      if (source === null) continue;
+
+      const content = [
+        `${chapter.title}.`,
+        section.id === "overview" ? plainMarkdown(chapter.summary) : `${section.heading}.`,
+        ...prose,
+      ]
+        .filter((part) => part.length > 0)
+        .join(" ");
+
+      chunks.push(
+        chunk(
+          edition,
+          "chapter",
+          `${chapter.slug}:${section.id}`,
+          section.id === "overview" ? chapter.title : `${chapter.title} — ${section.heading}`,
+          content,
+          { url: source.url, title: source.title, retrievedOn: chapter.lastVerified },
+          chapter.lastVerified,
+        ),
+      );
+    }
+  }
+
+  return chunks;
+}
 
 /**
  * Every chunk in the knowledge base, built once on first use.
@@ -856,6 +1231,14 @@ export function buildKnowledgeBase(): readonly KnowledgeChunk[] {
     );
   }
 
+  /*
+    Food and drink prose, from the guide registry. Pearls, the cup deposit and
+    what a reader may carry in live in the chapter, not in a price table.
+  */
+  chunks.push(...foodGuideChapterChunks(allChapters()));
+
+  chunks.push(...foodEstimateChunks(foodEstimates, FOOD_ESTIMATE_DISCLAIMER));
+
   return chunks;
 }
 
@@ -1070,7 +1453,8 @@ const SYNONYM_GROUPS: readonly (readonly string[])[] = [
   ["parking", "park", "car"],
   ["locker", "storage"],
   ["accessibility", "wheelchair", "disabled"],
-  ["food", "drink", "eat", "meal", "restaur"],
+  ["food", "drink", "eat", "meal", "restaur", "stall", "marketplace"],
+  ["carry", "bring", "prohibited", "banned"],
   ["lineup", "artist", "dj"],
   ["stage", "arena"],
   ["shower", "toilet", "sanitari"],
@@ -1346,6 +1730,20 @@ const PRICE_INTENT = /\b(?:how much|price|prices|cost|costs|fee|fees|expensive|c
 
 const CURRENCY_IN_TEXT = /(?:€|£|R\$)\s?\d/;
 
+/**
+ * A Pearl amount, written as a digit or a small word.
+ *
+ * Cup deposits and refund fees are priced in Pearls, not euros. A price
+ * question about them must prefer the chapter that states "one Pearl" over a
+ * record that merely shares the word "festival" and carries no figure.
+ */
+const PEARL_FIGURE = /\b(?:\d[\d.,]*|one|two|three|four|five|six|seven|eight|nine|ten)\s+pearls?\b/i;
+
+/** True when a passage states a currency amount or a Pearl amount. */
+function textStatesFigure(text: string): boolean {
+  return CURRENCY_IN_TEXT.test(text) || PEARL_FIGURE.test(text);
+}
+
 /** How much a record is preferred when it satisfies a price question. */
 const PRICE_INTENT_BONUS = 1.6;
 
@@ -1452,6 +1850,8 @@ const KIND_PRIOR: Readonly<Record<ChunkKind, number>> = {
   resource: 0.6,
   partner: 0.5,
   "community-group": 0.4,
+  chapter: 1,
+  "food-estimate": 1,
 };
 
 /**
@@ -1616,7 +2016,7 @@ export function scoreDocumentFull(
   */
   const editionMatches =
     filterEdition === undefined || filterEdition === "all" || document.chunk.edition === "all" || document.chunk.edition === filterEdition;
-  const hasFigure = CURRENCY_IN_TEXT.test(`${document.chunk.title} ${document.chunk.content}`);
+  const hasFigure = textStatesFigure(`${document.chunk.title} ${document.chunk.content}`);
   const priceFactor =
     hints.priceIntent === true && editionMatches ? (hasFigure ? PRICE_INTENT_BONUS : NO_PRICE_FACTOR) : 1;
 

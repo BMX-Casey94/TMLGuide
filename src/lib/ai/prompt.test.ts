@@ -80,6 +80,20 @@ describe("the system prompt", () => {
   it("asks for UK English", () => {
     expect(SYSTEM_PROMPT).toContain("UK English");
   });
+
+  it("allows a marked community estimate and still refuses an unpublished 2027 figure", () => {
+    expect(SYSTEM_PROMPT.toLowerCase()).toContain("community estimate");
+    expect(SYSTEM_PROMPT.toLowerCase()).toContain("not an official tomorrowland price");
+    expect(SYSTEM_PROMPT.toLowerCase()).toContain("precise 2027 figure");
+    expect(SYSTEM_PROMPT.toLowerCase()).toContain("never convert");
+  });
+
+  it("treats a best-food question as guidance rather than a single winner", () => {
+    expect(SYSTEM_PROMPT.toLowerCase()).toContain("best food in dreamville");
+    expect(SYSTEM_PROMPT.toLowerCase()).toContain("types of stalls");
+    expect(SYSTEM_PROMPT.toLowerCase()).toContain("where the marketplace is");
+    expect(SYSTEM_PROMPT.toLowerCase()).toContain("do not name a single winner");
+  });
 });
 
 describe("buildMessages", () => {
@@ -421,6 +435,42 @@ describe("validateAnswer", () => {
     expect(outcome.ok).toBe(false);
     if (outcome.ok) return;
     expect(outcome.reason).toBe("too-long");
+  });
+
+  it("accepts an amount copied from a community-estimate passage", () => {
+    const estimate = passage({
+      id: "belgium:food-estimate:stall-fries",
+      title: "Fries — food and drink community estimate",
+      text: "Fries. Estimated range €8 to €12. Marked as a community estimate. Community estimate, not an official Tomorrowland price. Source: https://example.test/community/fries.",
+      sourceUrl: "https://example.test/community/fries",
+      sourceTitle: "Community food notes",
+    });
+    const outcome = validateAnswer({
+      answer:
+        "Community reports put fries at €8 to €12. That is an estimate and not an official Tomorrowland price [1].",
+      passages: [estimate],
+      edition: "belgium",
+    });
+    expect(outcome.ok).toBe(true);
+  });
+
+  it("still rejects a euro amount that is in neither an official nor an estimate passage", () => {
+    const estimate = passage({
+      id: "belgium:food-estimate:stall-fries",
+      title: "Fries — food and drink community estimate",
+      text: "Fries. Estimated range €8 to €12. Community estimate, not an official Tomorrowland price.",
+      sourceUrl: "https://example.test/community/fries",
+      sourceTitle: "Community food notes",
+    });
+    const official = passage({ text: "Day Pass. Price €144 per person." });
+    const outcome = validateAnswer({
+      answer: "A meal at the stalls is €47 [1].",
+      passages: [estimate, official],
+      edition: "belgium",
+    });
+    expect(outcome.ok).toBe(false);
+    if (outcome.ok) return;
+    expect(outcome.reason).toBe("invented-price");
   });
 
   it("accepts an answer with no figures at all", () => {

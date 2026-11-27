@@ -464,6 +464,189 @@
   }
 }
 
+/*
+  ---------- Route-zone dropdowns ----------
+
+  A custom listbox rather than a native `<select>`, matching the edition picker
+  in the assistant: a rounded, elevated, dark trigger and a frosted rounded menu.
+  A native select cannot be styled to this palette on any platform, and its
+  option list on Windows arrives as an unstyled white sheet that ignores the
+  page's colour scheme entirely.
+
+  The trigger is a pill at 999px so it reads as a control rather than as a form
+  field, and carries the same chevron as the assistant's picker so the two behave
+  the same way under the hand. The menu blurs what is behind it, which is what
+  keeps a long zone list readable over a map canvas without a solid panel.
+*/
+.tml-map-listbox {
+  position: relative;
+  min-width: 0;
+}
+
+.tml-map-listbox__button,
+.tml-map-listbox__option {
+  /* WCAG 2.5.5: every target is at least 44px tall. */
+  min-height: 44px;
+}
+
+.tml-map-listbox__button {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  padding: 0.55rem 1rem;
+  border: 1px solid var(--hair-strong);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ground) 72%, var(--surface-2));
+  color: var(--cream);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 0.18s ease,
+    background 0.18s ease;
+}
+
+/* The chevron, drawn in CSS so there is no asset to load. */
+.tml-map-listbox__button::after {
+  content: "";
+  width: 0.5rem;
+  height: 0.5rem;
+  flex: none;
+  margin-right: 0.15rem;
+  border-right: 2px solid var(--cream-mute);
+  border-bottom: 2px solid var(--cream-mute);
+  transform: rotate(45deg) translateY(-0.15rem);
+  transition: transform 0.18s ease;
+}
+
+.tml-map-listbox__button[aria-expanded="true"]::after {
+  transform: rotate(225deg) translateY(-0.15rem);
+}
+
+@media (hover: hover) {
+  .tml-map-listbox__button:hover {
+    border-color: var(--ea);
+    background: color-mix(in srgb, var(--ea) 10%, var(--surface-2));
+  }
+}
+
+.tml-map-listbox__button[aria-expanded="true"] {
+  border-color: var(--ea);
+  background: color-mix(in srgb, var(--ea) 10%, var(--surface-2));
+}
+
+.tml-map-listbox__button:focus-visible,
+.tml-map-listbox__option:focus-visible {
+  outline: 2px solid var(--ea);
+  outline-offset: 2px;
+}
+
+.tml-map-listbox__popup {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 0.4rem);
+  left: 0;
+  right: 0;
+  max-height: 18rem;
+  overflow: auto;
+  /* Momentary overscroll at the end of a long list must not scroll the page. */
+  overscroll-behavior: contain;
+  margin: 0;
+  padding: 0.4rem;
+  border: 1px solid var(--hair-strong);
+  border-radius: 18px;
+  background-color: rgb(21 17 15 / 0.94);
+  box-shadow: 0 18px 44px rgb(0 0 0 / 0.5);
+  backdrop-filter: blur(14px) saturate(1.1);
+}
+
+.tml-map-listbox__group {
+  margin: 0.5rem 0.75rem 0.2rem;
+  color: var(--cream-mute);
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.tml-map-listbox__option {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  padding: 0.55rem 0.8rem;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--cream);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+/*
+  The chosen row is marked by weight and a tick as well as by colour, so the
+  selection survives a colour-vision deficiency and a glance in the dark.
+*/
+.tml-map-listbox__option[aria-selected="true"] {
+  background-color: rgb(255 200 61 / 0.2);
+  color: var(--ea);
+  font-weight: 600;
+}
+
+.tml-map-listbox__option[aria-selected="true"]::after {
+  content: "✓";
+  margin-left: auto;
+  padding-left: 0.6rem;
+  color: var(--ea);
+}
+
+@media (hover: hover) {
+  .tml-map-listbox__option:hover {
+    background-color: rgb(255 200 61 / 0.12);
+  }
+
+  .tml-map-listbox__option[aria-selected="true"]:hover {
+    background-color: rgb(255 200 61 / 0.28);
+  }
+}
+
+/* ---------- The 2D / 3D camera toggle ---------- */
+
+.tml-map-viewmode {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  gap: 0.45rem;
+  margin-left: auto;
+  padding: 0 0.95rem;
+  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+}
+
+.tml-map-viewmode__icon {
+  font-size: 1em;
+  line-height: 1;
+  color: var(--ea);
+}
+
+/* Pressed is the tilted view. Marked by fill and weight, never by colour alone. */
+.tml-map-viewmode[aria-pressed="true"] {
+  border-color: var(--ea);
+  background-color: rgb(255 200 61 / 0.16);
+  color: var(--cream);
+  font-weight: 700;
+}
+
+/* Inactive only where there is no canvas to tilt; still focusable and readable. */
+.tml-map-viewmode[aria-disabled="true"] {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
 .tml-map-swap {
   justify-self: start;
 }
@@ -786,7 +969,9 @@
 @media (prefers-reduced-motion: reduce) {
   .tml-map-chip,
   .tml-map-list__select,
-  .tml-map-list__favourite {
+  .tml-map-list__favourite,
+  .tml-map-listbox__button,
+  .tml-map-listbox__button::after {
     transition: none;
   }
 }

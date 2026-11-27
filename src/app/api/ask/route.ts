@@ -12,9 +12,13 @@
  * 3. Origin. `isAllowedOrigin` rejects cross-origin mutations, and an endpoint
  *    that spends money on a stranger's behalf needs it more than the contact form.
  * 4. Rate limit, keyed on a salted hash of the trusted client IP.
- * 5. Zod validation, strict, with the question length-capped.
- * 6. Turnstile, when the deployment has configured it.
- * 7. The pipeline, which refuses before it spends.
+ * 5. Courtesy. A message that is only a thank-you or a greeting is answered
+ *    here, before the provider is read. "hi" is not rejected for being short.
+ *    An unexpected key or a bad edition is still a 422, and Turnstile still
+ *    applies. No retrieval, no model call, no spend, and the message is not logged.
+ * 6. Zod validation, strict, with the question length-capped.
+ * 7. Turnstile, when the deployment has configured it.
+ * 8. The pipeline, which refuses before it spends.
  *
  * Nothing in a response repeats an internal detail. A caller learns what is wrong
  * with their request and nothing about the stack, the model or the ledger.
@@ -25,6 +29,7 @@ import { z } from "zod";
 import { askGuide, oldestDate, type Citation } from "@/lib/ai/answer";
 import { providerFromEnv, readProviderConfig } from "@/lib/ai/provider";
 import { MAX_QUESTION_CHARS, MIN_QUESTION_CHARS } from "@/lib/ai/prompt";
+import { COURTESY_MODEL, courtesyReply } from "@/lib/ai/small-talk";
 import {
   describeSpendLedger,
   getSpendLedger,
@@ -109,6 +114,62 @@ export function isJsonContentType(value: string | null): boolean {
   if (value === null) return false;
   const mediaType = value.split(";")[0]?.trim().toLowerCase() ?? "";
   return mediaType === "application/json";
+}
+
+/**
+ * Turnstile, when this deployment has configured it.
+ *
+ * Returns the rejection response, or null when the request may continue. A
+ * courtesy reply uses the same gate: "thanks" is not a way around the bot check.
+ */
+async function enforceTurnstile(
+  token: string | undefined,
+  remoteIp: string,
+): Promise<NextResponse | null> {
+  if (!isTurnstileConfigured()) return null;
+
+  const outcome = await verifyTurnstile({ token, remoteIp });
+  if (outcome.ok) return null;
+
+  console.warn(`[ask] Turnstile rejected a request (${outcome.code})`);
+  return jsonResponse(
+    {
+      error:
+        outcome.code === "unavailable"
+          ? "The verification service is not available. Please try again shortly."
+          : "Please complete the verification check and try again.",
+    },
+    outcome.code === "unavailable" ? 503 : 403,
+  );
+}
+
+/**
+ * A courtesy answer. The log records the outcome only: the message and the
+ * reply are not written, and the spend ledger is not touched.
+ */
+function courtesyResponse(reply: string): NextResponse {
+  console.info(
+    JSON.stringify({
+      event: "ask",
+      requestId: crypto.randomUUID(),
+      provider: "none",
+      model: COURTESY_MODEL,
+      outcome: "courtesy",
+      costPence: 0,
+      citationCount: 0,
+    }),
+  );
+
+  return jsonResponse(
+    {
+      answer: reply,
+      citations: [],
+      lastVerified: null,
+      refusal: null,
+      model: COURTESY_MODEL,
+    } satisfies AskResponseBody,
+    200,
+  );
 }
 
 let warnedAboutSalt = false;
@@ -211,6 +272,42 @@ export async function POST(request: Request): Promise<NextResponse> {
     return jsonResponse({ error: "Request body must be a JSON object" }, 400);
   }
 
+  // Courtesy. Before Zod, because "hi" is shorter than a question, and before
+  // the provider is constructed. The rate limit above has already run.
+  const record = payload as Record<string, unknown>;
+  if (typeof record.question === "string") {
+    const courtesy = courtesyReply(record.question);
+    if (courtesy !== null) {
+      // Same contract as a real question, except length: "hi" is two characters
+      // and would otherwise be a 422. An unknown key is still rejected, so a
+      // client cannot smuggle `systemPrompt` in behind a thank-you.
+      const gated = askRequestSchema.safeParse(payload);
+      if (!gated.success) {
+        const otherIssue = gated.error.issues.some(
+          (issue) => !(issue.code === "too_small" && issue.path.join(".") === "question"),
+        );
+        if (otherIssue) {
+          const fields: Record<string, string> = {};
+          for (const issue of gated.error.issues) {
+            if (issue.code === "too_small" && issue.path.join(".") === "question") continue;
+            const key = issue.path.join(".") || "question";
+            if (fields[key] === undefined) fields[key] = issue.message;
+          }
+          return jsonResponse({ error: "Please check the question and try again.", fields }, 422);
+        }
+      }
+
+      const token = gated.success
+        ? gated.data.turnstileToken
+        : typeof record.turnstileToken === "string"
+          ? record.turnstileToken
+          : undefined;
+      const blocked = await enforceTurnstile(token, clientIp);
+      if (blocked !== null) return blocked;
+      return courtesyResponse(courtesy.reply);
+    }
+  }
+
   const parsed = askRequestSchema.safeParse(payload);
   if (!parsed.success) {
     const fields: Record<string, string> = {};
@@ -221,27 +318,11 @@ export async function POST(request: Request): Promise<NextResponse> {
     return jsonResponse({ error: "Please check the question and try again.", fields }, 422);
   }
 
-  // 6. Turnstile, when configured. Skipped cleanly when it is not.
-  if (isTurnstileConfigured()) {
-    const outcome = await verifyTurnstile({
-      token: parsed.data.turnstileToken,
-      remoteIp: clientIp,
-    });
-    if (!outcome.ok) {
-      console.warn(`[ask] Turnstile rejected a request (${outcome.code})`);
-      return jsonResponse(
-        {
-          error:
-            outcome.code === "unavailable"
-              ? "The verification service is not available. Please try again shortly."
-              : "Please complete the verification check and try again.",
-        },
-        outcome.code === "unavailable" ? 503 : 403,
-      );
-    }
-  }
+  // 7. Turnstile, when configured. Skipped cleanly when it is not.
+  const blocked = await enforceTurnstile(parsed.data.turnstileToken, clientIp);
+  if (blocked !== null) return blocked;
 
-  // 7. The pipeline.
+  // 8. The pipeline.
   const provider = providerFromEnv();
   const config = readProviderConfig();
 

@@ -3,13 +3,35 @@
  *
  * De Schorre is the provincial recreation domain at Boom where the festival is
  * held; DreamVille is the campsite on the Rumst side of the same brook valley.
- * The coordinates below are WGS84, longitude first, and were placed by walking
- * the layouts of recent editions against OpenStreetMap: the main entrance on the
- * Schorredijk side, the amphitheatre bowl in the south-east, the clay-pit lakes
- * in the middle, and the campsite fields east of the Nachtegaalstraat.
  *
- * Two things are deliberately conservative. First, the outlines are schematic:
- * a festival rents fields and re-fences them every year, so a polygon marks the
+ * ## How the positions were arrived at
+ *
+ * The outlines and stage positions were placed against the surveying data that
+ * OpenStreetMap holds for the domain — the `leisure=park` boundary of
+ * `Provinciaal Domein De Schorre`, the natural-water polygons that are the
+ * disused clay pits, the named footways, and the three viewpoints on the
+ * amphitheatre hill — and then cross-checked against published stage maps of
+ * recent editions. Coordinates are WGS84, longitude first.
+ *
+ * The layout that comes out of that is a specific one, and it is worth stating
+ * because it is the thing the older version of this file got wrong:
+ *
+ * - **Freedom** and **The Rose Garden** sit side by side on the western side of
+ *   the site, about a hundred metres apart. They are one edge of the routing
+ *   graph, and the walk is a minute.
+ * - **Cage**, **Atmosphere** and **The Rave Cave** are the north-western group,
+ *   in the trees above the western lakes.
+ * - **Elixir** stands on the north bank of the central pit; **Crystal Garden**
+ *   floats on that pit itself; **Planaxis** and **Rise** are on its southern and
+ *   western shores.
+ * - **Core** is deep in the south-western woods, reached by its own path.
+ * - **The Library** and **The Mainstage** are the eastern pair, the Mainstage in
+ *   the natural amphitheatre bowl that the domain's hill forms.
+ * - **House of Fortune** is the small room behind the Mainstage, on the
+ *   DreamVille side, a short walk from the campsite gate.
+ *
+ * Two things are deliberately conservative. First, the outlines are schematic: a
+ * festival rents fields and re-fences them every year, so a polygon marks the
  * area a zone occupies rather than a surveyed boundary. Second, Tomorrowland has
  * not published a 2027 site plan, so stage names are the ones recent editions
  * used in these positions. `GEO_DATA_DISCLAIMER` says so in the visitor's own
@@ -36,7 +58,7 @@ import type {
  * warned in advance.
  */
 export const GEO_DATA_DISCLAIMER =
-  "Stage names, zone outlines and walking times follow the typical De Schorre and DreamVille layouts of recent editions. Tomorrowland has not published a 2027 site plan, so use this as a planning aid rather than an official map, and follow the signage on site.";
+  "Stage names, zone outlines and walking times follow the typical De Schorre and DreamVille layouts of recent editions, checked against OpenStreetMap's survey of the domain. Tomorrowland has not published a 2027 site plan, so use this as a planning aid rather than an official map, and follow the signage on site.";
 
 /** Unhurried festival walking pace, in miles per hour. */
 export const FESTIVAL_PACE_MPH = 2.8;
@@ -113,10 +135,10 @@ const DE_SCHORRE_NODES: readonly GeoMapNode[] = [
     name: "Mainstage",
     shortLabel: "Mainstage",
     category: "stage",
-    lng: 4.3854,
-    lat: 51.0912,
+    lng: 4.3855,
+    lat: 51.09165,
     summary:
-      "The festival's headline stage, set into the amphitheatre bowl on the south-eastern side of the domain and framed by mature trees.",
+      "The festival's headline stage, built into the natural amphitheatre bowl on the eastern side of the domain, with the whole eastern slope rising behind the crowd.",
     typicalZoneNote:
       "Packed from late afternoon until the closing set, and the whole bowl empties at once when the headliner finishes.",
   },
@@ -125,12 +147,36 @@ const DE_SCHORRE_NODES: readonly GeoMapNode[] = [
     name: "Freedom",
     shortLabel: "Freedom",
     category: "stage",
-    lng: 4.3768,
-    lat: 51.0908,
+    lng: 4.3778,
+    lat: 51.0909,
     summary:
-      "A large covered hall on the western side of the park, used for the harder dance styles and busy in its own right once the evening starts.",
+      "The big covered hall on the western side of the site, used for the larger house and trance shows and busy in its own right once the evening starts.",
     typicalZoneNote:
       "Busy but rarely impassable; the crush is at the doors rather than on the floor.",
+  },
+  {
+    id: "ds-rose-garden",
+    name: "The Rose Garden",
+    shortLabel: "Rose Garden",
+    category: "stage",
+    lng: 4.3792,
+    lat: 51.09085,
+    summary:
+      "The dragon stage, set in the field immediately beside Freedom and looking out over the western lake.",
+    typicalZoneNote:
+      "Comfortable through most of the day; the shore path beside it is the pinch point, not the stage itself.",
+  },
+  {
+    id: "ds-cage",
+    name: "Cage",
+    shortLabel: "Cage",
+    category: "stage",
+    lng: 4.3781,
+    lat: 51.0919,
+    summary:
+      "The dark club room in the trees north-west of Freedom, next to the One World Radio studio, for hard techno, rave and industrial sets.",
+    typicalZoneNote:
+      "Fills early and stays full; the entrance is a single doorway, so the queue is outside rather than inside.",
   },
   {
     id: "ds-atmosphere",
@@ -138,67 +184,115 @@ const DE_SCHORRE_NODES: readonly GeoMapNode[] = [
     shortLabel: "Atmosphere",
     category: "stage",
     lng: 4.3792,
-    lat: 51.0928,
+    lat: 51.0925,
     summary:
-      "A tented stage in the north-central zone, close to the northern lakes and a short walk from the Atmosphere camping end of DreamVille.",
+      "The large indoor techno tent on the northern approach, a short walk from Freedom and Cage and on the way in from the campsite side.",
     typicalZoneNote:
       "Busiest in the early evening, when people move north to escape the Mainstage crowd.",
+  },
+  {
+    id: "ds-elixir",
+    name: "Elixir",
+    shortLabel: "Elixir",
+    category: "stage",
+    lng: 4.3809,
+    lat: 51.0925,
+    summary:
+      "A small stage built on the north bank of the central clay pit, with the water directly behind the booth.",
+    typicalZoneNote:
+      "A pleasant daytime stop; the bank narrows where it meets the bridge, and that is where it holds people up.",
+  },
+  {
+    id: "ds-rave-cave",
+    name: "The Rave Cave",
+    shortLabel: "Rave Cave",
+    category: "stage",
+    lng: 4.37955,
+    lat: 51.09145,
+    summary:
+      "A tunnel-like room cut into the hillside on the central western path, between the Rose Garden and the northern lakes.",
+    typicalZoneNote:
+      "Small and enclosed, so it reaches capacity quickly and empties between sets.",
   },
   {
     id: "ds-crystal-garden",
     name: "Crystal Garden",
     shortLabel: "Crystal",
     category: "stage",
-    lng: 4.3808,
-    lat: 51.0915,
+    lng: 4.3828,
+    lat: 51.0914,
     summary:
       "The floating stage on the main clay-pit lake, reached by the wooden walkways that ring the water.",
     typicalZoneNote:
       "The walkways are narrow and the decks fill quickly; the crowd on the shore is easier to move through.",
   },
   {
+    id: "ds-planaxis",
+    name: "Planaxis",
+    shortLabel: "Planaxis",
+    category: "stage",
+    lng: 4.3812,
+    lat: 51.09055,
+    summary:
+      "The water-side stage on the southern shore of the central pit, built around a giant conch and its fountains.",
+    typicalZoneNote:
+      "Busiest around sunset, when the light on the water is the reason most people are there.",
+  },
+  {
+    id: "ds-rise",
+    name: "Rise",
+    shortLabel: "Rise",
+    category: "stage",
+    lng: 4.3819,
+    lat: 51.08995,
+    summary:
+      "The green, plant-filled stage south-east of Planaxis, which programmes established names alongside Tomorrowland Academy talent.",
+    typicalZoneNote:
+      "Relaxed until the headline slot, with most of the crowd sitting on the grass between sets.",
+  },
+  {
     id: "ds-library",
     name: "The Library",
     shortLabel: "Library",
     category: "stage",
-    lng: 4.3832,
-    lat: 51.0922,
+    lng: 4.3843,
+    lat: 51.09035,
     summary:
-      "The east-central stage, formerly the Organ of Harmony, on the open ground between the lakes and the Mainstage bowl.",
+      "The cathedral-style stage on the east-central ground, on the slope between the lakes and the Mainstage bowl.",
     typicalZoneNote:
       "A natural meeting point between the Mainstage and DreamVille, so it is crowded whenever either is emptying.",
+  },
+  {
+    id: "ds-house-of-fortune",
+    name: "House of Fortune",
+    shortLabel: "Fortune",
+    category: "stage",
+    lng: 4.3866,
+    lat: 51.0922,
+    summary:
+      "The small 360-degree room directly behind the Mainstage, on the DreamVille side, where the booth can be watched from any angle.",
+    typicalZoneNote:
+      "Intimate and quick to fill; most people find it on the way past rather than planning to be there.",
   },
   {
     id: "ds-core",
     name: "Core",
     shortLabel: "Core",
     category: "stage",
-    lng: 4.3782,
-    lat: 51.0888,
+    lng: 4.3777,
+    lat: 51.0874,
     summary:
       "A stage in the wooded valley on the south-western edge of the domain, deliberately darker and quieter than the rest of the site.",
     typicalZoneNote:
       "The trees hold the crowd in, so the valley fills from the back forwards.",
   },
   {
-    id: "ds-rose-garden",
-    name: "Rose Garden",
-    shortLabel: "Rose Garden",
-    category: "stage",
-    lng: 4.3812,
-    lat: 51.0904,
-    summary:
-      "A waterside stage on the central-south shore, the usual choice for anyone who wants to dance somewhere with room to stand.",
-    typicalZoneNote:
-      "Comfortable through most of the day; the shore path is the pinch point, not the stage itself.",
-  },
-  {
     id: "ds-main-entrance",
     name: "Main Entrance",
     shortLabel: "Main Gate",
     category: "entrance",
-    lng: 4.3745,
-    lat: 51.0898,
+    lng: 4.3763,
+    lat: 51.0896,
     summary:
       "The day-visitor entrance on the western side of the domain, where ticket scanning and bag search are carried out.",
     typicalZoneNote:
@@ -221,8 +315,8 @@ const DE_SCHORRE_NODES: readonly GeoMapNode[] = [
     name: "First Aid and Info Hub",
     shortLabel: "First Aid",
     category: "facility",
-    lng: 4.3776,
-    lat: 51.0901,
+    lng: 4.3773,
+    lat: 51.0899,
     summary:
       "The main medical post and information desk, on the central spine a short walk inside the main entrance.",
     typicalZoneNote:
@@ -233,8 +327,8 @@ const DE_SCHORRE_NODES: readonly GeoMapNode[] = [
     name: "Lockers at the Main Entrance",
     shortLabel: "Lockers",
     category: "facility",
-    lng: 4.3751,
-    lat: 51.0895,
+    lng: 4.3768,
+    lat: 51.08915,
     summary:
       "The larger locker bank, just inside the main entrance, for day visitors who want to leave bags and coats before the gates.",
     typicalZoneNote:
@@ -246,7 +340,7 @@ const DE_SCHORRE_NODES: readonly GeoMapNode[] = [
     shortLabel: "DV Lockers",
     category: "facility",
     lng: 4.3863,
-    lat: 51.0926,
+    lat: 51.09255,
     summary:
       "A smaller locker bank beside the eastern gate, convenient for campers who do not want to carry a bag to the stages.",
     typicalZoneNote:
@@ -257,7 +351,7 @@ const DE_SCHORRE_NODES: readonly GeoMapNode[] = [
     name: "Shuttle and Taxi Drop-off",
     shortLabel: "Shuttle",
     category: "transport",
-    lng: 4.3736,
+    lng: 4.3755,
     lat: 51.089,
     summary:
       "The western approach road where shuttle buses and taxis set down and collect, a few minutes' walk from the main entrance.",
@@ -269,21 +363,28 @@ const DE_SCHORRE_NODES: readonly GeoMapNode[] = [
 const DE_SCHORRE_EDGE_SPECS: readonly EdgeSpec[] = [
   { from: "ds-main-entrance", to: "ds-lockers-main", peakMultiplier: 1.1, bottleneckNote: "Locker desks queue from early evening; allow extra time before the first set you care about." },
   { from: "ds-main-entrance", to: "ds-transport", peakMultiplier: 1.3, bottleneckNote: "Shuttle buses and taxis share the approach road, and queues build from mid-afternoon." },
-  { from: "ds-main-entrance", to: "ds-freedom", peakMultiplier: 1.6, bottleneckNote: "Bag search and ticket scanning at the main entrance, the slowest stretch of arrival." },
-  { from: "ds-main-entrance", to: "ds-first-aid", peakMultiplier: 1.3 },
+  { from: "ds-main-entrance", to: "ds-first-aid", peakMultiplier: 1.3, bottleneckNote: "Bag search and ticket scanning at the main entrance, the slowest stretch of arrival." },
   { from: "ds-first-aid", to: "ds-freedom", peakMultiplier: 1.1 },
-  { from: "ds-first-aid", to: "ds-core", peakMultiplier: 1 },
   { from: "ds-first-aid", to: "ds-rose-garden", peakMultiplier: 1.2 },
-  { from: "ds-freedom", to: "ds-atmosphere", peakMultiplier: 1.3, bottleneckNote: "The path between the Freedom hall and the northern tents narrows to a single lane." },
-  { from: "ds-atmosphere", to: "ds-crystal-garden", peakMultiplier: 1.2 },
-  { from: "ds-atmosphere", to: "ds-library", peakMultiplier: 1.25 },
-  { from: "ds-crystal-garden", to: "ds-library", peakMultiplier: 1.2 },
+  { from: "ds-first-aid", to: "ds-core", peakMultiplier: 1 },
+  { from: "ds-freedom", to: "ds-rose-garden", peakMultiplier: 1.4, bottleneckNote: "The two stages share one field, so the gap between them fills solid as the evening goes on." },
+  { from: "ds-freedom", to: "ds-cage", peakMultiplier: 1.3, bottleneckNote: "The path between the Freedom hall and the northern rooms narrows to a single lane." },
+  { from: "ds-rose-garden", to: "ds-rave-cave", peakMultiplier: 1.2 },
+  { from: "ds-cage", to: "ds-rave-cave", peakMultiplier: 1.1 },
+  { from: "ds-cage", to: "ds-atmosphere", peakMultiplier: 1.3, bottleneckNote: "Atmosphere's entrance faces Cage across a narrow wooded path that backs up between sets." },
+  { from: "ds-atmosphere", to: "ds-elixir", peakMultiplier: 1.2 },
+  { from: "ds-elixir", to: "ds-crystal-garden", peakMultiplier: 1.2, bottleneckNote: "The lake bridge at Elixir is the only crossing on this side, and it runs one way at headline time." },
+  { from: "ds-rave-cave", to: "ds-planaxis", peakMultiplier: 1.1 },
+  { from: "ds-rave-cave", to: "ds-crystal-garden", peakMultiplier: 1.2 },
+  { from: "ds-planaxis", to: "ds-rise", peakMultiplier: 1 },
+  { from: "ds-planaxis", to: "ds-crystal-garden", peakMultiplier: 1.2 },
+  { from: "ds-rise", to: "ds-core", peakMultiplier: 1, bottleneckNote: "The Core path leaves the lakeside and climbs into the woods, where it is unlit and single file." },
   { from: "ds-crystal-garden", to: "ds-rose-garden", peakMultiplier: 1.1 },
-  { from: "ds-core", to: "ds-rose-garden", peakMultiplier: 1 },
+  { from: "ds-crystal-garden", to: "ds-library", peakMultiplier: 1.2 },
   { from: "ds-library", to: "ds-mainstage", peakMultiplier: 1.6, bottleneckNote: "The Library side of the Mainstage path is pushed one way after the headline set." },
-  { from: "ds-library", to: "ds-dreamville-gate", peakMultiplier: 1.4 },
+  { from: "ds-mainstage", to: "ds-house-of-fortune", peakMultiplier: 1.5, bottleneckNote: "The service lane behind the Mainstage carries both the crowd and the production traffic." },
   { from: "ds-mainstage", to: "ds-dreamville-gate", peakMultiplier: 1.8, bottleneckNote: "The eastern bridge is the worst pinch point of the night, roughly between 00:30 and 02:00." },
-  { from: "ds-mainstage", to: "ds-rose-garden", peakMultiplier: 1.5, bottleneckNote: "The shore path narrows between the pond and the Rose Garden, and stops whenever the crowd does." },
+  { from: "ds-house-of-fortune", to: "ds-dreamville-gate", peakMultiplier: 1.4 },
   { from: "ds-dreamville-gate", to: "ds-lockers-dreamville", peakMultiplier: 1.2, bottleneckNote: "The locker queue stands in the walkway, so the gate approach slows with it." },
 ];
 
@@ -291,62 +392,102 @@ const DE_SCHORRE_EDGE_SPECS: readonly EdgeSpec[] = [
 /* De Schorre overlays                                                         */
 /* -------------------------------------------------------------------------- */
 
+/**
+ * The festival footprint: the domain's own boundary, extended westwards over the
+ * fields the festival rents for the day entrance, the transport drop-off and the
+ * northern approach. The surveyed park polygon stops at the tree line, so using
+ * it alone would leave the entrance outside the drawn ground.
+ *
+ * Rings are closed and wind anticlockwise, as RFC 7946 asks of an exterior ring.
+ */
 const DE_SCHORRE_FOOTPRINT: GeoJsonPolygonGeometry = {
   type: "Polygon",
   coordinates: [
     [
-      [4.3724, 51.0877],
-      [4.3742, 51.0869],
-      [4.38, 51.0865],
-      [4.3862, 51.0872],
-      [4.3896, 51.0886],
-      [4.3902, 51.0916],
-      [4.3888, 51.0946],
-      [4.3856, 51.0956],
-      [4.38, 51.0952],
-      [4.3746, 51.0944],
-      [4.3718, 51.0922],
-      [4.3716, 51.0896],
-      [4.3724, 51.0877],
+      [4.3742, 51.0866],
+      [4.374, 51.0905],
+      [4.376, 51.0928],
+      [4.3798, 51.0925],
+      [4.3821, 51.0944],
+      [4.3839, 51.0949],
+      [4.3858, 51.0946],
+      [4.3866, 51.0936],
+      [4.3913, 51.0913],
+      [4.3912, 51.0903],
+      [4.3892, 51.0876],
+      [4.3858, 51.0862],
+      [4.3849, 51.0849],
+      [4.38, 51.0864],
+      [4.3812, 51.086],
+      [4.3794, 51.0851],
+      [4.3755, 51.0856],
+      [4.3742, 51.0866],
     ],
   ],
 };
 
+/**
+ * The clay pits, traced from OpenStreetMap's `natural=water` polygons and
+ * simplified to roughly ten-metre fidelity: the south-western pit beside the Rose
+ * Garden, the central pit that carries Crystal Garden, the northern pit by
+ * Atmosphere, and the eastern pit below the Mainstage hill.
+ */
 const DE_SCHORRE_LAKES: GeoJsonMultiPolygonGeometry = {
   type: "MultiPolygon",
   coordinates: [
     [
       [
-        [4.3794, 51.0913],
-        [4.3799, 51.0907],
-        [4.3816, 51.0906],
-        [4.3829, 51.0909],
-        [4.3828, 51.0922],
-        [4.3814, 51.093],
-        [4.3801, 51.0924],
-        [4.3794, 51.0913],
+        [4.37876, 51.089],
+        [4.37843, 51.08926],
+        [4.37918, 51.08978],
+        [4.37923, 51.09043],
+        [4.38032, 51.09068],
+        [4.38112, 51.09025],
+        [4.37989, 51.08903],
+        [4.37876, 51.089],
       ],
     ],
     [
       [
-        [4.383, 51.0882],
-        [4.3844, 51.0878],
-        [4.3858, 51.0884],
-        [4.386, 51.0894],
-        [4.3846, 51.0899],
-        [4.3832, 51.0893],
-        [4.383, 51.0882],
+        [4.38188, 51.09069],
+        [4.3807, 51.09106],
+        [4.38075, 51.09135],
+        [4.38118, 51.09142],
+        [4.38134, 51.09175],
+        [4.38277, 51.09231],
+        [4.38333, 51.09206],
+        [4.38298, 51.09185],
+        [4.3836, 51.09173],
+        [4.38388, 51.09131],
+        [4.38369, 51.09104],
+        [4.3831, 51.09073],
+        [4.38271, 51.09068],
+        [4.38223, 51.09094],
+        [4.38188, 51.09069],
       ],
     ],
     [
       [
-        [4.3798, 51.0938],
-        [4.381, 51.0932],
-        [4.3826, 51.0936],
-        [4.3828, 51.0948],
-        [4.3814, 51.095],
-        [4.38, 51.0946],
-        [4.3798, 51.0938],
+        [4.37955, 51.09105],
+        [4.37876, 51.09101],
+        [4.37887, 51.09122],
+        [4.3795, 51.0914],
+        [4.37911, 51.09163],
+        [4.37949, 51.09183],
+        [4.37989, 51.09174],
+        [4.37955, 51.09105],
+      ],
+    ],
+    [
+      [
+        [4.38533, 51.08663],
+        [4.38528, 51.08678],
+        [4.38589, 51.08692],
+        [4.38616, 51.08826],
+        [4.38657, 51.08823],
+        [4.38614, 51.08807],
+        [4.386, 51.08666],
+        [4.38533, 51.08663],
       ],
     ],
   ],
@@ -356,14 +497,13 @@ const DE_SCHORRE_CORE_WOOD: GeoJsonPolygonGeometry = {
   type: "Polygon",
   coordinates: [
     [
-      [4.3728, 51.0874],
-      [4.3762, 51.0866],
-      [4.3802, 51.087],
-      [4.3808, 51.0888],
-      [4.379, 51.09],
-      [4.3758, 51.0898],
-      [4.373, 51.0892],
-      [4.3728, 51.0874],
+      [4.3738, 51.0856],
+      [4.3762, 51.0899],
+      [4.3795, 51.0897],
+      [4.3814, 51.0884],
+      [4.3812, 51.086],
+      [4.379, 51.085],
+      [4.3738, 51.0856],
     ],
   ],
 };
@@ -372,13 +512,13 @@ const DE_SCHORRE_MAINSTAGE_BOWL: GeoJsonPolygonGeometry = {
   type: "Polygon",
   coordinates: [
     [
-      [4.3836, 51.0902],
-      [4.386, 51.0898],
-      [4.3876, 51.091],
-      [4.3868, 51.0924],
-      [4.3844, 51.0926],
-      [4.3832, 51.0914],
-      [4.3836, 51.0902],
+      [4.3839, 51.0918],
+      [4.3846, 51.0927],
+      [4.3862, 51.0929],
+      [4.3872, 51.0918],
+      [4.3862, 51.0906],
+      [4.3845, 51.0908],
+      [4.3839, 51.0918],
     ],
   ],
 };
@@ -386,13 +526,13 @@ const DE_SCHORRE_MAINSTAGE_BOWL: GeoJsonPolygonGeometry = {
 const DE_SCHORRE_SPINE: GeoJsonLineStringGeometry = {
   type: "LineString",
   coordinates: [
-    [4.3745, 51.0898],
-    [4.3776, 51.0901],
-    [4.38, 51.0903],
-    [4.3814, 51.0901],
-    [4.3834, 51.09],
-    [4.3852, 51.0906],
-    [4.3866, 51.0918],
+    [4.3763, 51.0896],
+    [4.3773, 51.0899],
+    [4.3792, 51.09085],
+    [4.37955, 51.09145],
+    [4.3828, 51.0914],
+    [4.3843, 51.09035],
+    [4.3855, 51.09165],
     [4.3868, 51.0928],
   ],
 };
@@ -406,8 +546,9 @@ const DE_SCHORRE_OVERLAYS: GeoJsonFeatureCollection<MapOverlayProperties> = {
       properties: {
         mapId: "de-schorre",
         kind: "park-footprint",
-        name: "De Schorre park footprint",
-        notes: "Approximate outline of the provincial domain; the festival occupies the eastern side of it.",
+        name: "De Schorre festival ground",
+        notes:
+          "The surveyed park boundary, extended west over the fields the festival rents for the entrance, drop-off and northern approach.",
       },
       geometry: DE_SCHORRE_FOOTPRINT,
     },
@@ -418,7 +559,8 @@ const DE_SCHORRE_OVERLAYS: GeoJsonFeatureCollection<MapOverlayProperties> = {
         mapId: "de-schorre",
         kind: "water",
         name: "Clay-pit lakes",
-        notes: "The former clay pits that now form the central and northern lakes; outlines are indicative.",
+        notes:
+          "The disused clay pits, traced from OpenStreetMap and simplified to about ten metres; four pits, including the one Crystal Garden floats on.",
       },
       geometry: DE_SCHORRE_LAKES,
     },
@@ -440,7 +582,8 @@ const DE_SCHORRE_OVERLAYS: GeoJsonFeatureCollection<MapOverlayProperties> = {
         mapId: "de-schorre",
         kind: "stage-bowl",
         name: "Mainstage amphitheatre",
-        notes: "The natural bowl that holds the Mainstage crowd, open at the north-west towards the Library.",
+        notes:
+          "The natural bowl that holds the Mainstage crowd, open at the north-west towards the Library.",
       },
       geometry: DE_SCHORRE_MAINSTAGE_BOWL,
     },
@@ -451,7 +594,8 @@ const DE_SCHORRE_OVERLAYS: GeoJsonFeatureCollection<MapOverlayProperties> = {
         mapId: "de-schorre",
         kind: "walking-spine",
         name: "Main walking spine",
-        notes: "The signed route from the main entrance, past First Aid, to the eastern DreamVille gate.",
+        notes:
+          "The signed route from the main entrance, past the western stages and the lakes, to the eastern DreamVille gate.",
       },
       geometry: DE_SCHORRE_SPINE,
     },
@@ -883,8 +1027,8 @@ export const DE_SCHORRE_MAP: GeoMap = {
   id: "de-schorre",
   name: "De Schorre, Boom",
   disclaimer: GEO_DATA_DISCLAIMER,
-  centre: [4.3805, 51.0911],
-  bounds: { south: 51.0865, west: 4.3716, north: 51.0956, east: 4.3902 },
+  centre: [4.3825, 51.0904],
+  bounds: { south: 51.0845, west: 4.374, north: 51.0952, east: 4.3915 },
   nodes: DE_SCHORRE_NODES,
   edges: buildEdges(DE_SCHORRE_NODES, DE_SCHORRE_EDGE_SPECS),
   overlays: DE_SCHORRE_OVERLAYS,
@@ -913,8 +1057,8 @@ export const ALL_VENUE_MAP: GeoMap = {
   id: "all",
   name: "Boom and Rumst, full site",
   disclaimer: GEO_DATA_DISCLAIMER,
-  centre: [4.3893, 51.092],
-  bounds: { south: 51.0865, west: 4.3716, north: 51.0975, east: 4.407 },
+  centre: [4.3893, 51.0934],
+  bounds: { south: 51.0845, west: 4.374, north: 51.0975, east: 4.407 },
   nodes: ALL_VENUE_NODES,
   edges: [
     ...buildEdges(ALL_VENUE_NODES, DE_SCHORRE_EDGE_SPECS),

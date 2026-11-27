@@ -101,9 +101,9 @@ describe("describePosition inside the festival area", () => {
   });
 
   it("finds the nearest zone on the other venue when the reader is there", () => {
-    // Standing in the Freedom hall itself: the nearest zone is that stage.
+    // Standing inside the Freedom hall itself: the nearest zone is that stage.
     const outcome = describePosition(
-      { lng: 4.3768, lat: 51.0908, accuracyMiles: null },
+      { lng: 4.37785, lat: 51.09095, accuracyMiles: null },
       ALL_VENUE_MAP,
       VENUE_BOUNDS,
     );

@@ -1,5 +1,5 @@
 import AxeBuilder from "@axe-core/playwright";
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 
 /**
  * The My Trip accessibility scan.
@@ -19,6 +19,20 @@ const VIEWPORTS = [
   { name: "mobile", width: 390, height: 844 },
 ];
 
+/**
+ * Picks an option from one of the sheet's custom menus.
+ *
+ * These are button-and-listbox controls rather than native selects, so
+ * `selectOption` does not apply: the trigger is opened, then the option is
+ * clicked. The option is found by role so the test also proves the list is
+ * exposed as a listbox with option children.
+ */
+async function chooseOption(page: Page, label: string, index: number): Promise<void> {
+  await page.getByLabel(label).click();
+  await page.getByRole("option").nth(index).click();
+  await expect(page.getByRole("listbox")).toHaveCount(0);
+}
+
 for (const viewport of VIEWPORTS) {
   test(`axe: /tools/my-trip on ${viewport.name}`, async ({ page }) => {
     await page.setViewportSize({ width: viewport.width, height: viewport.height });
@@ -26,10 +40,9 @@ for (const viewport of VIEWPORTS) {
     await page.waitForLoadState("networkidle");
 
     // Choose a ticket and a package, so the detail panels are on the page too.
-    await page.getByLabel("The ticket you hold").selectOption({ index: 1 });
-    await page.getByLabel("A published accommodation package, if you booked one").selectOption({
-      index: 1,
-    });
+    // Index 0 is the "nothing chosen" row in both menus.
+    await chooseOption(page, "The ticket you hold", 1);
+    await chooseOption(page, "A published accommodation package, if you booked one", 1);
     // Open the clear confirmation, which is a second interactive surface.
     await page.getByRole("button", { name: "Clear this trip" }).click();
     await page.getByRole("button", { name: "Keep it" }).click();

@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { CustomSelect } from "@/components/ui/custom-select";
 import {
   WINTER_OFFICIAL_LINKS,
   WINTER_TIMER_DISCLAIMER,
@@ -77,18 +78,13 @@ export function WinterTimerTool({
             <label className="tool-field__label" htmlFor="tml-wtimer-from">
               Starting stage or hub
             </label>
-            <select
+            <CustomSelect
               id="tml-wtimer-from"
-              className="tool-select"
+              ariaLabel="Starting stage or hub"
               value={fromId}
-              onChange={(event) => setFromId(event.target.value)}
-            >
-              {WINTER_ZONES.map((zone) => (
-                <option key={zone.id} value={zone.id}>
-                  {zone.name}
-                </option>
-              ))}
-            </select>
+              onChange={setFromId}
+              options={WINTER_ZONES.map((zone) => ({ value: zone.id, label: zone.name }))}
+            />
           </div>
 
           <button
@@ -104,18 +100,13 @@ export function WinterTimerTool({
             <label className="tool-field__label" htmlFor="tml-wtimer-to">
               Target stage or hub
             </label>
-            <select
+            <CustomSelect
               id="tml-wtimer-to"
-              className="tool-select"
+              ariaLabel="Target stage or hub"
               value={toId}
-              onChange={(event) => setToId(event.target.value)}
-            >
-              {WINTER_ZONES.map((zone) => (
-                <option key={zone.id} value={zone.id}>
-                  {zone.name}
-                </option>
-              ))}
-            </select>
+              onChange={setToId}
+              options={WINTER_ZONES.map((zone) => ({ value: zone.id, label: zone.name }))}
+            />
           </div>
         </div>
 
@@ -209,18 +200,16 @@ export function WinterTimerTool({
             <label className="tool-field__label" htmlFor="tml-wtimer-buffer">
               Arrival buffer (minutes)
             </label>
-            <select
+            <CustomSelect
               id="tml-wtimer-buffer"
-              className="tool-select"
+              ariaLabel="Arrival buffer (minutes)"
               value={String(bufferMinutes)}
-              onChange={(event) => setBufferMinutes(Number(event.target.value))}
-            >
-              {[0, 5, 10, 15, 20, 30, 45].map((mins) => (
-                <option key={mins} value={mins}>
-                  {mins === 0 ? "No extra buffer (0 min)" : `${mins} minutes before set`}
-                </option>
-              ))}
-            </select>
+              onChange={(next) => setBufferMinutes(Number(next))}
+              options={[0, 5, 10, 15, 20, 30, 45].map((mins) => ({
+                value: String(mins),
+                label: mins === 0 ? "No extra buffer (0 min)" : `${mins} minutes before set`,
+              }))}
+            />
             <p className="tool-field__note">
               Time for lockers, boot changes, toilets, or finding your spot before the set starts.
             </p>

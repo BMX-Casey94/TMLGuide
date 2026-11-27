@@ -271,6 +271,40 @@ describe("venue maps", () => {
       ]),
     );
   });
+
+  it("holds every stage of a typical recent edition, not just the headline four", () => {
+    /*
+      The complaint this answers was that stages were missing. These are the
+      permanent stages that have occupied the same corners of De Schorre for
+      several editions, so a planning aid that omits any of them sends a reader
+      looking for a stage the map claims is not there.
+    */
+    for (const id of [
+      "ds-mainstage",
+      "ds-freedom",
+      "ds-rose-garden",
+      "ds-cage",
+      "ds-atmosphere",
+      "ds-elixir",
+      "ds-rave-cave",
+      "ds-crystal-garden",
+      "ds-planaxis",
+      "ds-rise",
+      "ds-library",
+      "ds-house-of-fortune",
+      "ds-core",
+    ]) {
+      expect(nodeById(DE_SCHORRE_MAP, id), `${id} is missing`).not.toBeNull();
+    }
+  });
+
+  it("keeps the named stage count honest against the site's own list", () => {
+    const stages = DE_SCHORRE_MAP.nodes.filter((node) => node.category === "stage");
+    // Deliberately not sixteen: only the stages whose position is stable across
+    // editions are placed. See the disclaimer, which says as much.
+    expect(stages.length).toBeGreaterThanOrEqual(12);
+    expect(stages.length).toBeLessThanOrEqual(16);
+  });
 });
 
 describe("coordinates", () => {
@@ -342,8 +376,9 @@ describe("coordinates", () => {
   it("matches the expected spread of each venue to within a few hundred metres", () => {
     const mainstage = nodeById(DE_SCHORRE_MAP, "ds-mainstage") as GeoMapNode;
     const freedom = nodeById(DE_SCHORRE_MAP, "ds-freedom") as GeoMapNode;
-    expect(haversineMiles(positionOf(mainstage), positionOf(freedom))).toBeGreaterThan(0.3);
-    expect(haversineMiles(positionOf(mainstage), positionOf(freedom))).toBeLessThan(0.9);
+    // Opposite shores of the central clay pits: a few hundred metres, not a mile.
+    expect(haversineMiles(positionOf(mainstage), positionOf(freedom))).toBeGreaterThan(0.15);
+    expect(haversineMiles(positionOf(mainstage), positionOf(freedom))).toBeLessThan(0.6);
 
     const entrance = nodeById(DREAMVILLE_MAP, "dv-main-entrance") as GeoMapNode;
     const greens = nodeById(DREAMVILLE_MAP, "dv-magnificent-greens") as GeoMapNode;
@@ -589,6 +624,25 @@ describe("haversineMiles", () => {
 });
 
 describe("findShortestRoute", () => {
+  it("walks Rose Garden to Freedom directly, in under a minute's distance", () => {
+    const route = findShortestRoute(DE_SCHORRE_MAP, "ds-rose-garden", "ds-freedom");
+    expect(route).not.toBeNull();
+    if (route === null) return;
+
+    /*
+      These two stages share a bank, roughly a hundred metres apart. A route of
+      0.27 miles, or any walk that detours via First Aid, means the pins have
+      drifted apart again.
+    */
+    expect(route.totalDistanceMiles).toBeLessThanOrEqual(0.08);
+    expect(route.totalDistanceMiles).toBeGreaterThan(0.04);
+    expect(route.normalWalkMinutes).toBeLessThanOrEqual(2);
+    expect(route.peakWalkMinutes).toBeLessThanOrEqual(3);
+    expect(route.nodes.map((node) => node.id)).toEqual(["ds-rose-garden", "ds-freedom"]);
+    expect(route.nodes.map((node) => node.id)).not.toContain("ds-first-aid");
+    expect(route.totalDistanceMiles).not.toBeCloseTo(0.27, 2);
+  });
+
   it("routes from the main entrance to the Mainstage on De Schorre", () => {
     const route = findShortestRoute(DE_SCHORRE_MAP, "ds-main-entrance", "ds-mainstage");
     expect(route).not.toBeNull();
@@ -707,7 +761,9 @@ describe("findShortestRoute", () => {
   });
 
   it("collects each bottleneck note once, in walking order", () => {
-    const route = findShortestRoute(DE_SCHORRE_MAP, "ds-main-entrance", "ds-dreamville-gate");
+    // Shuttle to the Mainstage crosses the entrance and the shore, so more than
+    // one bottleneck is on the walk and their order can be checked.
+    const route = findShortestRoute(DE_SCHORRE_MAP, "ds-transport", "ds-mainstage");
     expect(route).not.toBeNull();
     if (route === null) return;
 

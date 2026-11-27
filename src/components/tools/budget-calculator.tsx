@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
 import { useEdition } from "@/components/shell";
 import { Button } from "@/components/ui/button";
+import { CustomSelect } from "@/components/ui/custom-select";
 import {
   BUDGET_QUERY_KEY,
   BUDGET_STORAGE_KEY,
@@ -422,20 +423,20 @@ export function BudgetCalculator({ paymentTerms }: BudgetCalculatorProps) {
             <label className="tool-field__label" htmlFor={field("ticket")}>
               Ticket
             </label>
-            <select
+            <CustomSelect
               id={field("ticket")}
-              className="tool-select"
+              ariaLabel="Ticket"
               value={state.ticketId}
-              onChange={(event) => onTicketChange(event.target.value)}
-            >
-              {choices.map((choice) => (
-                <option key={choice.id} value={choice.id}>
-                  {choice.label} — {formatMoney(choice.priceMinor, currency)}
-                  {choice.soldOut ? " (sold out)" : ""}
-                </option>
-              ))}
-              <option value={CUSTOM_TICKET_ID}>My own ticket price</option>
-            </select>
+              placeholder="Choose a ticket"
+              onChange={onTicketChange}
+              options={[
+                ...choices.map((choice) => ({
+                  value: choice.id,
+                  label: `${choice.label} — ${formatMoney(choice.priceMinor, currency)}${choice.soldOut ? " (sold out)" : ""}`,
+                })),
+                { value: CUSTOM_TICKET_ID, label: "My own ticket price" },
+              ]}
+            />
             {ticket.choice === undefined ? (
               <p className="tool-field__note">
                 Type the price you paid or expect to pay, per person.

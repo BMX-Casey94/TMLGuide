@@ -1,0 +1,235 @@
+/*
+  The Dusk Programme select. Plain CSS, prefixed `.tml-select-`, imported by
+  `custom-select.tsx`.
+
+  It borrows the shape and behaviour of the Edition picker in
+  `components/ai/ai.css`: an elevated dark card, a hairline border that turns
+  gold when the control is live, a chevron that rotates on open, and a frosted
+  list of rounded rows. The colours come from the global tokens, so the surface
+  and the accent follow the current edition without any rule here.
+*/
+
+.tml-select {
+  position: relative;
+  display: block;
+  width: 100%;
+  min-width: 0;
+}
+
+/* ---------- Trigger ---------- */
+
+.tml-select-trigger {
+  display: flex;
+  width: 100%;
+  min-height: 44px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.6rem 0.85rem 0.6rem 1rem;
+  border: 1px solid var(--hair-strong);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--surface-2) 92%, var(--ground));
+  color: var(--cream);
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  line-height: 1.3;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
+}
+
+.tml-select-trigger__label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* No value yet: the prompt reads as a prompt, not as a choice already made. */
+.tml-select-trigger__label--placeholder {
+  color: var(--cream-mute);
+}
+
+.tml-select-trigger:hover,
+.tml-select-trigger:focus-visible,
+.tml-select[data-open="true"] .tml-select-trigger {
+  border-color: var(--gold);
+  background: color-mix(in srgb, var(--gold) 8%, var(--surface-2));
+  outline: none;
+}
+
+.tml-select-trigger:focus-visible {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--gold) 22%, transparent);
+}
+
+.tml-select-trigger:disabled,
+.tml-select[data-disabled="true"] .tml-select-trigger {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.tml-select-chevron {
+  flex: none;
+  color: var(--cream-mute);
+  transition: transform 0.18s ease, color 0.18s ease;
+}
+
+.tml-select-chevron[data-open="true"] {
+  transform: rotate(180deg);
+  color: var(--gold);
+}
+
+/* ---------- Popover ---------- */
+
+.tml-select-menu {
+  position: absolute;
+  top: calc(100% + 0.4rem);
+  right: 0;
+  left: 0;
+  z-index: 40;
+  /*
+    `16rem` is the working height; the viewport caps it further so a list opened
+    near the bottom of a short window still has rows visible above the fold. The
+    `data-placement` attribute flips it above the trigger when there is no room
+    below, which is why both offsets are declared.
+  */
+  max-height: min(16rem, calc(100vh - 5rem));
+  padding: 0.35rem;
+  overflow-y: auto;
+  /* Momentum scrolling on touch, and no rubber-banding of the page behind. */
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--cream) 28%, transparent) transparent;
+  border: 1px solid color-mix(in srgb, var(--cream) 14%, var(--hair-strong));
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--surface-2) 96%, var(--ground));
+  backdrop-filter: blur(12px);
+  box-shadow:
+    inset 0 1px 0 rgb(244 236 224 / 0.06),
+    0 18px 40px -14px rgb(0 0 0 / 0.9);
+}
+
+/* No room below: the list hangs above the trigger instead, and its shadow flips
+   so the light still appears to come from above. */
+.tml-select-menu[data-placement="up"] {
+  top: auto;
+  bottom: calc(100% + 0.4rem);
+}
+
+.tml-select-menu::-webkit-scrollbar {
+  width: 6px;
+}.tml-select-menu::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.tml-select-menu::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--cream) 24%, transparent);
+}
+
+.tml-select-group + .tml-select-group {
+  margin-top: 0.2rem;
+  padding-top: 0.2rem;
+  border-top: 1px solid var(--hair);
+}
+
+.tml-select-group__label {
+  margin: 0;
+  padding: 0.45rem 0.75rem 0.3rem;
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--cream-mute);
+}
+
+/* ---------- Options ---------- */
+
+.tml-select-option {
+  display: flex;
+  width: 100%;
+  min-height: 40px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 11px;
+  color: var(--cream-mute);
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  line-height: 1.35;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+/* `data-active` follows the pointer and the arrow keys alike, so the two inputs
+   show one highlight rather than two different ones. */
+.tml-select-option[data-active="true"] {
+  background: color-mix(in srgb, var(--cream) 7%, transparent);
+  color: var(--cream);
+}
+
+.tml-select-option[aria-selected="true"] {
+  background: color-mix(in srgb, var(--gold) 15%, transparent);
+  color: var(--cream);
+}
+
+.tml-select-option[aria-selected="true"][data-active="true"] {
+  background: color-mix(in srgb, var(--gold) 22%, transparent);
+}
+
+.tml-select-option__label {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.tml-select-option__check {
+  flex: none;
+  color: var(--gold);
+}
+
+.tml-select-option[data-disabled="true"] {
+  color: color-mix(in srgb, var(--cream-mute) 55%, transparent);
+  cursor: not-allowed;
+}
+
+.tml-select-option[data-disabled="true"][data-active="true"] {
+  background: transparent;
+  color: color-mix(in srgb, var(--cream-mute) 55%, transparent);
+}
+
+/* ---------- Motion and printing ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .tml-select-trigger,
+  .tml-select-chevron,
+  .tml-select-option {
+    transition: none;
+  }
+}
+
+/* The preference the accessibility toolbar stores, which is independent of the
+   operating system setting. It is `!important` everywhere else on the site, so
+   this control matches. */
+html[data-a11y-motion="reduce"] .tml-select-trigger,
+html[data-a11y-motion="reduce"] .tml-select-chevron,
+html[data-a11y-motion="reduce"] .tml-select-option {
+  transition: none !important;
+}
+
+/* A printed page cannot open a list, so it shows the chosen label as plain text
+   on paper and drops the list entirely. */
+@media print {
+  .tml-select-trigger {
+    border-color: #bbb;
+    background: #fff !important;
+    color: #111;
+  }
+
+  .tml-select-chevron,
+  .tml-select-menu {
+    display: none !important;
+  }
+}

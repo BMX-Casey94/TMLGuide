@@ -27,6 +27,13 @@ function regionField(): HTMLElement {
   return screen.getByLabelText(/^region$/i);
 }
 
+function chooseField(field: HTMLElement, value: string): void {
+  fireEvent.click(field);
+  const option = screen.getAllByRole("option").find((item) => item.getAttribute("data-value") === value);
+  if (option === undefined) throw new Error(`No filter option with value ${value}`);
+  fireEvent.click(option);
+}
+
 describe("WhatsappDirectory", () => {
   it("renders every group before any filter is applied", () => {
     render(<WhatsappDirectory groups={whatsappGroups} />);
@@ -95,7 +102,7 @@ describe("WhatsappDirectory", () => {
     setUrl("?edition=winter");
     render(<WhatsappDirectory groups={whatsappGroups} />);
 
-    expect(editionField()).toHaveValue("winter");
+    expect(editionField()).toHaveAttribute("data-value", "winter");
     expect(screen.getAllByRole("link")).toHaveLength(
       whatsappGroups.filter((group) => group.edition === "winter").length,
     );
@@ -105,7 +112,7 @@ describe("WhatsappDirectory", () => {
     setUrl("?region=Atlantis");
     render(<WhatsappDirectory groups={whatsappGroups} />);
 
-    expect(regionField()).toHaveValue("");
+    expect(regionField()).toHaveAttribute("data-value", "");
     expect(screen.getAllByRole("link")).toHaveLength(whatsappGroups.length);
   });
 
@@ -113,7 +120,7 @@ describe("WhatsappDirectory", () => {
     render(<WhatsappDirectory groups={whatsappGroups} />);
     const before = window.history.length;
 
-    fireEvent.change(editionField(), { target: { value: "brasil" } });
+    chooseField(editionField(), "brasil");
 
     expect(window.location.search).toBe("?edition=brasil");
     expect(window.history.length).toBe(before + 1);
@@ -121,7 +128,7 @@ describe("WhatsappDirectory", () => {
 
   it("re-reads the URL on a popstate, which is how the back button restores a filter", () => {
     render(<WhatsappDirectory groups={whatsappGroups} />);
-    fireEvent.change(editionField(), { target: { value: "brasil" } });
+    chooseField(editionField(), "brasil");
     expect(screen.getAllByRole("link")).toHaveLength(1);
 
     // The browser has gone back: the URL is bare and the event reports it.
@@ -130,14 +137,14 @@ describe("WhatsappDirectory", () => {
       window.dispatchEvent(new PopStateEvent("popstate"));
     });
 
-    expect(editionField()).toHaveValue("any");
+    expect(editionField()).toHaveAttribute("data-value", "any");
     expect(screen.getAllByRole("link")).toHaveLength(whatsappGroups.length);
   });
 
   it("filters by region and keeps the count honest", () => {
     render(<WhatsappDirectory groups={whatsappGroups} />);
 
-    fireEvent.change(regionField(), { target: { value: "Worldwide" } });
+    chooseField(regionField(), "Worldwide");
 
     const expected = whatsappGroups.filter((group) => group.region === "Worldwide").length;
     expect(screen.getAllByRole("link")).toHaveLength(expected);
@@ -189,7 +196,8 @@ describe("WhatsappDirectory", () => {
   it("shows every region in the filter, in display order", () => {
     render(<WhatsappDirectory groups={whatsappGroups} />);
 
-    const options = within(regionField()).getAllByRole("option").map((option) => option.textContent);
+    fireEvent.click(regionField());
+    const options = screen.getAllByRole("option").map((option) => option.textContent?.trim());
     expect(options[0]).toBe("All regions");
     expect(options.slice(1)).toContain("Worldwide");
     expect(options).toHaveLength(new Set(whatsappGroups.map((group) => group.region)).size + 1);
@@ -198,12 +206,12 @@ describe("WhatsappDirectory", () => {
   it("keeps the reader's region choice when a search empties the result", () => {
     render(<WhatsappDirectory groups={whatsappGroups} />);
 
-    fireEvent.change(regionField(), { target: { value: "Worldwide" } });
+    chooseField(regionField(), "Worldwide");
     fireEvent.change(searchField(), { target: { value: "alpe" } });
 
     // An empty result the reader can undo, not a silent reset of their region choice.
     expect(screen.getByRole("heading", { name: /no groups match/i })).toBeInTheDocument();
-    expect(regionField()).toHaveValue("Worldwide");
+    expect(regionField()).toHaveAttribute("data-value", "Worldwide");
     expect(window.location.search).toBe("?q=alpe&region=Worldwide");
   });
 
