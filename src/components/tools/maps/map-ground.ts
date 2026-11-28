@@ -50,7 +50,19 @@ export const AERIAL_SOURCE_ID = "flanders-aerial";
 export const HILLSHADE_LAYER_ID = "hillshade";
 export const AERIAL_LAYER_ID = "aerial-photo";
 
-/** The symbol layer the photograph and the hillshade must sit beneath. */
+/**
+ * The style layer the photograph goes in above: the flat building footprint fill.
+ *
+ * The photograph is the ground, so it has to sit above the flat landcover, water
+ * and footprint fills — otherwise the photograph is what the reader sees and the
+ * vector ground is wasted. It must sit *below* the extruded buildings and the
+ * roads, though: a photograph pasted over those would hide the 3D buildings
+ * entirely, which is the detail that makes the amphitheatre bowl readable. This
+ * id, the last of the flat fills, is exactly the seam between the two.
+ */
+const GROUND_PHOTO_BEFORE_ID = "building-3d";
+
+/** The symbol layer the hillshade must sit beneath, so names stay legible. */
 const LABEL_LAYER_ID = "place-label";
 
 /** Camera tilt, in degrees. Enough to read the clay-pit relief, not a cliff. */
@@ -129,10 +141,17 @@ export async function tileReturnsImage(url: string): Promise<boolean> {
 /**
  * Adds the orthophoto and the terrain mesh, each only after its own probe.
  *
- * The photograph goes in above the flat vector fills and below the place
- * labels, with the hillshade between the photograph and those labels, so the
- * land is visible and the names stay readable. Returns the credit lines for
- * the sources that actually loaded.
+ * The photograph is the *ground*: it goes above the flat landcover, water and
+ * footprint fills but below the extruded buildings, the roads and the labels. Any
+ * higher and it hides the 3D buildings, which are the detail that makes the
+ * amphitheatre bowl legible; any lower and the flat vector fills cover it and the
+ * fetch was wasted.
+ *
+ * The hillshade goes above the photograph and below the labels, so relief shades
+ * the imagery without washing out the place names.
+ *
+ * Returns the credit lines for the sources that actually loaded, so the
+ * attribution block only credits what the reader can actually see.
  */
 export async function attachSurveyedGround(map: MapLibreMap): Promise<readonly string[]> {
   const credits: string[] = [];
@@ -156,7 +175,11 @@ export async function attachSurveyedGround(map: MapLibreMap): Promise<readonly s
         source: AERIAL_SOURCE_ID,
         paint: { "raster-opacity": 0.92 },
       },
-      LABEL_LAYER_ID,
+      /*
+        Inserted *before* the extrusions, so the buildings stand on the
+        photograph rather than being buried by it.
+      */
+      GROUND_PHOTO_BEFORE_ID,
     );
     credits.push(AERIAL_ATTRIBUTION);
   }
